@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const UserModel = require('../models/userModel.js')
+const UserModel = require('../models/userModel.js');
+const TableCreation = require('../models/tableCreation.js')
 const { OAuth2Client } = require('google-auth-library');
 const EmailUtils = require('../utils/emailUtils.js');
 const bus = require('../events/eventBus.js');
@@ -10,6 +11,7 @@ const { uploadAvatarBuffer } = require('../utils/cloudinary.js');
 class UserController {
     constructor() {
         this.userModel = new UserModel();
+        this.tables = new TableCreation()
         this.salt_round = parseInt(process.env.PASSWORD_SALT_ROUNDS);
         this.max_login_attempts = parseInt(process.env.LOGIN_MAX_ATTEMPTS);
         this.account_lock_minutes = parseInt(process.env.ACCOUNT_LOCK_MINUTES);
@@ -33,19 +35,6 @@ class UserController {
 
         return { accessToken, refreshToken };
     };
-    
-    createTable = async(req, res)=>{
-        try {
-            await this.userModel.create_users_table();
-            res.status(201).json({
-                success: true,
-                message: "users table created"
-            });
-        } catch (error) {
-            console.error("Failed to create users table: " + error.message);
-            throw error;
-        }
-    }
 
     googleLogin = async(req, res)=>{
         try {

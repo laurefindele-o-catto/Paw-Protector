@@ -5,49 +5,6 @@ class UserModel {
         this.db_connection = new DB_Connection();
     }
 
-    create_users_table = async()=>{
-        try {
-            const query = `
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(50) UNIQUE NOT NULL,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    password_hash VARCHAR(255) NOT NULL,
-                    full_name VARCHAR(255),
-                    is_active BOOLEAN DEFAULT true,
-                    email_verified BOOLEAN DEFAULT false,
-                    verification_token VARCHAR(255),
-                    password_reset_token VARCHAR(255),
-                    password_reset_expires TIMESTAMP,
-                    last_login TIMESTAMP,
-                    login_attempts INTEGER DEFAULT 0,
-                    locked_until TIMESTAMP,
-                    refresh_token TEXT,
-                    google_id VARCHAR(100) UNIQUE,
-                    provider VARCHAR(50),
-                    avatar_url TEXT,
-                    subscription_type VARCHAR(20) NOT NULL DEFAULT 'free',
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    updated_at TIMESTAMP DEFAULT NOW()
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-                CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-                CREATE INDEX IF NOT EXISTS idx_users_verification_token ON users(verification_token);
-                CREATE INDEX IF NOT EXISTS idx_users_password_reset_token ON users(password_reset_token);
-                CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
-                CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
-            `;
-
-            await this.db_connection.query_executor(query);
-            console.log("User table successfully created");
-            return {success: true};
-        } catch (error) {
-            console.log(`Error creating table: ${error.message}`);
-            throw error;            
-        }
-    }
-
     createUser = async(userData)=>{
         try {
             const {username, email, passwordHash} = userData;
@@ -559,6 +516,67 @@ class UserModel {
             return result.rows[0] || null;
         } catch (error) {
             console.log(`Avatar url updation failed: ${error.message}`);
+            return { success: false };
+        }
+    }
+
+    // Assign a role to a user
+    assignRoleToUser = async(userId, roleName) => {
+        try {
+            const roleRes = await this.db_connection.query_executor(
+                `SELECT 
+                    id 
+                FROM roles 
+                WHERE name = $1 LIMIT 1;`, 
+                [roleName]
+            );
+            if (!roleRes.rows[0]) throw new Error("Role not found");
+            const roleId = roleRes.rows[0].id;
+            await this.db_connection.query_executor(
+                `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;`,
+                [userId, roleId]
+            );
+            return { success: true };
+        } catch (error) {
+            console.log(`Assign role failed: ${error.message}`);
+            return { success: false };
+        }
+    }
+
+    // Get roles for a user
+    getUserRoles = async(userId) => {
+        try {
+            const res = await this.db_connection.query_executor(
+                `SELECT 
+                    r.name 
+                FROM user_roles ur 
+                JOIN roles r 
+                ON ur.role_id = r.id 
+                WHERE ur.user_id = $1;`,
+                [userId]
+            );
+            return res.rows.map(row => row.name);
+        } catch (error) {
+            console.log(`Get user roles failed: ${error.message}`);
+            return [];
+        }
+    }
+
+    // Remove a role from a user
+    removeRoleFromUser = async(userId, roleName) => {
+        try {
+            const roleRes = await this.db_connection.query_executor(
+                `SELECT id FROM roles WHERE name = $1 LIMIT 1;`, [roleName]
+            );
+            if (!roleRes.rows[0]) throw new Error("Role not found");
+            const roleId = roleRes.rows[0].id;
+            await this.db_connection.query_executor(
+                `DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2;`,
+                [userId, roleId]
+            );
+            return { success: true };
+        } catch (error) {
+            console.log(`Remove role failed: ${error.message}`);
             return { success: false };
         }
     }
