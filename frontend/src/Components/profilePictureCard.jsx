@@ -1,27 +1,16 @@
-import React from 'react';
+import mimtens from "../assets/mimtens.jpg";
 
-const ProfilePictureCard = ({ imageUrl, name }) => (
-  <div style={{
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    padding: '16px',
-    width: '200px',
-    textAlign: 'center',
-    background: '#fff'
-  }}>
-    <img
-      src={imageUrl}
-      alt={name}
-      style={{
-        width: '80px',
-        height: '80px',
-        borderRadius: '50%',
-        objectFit: 'cover',
-        marginBottom: '12px'
-      }}
-    />
-    <div style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{name}</div>
-  </div>
-);
+function PhotoCard(props) {
+    return (
+      <div className="flex flex-col items-center cursor-pointer">
+        <img
+          src={mimtens}
+          alt="Profile"
+          className="w-16 h-16 rounded-full object-cover border-2 border-blue-200 shadow transition-transform duration-200 hover:scale-105 hover:shadow-xl"
+        />
+        <p className="mt-2 text-sm font-sans">{props.name || "Profile Photo"}</p>
+      </div>
+    );
+}
 
-export default ProfilePictureCard;
+export default PhotoCard;
