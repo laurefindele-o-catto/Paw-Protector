@@ -2,32 +2,9 @@ const express = require('express');
 const UserController = require('../controllers/userController.js');
 const AuthenticateToken = require('../middlewares/authenticateToken.js');
 
-// essential modules
 const authRouter = express.Router();
 const userController = new UserController();
 const authenticateToken = new AuthenticateToken();
-
-/**
- * @openapi
- * /api/auth/init-table:
- *   get:
- *     tags: [Auth]
- *     summary: Initialize (create) users table if it does not exist
- *     responses:
- *       200:
- *         description: Table created or already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/BasicSuccess'
- *       500:
- *         description: Internal error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-authRouter.get('/init-table', userController.createTable);
 
 /**
  * @openapi
@@ -263,6 +240,4 @@ authRouter.post('/password/reset', userController.resetPassword);
  */
 authRouter.post('/password/change', authenticateToken.authenticateToken, userController.changePassword);
 
-module.exports = {
-    authRouter
-};
+module.exports = { authRouter };
