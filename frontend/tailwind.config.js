@@ -9,6 +9,9 @@ module.exports = {
     extend: {
       colors: {
         pawcream: '#FFFDF6',
+        lightSteelBlue : '#A7AAE1',
+        creamPink : '#F2AEBB',
+        blueA : '#696FC7',
       },
       keyframes: {
         'fade-in': {
