@@ -31,6 +31,8 @@ function AddPetPage() {
     }
   };
 
+  // Need to add handler for onclick 
+
   return (
     <div className="bg-gradient-to-br from-[#FFFDF6] to-[#f9fafb] min-h-screen flex flex-col items-center pt-16 px-6">
       {/* Title */}
@@ -175,6 +177,7 @@ function AddPetPage() {
         <button
           type="submit"
           className="mt-10 bg-blue-500 text-white py-3 px-6 rounded-lg shadow-md hover:bg-blue-600 transition"
+          style={{ backgroundColor: "#B6CEB4" }}
         >
           Save Pet
         </button>

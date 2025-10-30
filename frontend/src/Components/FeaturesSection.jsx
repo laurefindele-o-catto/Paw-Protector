@@ -66,12 +66,13 @@ export default function FeaturesSection() {
           justify-center max-w-6xl
         "
       >
-        <FeatureCard to="/paw-pal">🐾 PawPal</FeatureCard>
-        <FeatureCard to="/disease-detection">Disease<br/>Detection</FeatureCard>
-        <FeatureCard to="/petcare">Pet Care</FeatureCard>
-        <FeatureCard to="/find-a-vet">Find a Vet</FeatureCard>
-        <FeatureCard to="/vaccination-alerts">Vaccination<br/>Alerts</FeatureCard>
+        <FeatureCard to="/paw-pal" color="#A7AAE1">🐾 PawPal</FeatureCard>
+        <FeatureCard to="/disease-detection" color = "#F2AEBB">Disease<br/>Detection</FeatureCard>
+        <FeatureCard to="/petcare" color="#A1D6CB">Pet Care</FeatureCard>
+        <FeatureCard to="/find-a-vet" color="#BFECFF">Find a Vet</FeatureCard>
+        <FeatureCard to="/vaccination-alerts" color="#E6D9A2"> Vaccination<br/>Alerts</FeatureCard>
       </div>
+      
     </section>
   );
 }
