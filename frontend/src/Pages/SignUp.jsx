@@ -1,23 +1,35 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
 const SignupPage = () => {
+    
+    const {isAuthenticated, loading, register} = useAuth();
+    const navigate = useNavigate();
+
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [role, setRole] = useState("owner");
+    const [error, setError] = useState("");
+    const [info, setInfo] = useState("");
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const response = await fetch("http://localhost:3000/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, email, password }),
-            });
-            const data = await response.json();
-            // Handle success or error (e.g., show message, redirect)
-            console.log(data);
-        } catch (error) {
-            console.error("Signup error:", error);
+        setError("");
+        setInfo("");
+
+        const {success, error: errMsg, requiresVerification, message} = await register(username, email, password, role);
+        if(success){
+            // if(requiresVerification){
+            //     setInfo(message || 'Account created. Please verify your email before logging in.');
+            // } else {
+            //     navigate('/dashboard');
+            // }
+
+            navigate('/dashboard')
+        } else {
+            setError(errMsg || 'Registration failed');
         }
     }
 
@@ -55,6 +67,16 @@ const SignupPage = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
                     />
+                    <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    >
+                        <option value="owner">Owner</option>
+                        <option value="vet">Veterinarian</option>
+                        <option value="admin">Admin</option>
+                        <option value="moderator">Moderator</option>
+                    </select>
                     <button
                         type="submit"
                         className="w-full bg-gray-800 text-white py-2 rounded-md hover:bg-gray-700 transition-colors"
@@ -62,6 +84,8 @@ const SignupPage = () => {
                         Sign Up
                     </button>
                 </form>
+                {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+                {info && <p className="mt-3 text-sm text-green-600">{info}</p>}
                 <a
                     href="/login"
                     className="block text-center text-sm text-blue-600 hover:underline mt-4"

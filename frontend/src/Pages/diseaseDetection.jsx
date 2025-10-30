@@ -1,5 +1,9 @@
-function DiseaseDetection(){
-    return(<h1>Disease Detection</h1>);
+import React from 'react'
+
+function diseaseDetection() {
+  return (
+    <div>diseaseDetection</div>
+  )
 }
 
-export default DiseaseDetection;
+export default diseaseDetection
