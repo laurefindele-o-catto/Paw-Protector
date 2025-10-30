@@ -16,7 +16,9 @@ function Dashboard() {
             {/* Top Bar */}
             <header className="flex justify-between items-center p-4">
                 <div className="text-2xl font-bold text-indigo-600">🐾 PawPal</div>
-                <ProfilePictureCard />
+                <Link to="/profile">
+                    <ProfilePictureCard />
+                </Link>
             </header>
 
             {/* Random Cat Fact */}

@@ -80,6 +80,7 @@
 // export default ProfilePage;
 import PhotoCard from "../Components/profilePictureCard";
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 function ProfilePage() {
     const [name, setName] = useState("");
@@ -136,6 +137,12 @@ function ProfilePage() {
                         placeholder="Enter Address"
                     />
                 </div>
+                <button
+                    type="submit"
+                    className="self-end px-6 py-3 text-sm rounded bg-blue-500 text-white font-semibold shadow hover:bg-blue-600 transition"
+                >
+                    Submit
+                </button>
             </form>
 
             {/* Pets Section */}
@@ -143,7 +150,7 @@ function ProfilePage() {
                 <h2 className="text-3xl font-semibold mb-6 text-gray-800 font-sans animate-fade-in">
                     Your Pets
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
                     <div className="animate-fade-in delay-100"><PhotoCard name="Chonk" /></div>
                     <div className="animate-fade-in delay-200"><PhotoCard name="Baby Food" /></div>
                     <div className="animate-fade-in delay-300"><PhotoCard name="Mits" /></div>
@@ -152,13 +159,16 @@ function ProfilePage() {
             </div>
 
             {/* Floating Add Button */}
-            <button
-                className="fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-2xl"
-                style={{ backgroundColor: "#B6CEB4" }}
-                aria-label="Add Pet"
-            >
-                <span className="text-white text-3xl font-bold">+</span>
-            </button>
+            <Link to="/addPet">
+                <button
+                    className="fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-2xl"
+                    style={{ backgroundColor: "#B6CEB4" }}
+                    aria-label="Add Pet"
+                >
+                    <span className="text-white text-3xl font-bold">+</span>
+                </button>
+            </Link>
+            
         </div>
     );
 }
