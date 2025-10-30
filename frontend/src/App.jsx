@@ -10,12 +10,15 @@ import PetCare from "./Pages/PetCare";
 import PawPal from "./Pages/PawPal";
 import ProfilePage from "./Pages/profilePage";
 import AddPetPage from "./Pages/AddPetPage";
+import LoginPage from "./Pages/LoginPage";
+import SignupPage from "./Pages/SignUp";
+
 
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      {/* <Route path="/" element={<Home />} /> */}
       <Route path="/about" element={<About />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/disease-detection" element={<DiseaseDetection />} />
@@ -25,6 +28,8 @@ function App() {
       <Route path="/paw-pal" element={<PawPal />} />
       <Route path="/profile" element={< ProfilePage/>} />
       <Route path="/addPet" element={< AddPetPage/>} />
+      <Route path="/" element = {<LoginPage/>}/>
+      <Route path="/signup" element={<SignupPage/>}/>
     </Routes>
   );
 }
