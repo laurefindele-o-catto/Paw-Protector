@@ -5,6 +5,7 @@ class UserModel {
         this.db_connection = new DB_Connection();
     }
 
+    // TODO: Make sign up using phone numbers
     createUser = async(userData)=>{
         try {
             const {username, email, passwordHash} = userData;

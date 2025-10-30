@@ -13,6 +13,8 @@ class PetController {
                 birthdate, weight_kg, avatar_url, is_neutered, notes
             } = req.body;
 
+            // const file = req.file;
+
             if (!name || !species) {
                 return res.status(400).json({ success: false, error: 'Name and species are required' });
             }

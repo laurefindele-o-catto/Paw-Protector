@@ -2,8 +2,15 @@ import { Link } from "react-router-dom";
 import ProfilePictureCard from "../Components/profilePictureCard";
 // import catGif from "../assets/giphy/cat.gif"; // if you keep it in src
 import FeaturesSection from "../Components/FeaturesSection";
+import { useAuth } from "../context/AuthContext";
 
 function Dashboard() {
+    const {user, token, loading, logout} = useAuth();
+    console.log("user: " + user);
+    console.log("token: " + token);
+    console.log("loading: " + loading);
+    console.log("logout: " + logout);
+    
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800" style={{ backgroundColor: "#FAF6E9" }}>
             {/* Top Bar */}

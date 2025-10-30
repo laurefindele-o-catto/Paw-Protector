@@ -6,6 +6,8 @@ const router = express.Router();
 const petController = new PetController();
 const authenticateToken = new AuthenticateToken();
 
+// TODO: Keep the file upload feature
+
 // Add a pet
 router.post('/pets', authenticateToken.authenticateToken, petController.addPet);
 
