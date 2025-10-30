@@ -47,9 +47,9 @@ export const AuthProvider = ({children})=>{
     }, []);
 
 
-    const login = async(identifier, password)=>{
+    const login = async (identifier, password) => {
         try {
-            const response = await fetch(`${apiConfig.baseURL}${apiConfig.userRoutes.login}`, {
+            const response = await fetch(`${apiConfig.baseURL}${apiConfig.auth.login}`, {
                 method: 'POST',
                 headers:{
                     'Content-Type': 'application/json'
@@ -59,12 +59,10 @@ export const AuthProvider = ({children})=>{
 
             if(response.ok){
                 const userData = await response.json();
-                console.log(userData);
-                
                 setUser(userData.user);
                 setToken(userData.tokens.accessToken);
                 localStorage.setItem('token', userData.tokens.accessToken);
-                localStorage.setItem('user', JSON.stringify(userData.user))
+                localStorage.setItem('user', JSON.stringify(userData.user));
                 return {success: true}
             }else{
                 const errorData = await response.json();
@@ -75,26 +73,34 @@ export const AuthProvider = ({children})=>{
         }
     }
 
-    const register = async(username, email, password)=>{
+    const register = async (username, email, password, role) => {
         try {
-            const response = await fetch(`${apiConfig.baseURL}${apiConfig.userRoutes.register}`, {
+            const response = await fetch(`${apiConfig.baseURL}${apiConfig.auth.register}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    username: username, 
-                    email: email, 
-                    password: password
+                    username,
+                    email,
+                    password,
+                    role
                 })
             });
 
             const data = await response.json();
 
             if(response.ok){
+                if (data?.tokens?.accessToken) {
+                    setUser(data.user);
+                    setToken(data.tokens.accessToken);
+                    localStorage.setItem('token', data.tokens.accessToken);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
                 return {
                     success: true,
-                    message: data.message
+                    message: data.message,
+                    requiresVerification: data.user?.requires_verification === true
                 }
             }else{
                 return { 
@@ -107,23 +113,23 @@ export const AuthProvider = ({children})=>{
         }
     }
 
-    const logout = async()=>{
+    const logout = async () => {
         try {
-            const id = JSON.parse(localStorage.getItem('user')).id;
-            console.log(id);
-
+            const storedUser = JSON.parse(localStorage.getItem('user'));
             const storedToken = localStorage.getItem('token');
-            
-            const response = await fetch(`${apiConfig.baseURL}${apiConfig.userRoutes.logout}/${id}`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${storedToken}`
-                }
-            });
+            if (storedUser && storedToken) {
+                await fetch(`${apiConfig.baseURL}${apiConfig.auth.logout(storedUser.id)}`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${storedToken}`
+                    }
+                });
+            }
 
             setUser(null);
             setToken(null);
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
         } catch (error) {
             return { 
                 success: false, 
