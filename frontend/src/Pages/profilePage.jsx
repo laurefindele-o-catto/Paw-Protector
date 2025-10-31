@@ -2,7 +2,7 @@ import PhotoCard from "../Components/profilePictureCard";
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
-
+import { useNavigate } from "react-router-dom";
 // Simple loader for Google Places script
 function useGooglePlaces(apiKey) {
   const [loaded, setLoaded] = useState(false);
@@ -24,7 +24,7 @@ function useGooglePlaces(apiKey) {
 const placeholder = "/placeholder.png";
 
 function ProfilePage() {
-  const [user, setUser]= useState(null);
+  const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   // Phone number with region picker
@@ -46,7 +46,7 @@ function ProfilePage() {
   const fileInputRef = useRef();
   const addressInputRef = useRef();
   const googleLoaded = useGooglePlaces('AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds');
-//TODO: Hardcoded change it before submission
+  //TODO: Hardcoded change it before submission
 
   // ADD: map + geocoder refs
   const mapContainerRef = useRef(null);
@@ -55,12 +55,12 @@ function ProfilePage() {
   const geocoderRef = useRef(null);
 
   // Attach Places Autocomplete (extend to sync map/marker)
-  useEffect(() => {    
+  useEffect(() => {
 
     if (!googleLoaded || !addressInputRef.current) return;
 
     const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      fields: ['formatted_address','address_components','geometry','place_id']
+      fields: ['formatted_address', 'address_components', 'geometry', 'place_id']
     });
 
     ac.addListener('place_changed', () => {
@@ -128,7 +128,7 @@ function ProfilePage() {
         setLongitude(first.longitude || null);
         setPlaceId(first.place_id || "");
       }
-    } catch {}
+    } catch { }
   };
 
   // Preload user + pets + location
@@ -145,7 +145,7 @@ function ProfilePage() {
           if (m) { setDialCode(m[1]); setPhoneLocal(m[2]); }
         }
       }
-    } catch {}
+    } catch { }
     getPets();
     loadMyLocations();
   }, []);
@@ -307,7 +307,7 @@ function ProfilePage() {
 
       if (markerRef.current) markerRef.current.setPosition({ lat, lng });
       if (mapRef.current) mapRef.current.setCenter({ lat, lng });
-    } catch {}
+    } catch { }
   };
 
   // ADD: use browser geolocation
@@ -320,13 +320,24 @@ function ProfilePage() {
         updateFromLatLng(lat, lng);
         if (mapRef.current) mapRef.current.setZoom(15);
       },
-      () => {},
+      () => { },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
+  const navigate = useNavigate();
 
   return (
     <div className="bg-linear-to-br from-[#FFFDF6] to-[#f9fafb] min-h-screen flex flex-col items-center pt-16 px-4">
+      <button
+        
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition z-20"
+      >
+        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Dashboard
+      </button>
       <div
         className="absolute top-6 right-6 animate-fade-in cursor-pointer"
         onClick={handlePhotoClick}
@@ -414,7 +425,7 @@ function ProfilePage() {
             ref={addressInputRef}
             type="text"
             value={addressLine}
-            onChange={(e)=>setAddressLine(e.target.value)}
+            onChange={(e) => setAddressLine(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Start typing your address"
           />
@@ -452,19 +463,19 @@ function ProfilePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">City</label>
-            <input value={city} onChange={e=>setCity(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <input value={city} onChange={e => setCity(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">State</label>
-            <input value={state} onChange={e=>setState(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <input value={state} onChange={e => setState(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Postal Code</label>
-            <input value={postalCode} onChange={e=>setPostalCode(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <input value={postalCode} onChange={e => setPostalCode(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Country</label>
-            <input value={country} onChange={e=>setCountry(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <input value={country} onChange={e => setCountry(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
           </div>
         </div>
 

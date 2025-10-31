@@ -1,28 +1,49 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import apiConfig from "../config/apiConfig";
+import { Loader } from "../Components/Loader";
+import { useLoader } from "../hooks/useLoader";
 
 function AddPetPage() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [weight, setWeight] = useState("");
-  const [diseases, setDiseases] = useState([""]);
-  const [vaccines, setVaccines] = useState([""]);
+  const [diseases, setDiseases] = useState([
+    { disease_name: "", symptoms: "", severity: "", status: "", diagnosed_on: "", notes: "" }
+  ]);
+  const [vaccines, setVaccines] = useState({
+    rabies: { checked: false, date: "" },
+    flu: { checked: false, date: "" },
+    deworming: { checked: false, date: "" },
+  });
   const [spayed, setSpayed] = useState(false);
   const [image, setImage] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const catUrl = "https://images.unsplash.com/photo-1592194996308-7b43878e84a6";
 
-  const handleAddDisease = () => setDiseases([...diseases, ""]);
-  const handleDiseaseChange = (i, value) => {
+  const handleAddDisease = () => setDiseases([...diseases, { disease_name: "", symptoms: "", severity: "", status: "", diagnosed_on: "", notes: "" }]);
+  const handleDiseaseChange = (i, field, value) => {
     const updated = [...diseases];
-    updated[i] = value;
+    updated[i] = { ...updated[i], [field]: value };
     setDiseases(updated);
   };
 
-  const handleAddVaccine = () => setVaccines([...vaccines, ""]);
-  const handleVaccineChange = (i, value) => {
-    const updated = [...vaccines];
-    updated[i] = value;
-    setVaccines(updated);
+  const handleVaccineCheck = (vaccine) => {
+    setVaccines((prev) => ({
+      ...prev,
+      [vaccine]: { ...prev[vaccine], checked: !prev[vaccine].checked },
+    }));
+  };
+
+  const handleVaccineDate = (vaccine, date) => {
+    setVaccines((prev) => ({
+      ...prev,
+      [vaccine]: { ...prev[vaccine], date },
+    }));
   };
 
   const handleImageUpload = (e) => {
@@ -30,8 +51,124 @@ function AddPetPage() {
       setImage(URL.createObjectURL(e.target.files[0]));
     }
   };
+  //set the user when mounted
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user"));
+      setUser(u);
+    }
+    catch { }
+  }, []);
+  const submitPet = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
 
-  // Need to add handler for onclick 
+    try {
+      const perRes = await fetch(
+        `${apiConfig.baseURL}${apiConfig.pets.create}`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: name,
+            breed: breed,
+            species: "cat",
+            sex: gender,
+            weight_kg: weight,
+            avatar_url: catUrl,
+            is_neutered: spayed,
+          })
+        }
+      );
+      if (!perRes.ok) {
+        const err = await perRes.json();
+        throw new Error(err?.error || "Profile update failed");
+      }
+      
+      const data = await perRes.json();
+      console.log(data.pet);
+      const petId = data.pet.id;
+      
+      for (const disease of diseases) {
+        const res = await fetch(`${apiConfig.baseURL}${apiConfig.pets.diseases.create(petId)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(disease)
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err?.error || "Failed to add disease");
+        }
+      }
+
+      if (vaccines.rabies.checked && vaccines.rabies.date) {
+        const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addVaccination}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            pet_id: petId,
+            vaccine_name: "rabies",
+            administered_on: vaccines.rabies.date
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err?.error || "Failed to add rabies vaccination");
+        }
+      }
+      if (vaccines.flu.checked && vaccines.flu.date) {
+        const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addVaccination}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            pet_id: petId,
+            vaccine_name: "flu",
+            administered_on: vaccines.flu.date
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err?.error || "Failed to add flu vaccination");
+        }
+      }
+      if (vaccines.deworming.checked && vaccines.deworming.date) {
+        const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addDeworming}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            pet_id: petId,
+            product_name: 'Deworming',
+            administered_on: vaccines.deworming.date
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err?.error || "Failed to add deworming treatment");
+        }
+      }
+      alert("Pet, diseases, and care info saved!");
+      navigate("/profile")
+    } catch (err) {
+      alert(err.message || "Failed to add pet")
+    }
+  };
+
+  const { run: handleSubmit, loading } = useLoader(submitPet);
 
   return (
     <div className="bg-gradient-to-br from-[#FFFDF6] to-[#f9fafb] min-h-screen flex flex-col items-center pt-16 px-6">
@@ -57,7 +194,8 @@ function AddPetPage() {
       </div>
 
       {/* Two-column Form */}
-      <form className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-5xl border border-gray-100">
+      <form className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-5xl border border-gray-100"
+        onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}
           <div className="flex flex-col gap-6">
@@ -133,14 +271,56 @@ function AddPetPage() {
         <div className="mt-10">
           <label className="block text-sm font-medium text-gray-600 mb-2">Known Diseases</label>
           {diseases.map((disease, i) => (
-            <input
-              key={i}
-              type="text"
-              value={disease}
-              onChange={e => handleDiseaseChange(i, e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-2 focus:ring-2 focus:ring-red-300 transition"
-              placeholder="Enter Disease"
-            />
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <input
+                type="text"
+                value={disease.disease_name}
+                onChange={e => handleDiseaseChange(i, "disease_name", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-300 transition"
+                placeholder="Disease Name"
+              />
+              <input
+                type="text"
+                value={disease.symptoms}
+                onChange={e => handleDiseaseChange(i, "symptoms", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-300 transition"
+                placeholder="Symptoms"
+              />
+              {/* Severity dropdown with only allowed options */}
+              <select
+                value={disease.severity}
+                onChange={e => handleDiseaseChange(i, "severity", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-300 transition"
+              >
+                <option value="">Select Severity</option>
+                <option value="mild">Mild</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+              </select>
+              <select
+                value={disease.status}
+                onChange={e => handleDiseaseChange(i, "status", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-300 transition"
+              >
+                <option value="">Select Status</option>
+                <option value="active">Active</option>
+                <option value="resolved">Resolved</option>
+                <option value="chronic">Chronic</option>
+              </select>
+              <input
+                type="date"
+                value={disease.diagnosed_on}
+                onChange={e => handleDiseaseChange(i, "diagnosed_on", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-300 transition"
+              />
+              <input
+                type="text"
+                value={disease.notes}
+                onChange={e => handleDiseaseChange(i, "notes", e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-300 transition"
+                placeholder="Notes"
+              />
+            </div>
           ))}
           <button
             type="button"
@@ -154,32 +334,52 @@ function AddPetPage() {
         {/* Vaccines */}
         <div className="mt-8">
           <label className="block text-sm font-medium text-gray-600 mb-2">Vaccines Given</label>
-          {vaccines.map((vaccine, i) => (
-            <input
-              key={i}
-              type="text"
-              value={vaccine}
-              onChange={e => handleVaccineChange(i, e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-2 focus:ring-2 focus:ring-green-300 transition"
-              placeholder="Enter Vaccine"
-            />
+          {["rabies", "flu", "deworming"].map((vaccine) => (
+            <div key={vaccine} className="flex items-center gap-3 mb-2">
+              <input
+                type="checkbox"
+                checked={vaccines[vaccine].checked}
+                onChange={() => handleVaccineCheck(vaccine)}
+                id={vaccine}
+                className="h-5 w-5 text-blue-500 focus:ring-blue-400 border-gray-300 rounded"
+              />
+              <label htmlFor={vaccine} className="capitalize text-gray-700">
+                {vaccine === "rabies" ? "Rabies" : vaccine === "flu" ? "Flu" : "Deworming"}
+              </label>
+              {vaccines[vaccine].checked && (
+                <input
+                  type="date"
+                  value={vaccines[vaccine].date}
+                  onChange={e => handleVaccineDate(vaccine, e.target.value)}
+                  className="ml-4 border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-green-300 transition"
+                />
+              )}
+            </div>
           ))}
-          <button
-            type="button"
-            onClick={handleAddVaccine}
-            className="text-blue-600 text-sm hover:underline"
-          >
-            + Add another vaccine
-          </button>
         </div>
 
         {/* Submit */}
         <button
           type="submit"
-          className="mt-10 bg-blue-500 text-white py-3 px-6 rounded-lg shadow-md hover:bg-blue-600 transition"
-          style={{ backgroundColor: "#B6CEB4" }}
+          disabled={loading}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            backgroundColor: loading ? "#9DB89B" : (isHovered ? "#9DB89B" : "#B6CEB4"),
+            transition: "background-color 0.3s ease",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1
+          }}
+          className="mt-10 text-white py-3 px-6 rounded-lg shadow-md flex items-center justify-center gap-2"
         >
-          Save Pet
+          {loading ? (
+            <>
+              <Loader />
+              <span>Processing...</span>
+            </>
+          ) : (
+            "Save Pet"
+          )}
         </button>
       </form>
     </div>
