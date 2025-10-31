@@ -18,4 +18,10 @@ router.post('/care/reminder', authenticateToken.authenticateToken, careControlle
 // Notification
 router.post('/care/notification', authenticateToken.authenticateToken, careController.addNotification);
 
+// Vaccination
+router.get('/care/vaccinations/:petId', authenticateToken.authenticateToken, careController.getVaccinationsByPet);
+
+// Deworming
+router.get('/care/dewormings/:petId', authenticateToken.authenticateToken, careController.getDewormingsByPet);
+
 module.exports = router;
