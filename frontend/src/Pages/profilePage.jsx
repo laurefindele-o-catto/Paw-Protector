@@ -1,3 +1,4 @@
+// profilePage.jsx
 import PhotoCard from "../Components/profilePictureCard";
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -56,7 +57,6 @@ function ProfilePage() {
 
   // Attach Places Autocomplete (extend to sync map/marker)
   useEffect(() => {    
-
     if (!googleLoaded || !addressInputRef.current) return;
 
     const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
@@ -326,13 +326,31 @@ function ProfilePage() {
   };
 
   return (
-    <div className="bg-linear-to-br from-[#FFFDF6] to-[#f9fafb] min-h-screen flex flex-col items-center pt-16 px-4">
+    <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden flex flex-col items-center pt-20 px-4">
+      {/* animated background shapes (LandingPage palette) */}
+      <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
+      <div className="pointer-events-none fixed top-40 -right-10 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
+      <div className="pointer-events-none fixed bottom-10 left-10 h-16 w-16 bg-[#fdd142] rounded-full opacity-80 animate-[bouncey_4s_ease-in-out_infinite]" />
+      <div className="pointer-events-none fixed -bottom-24 right-20 h-72 w-72 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_20s_linear_infinite]" />
+
+      {/* diagonal dots accent */}
+      <div className="pointer-events-none absolute -top-6 right-8 h-32 w-32 opacity-30 animate-[slideDots_10s_linear_infinite]">
+        <div className="grid grid-cols-5 gap-3">
+          {Array.from({ length: 25 }).map((_, i) => (
+            <div key={i} className="h-1.5 w-1.5 rounded-full bg-[#0f172a]/40" />
+          ))}
+        </div>
+      </div>
+
+      {/* Profile avatar button */}
       <div
-        className="absolute top-6 right-6 animate-fade-in cursor-pointer"
+        className="absolute top-6 right-6 cursor-pointer"
         onClick={handlePhotoClick}
         title="Click to change photo"
       >
-        <PhotoCard avatarUrl={selectedFile ? URL.createObjectURL(selectedFile) : (user?.avatar_url || placeholder)} />
+        <PhotoCard
+          avatarUrl={selectedFile ? URL.createObjectURL(selectedFile) : (user?.avatar_url || placeholder)}
+        />
         <input
           type="file"
           accept="image/*"
@@ -342,52 +360,57 @@ function ProfilePage() {
         />
       </div>
 
-      <h1 className="text-5xl font-extrabold text-gray-800 text-center font-sans mb-10 tracking-tight animate-fade-in">
+      {/* Heading */}
+      <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 text-center mb-8 tracking-tight animate-[slideup_0.6s_ease-out]">
         Personal Information
       </h1>
 
+      {/* Form card */}
       <form
-        className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-lg flex flex-col gap-6 border border-gray-100 animate-slide-up"
+        className="relative w-full max-w-[720px] bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 md:p-10 animate-[slideup_0.6s_ease-out]"
         onSubmit={handleSubmit}
       >
+        {/* tiny floating accent inside card */}
+        <div className="pointer-events-none absolute -top-4 -right-4 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[float_6s_ease-in-out_infinite]" />
+
         {/* Full name */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Full Name
           </label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
             placeholder="Enter Full Name"
           />
         </div>
 
         {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Email
           </label>
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
             placeholder="Enter Email"
           />
         </div>
 
         {/* Phone with region picker */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Contact (Phone)
           </label>
           <div className="flex gap-2">
             <select
               value={dialCode}
               onChange={(e) => setDialCode(e.target.value)}
-              className="w-28 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-28 px-3 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
               title="Country code"
             >
               <option value="+880">+880 (BD)</option>
@@ -399,15 +422,15 @@ function ProfilePage() {
               type="tel"
               value={phoneLocal}
               onChange={(e) => setPhoneLocal(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
               placeholder="1XXXXXXXXX"
             />
           </div>
         </div>
 
         {/* Address with Google Places */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Address (Search)
           </label>
           <input
@@ -415,19 +438,19 @@ function ProfilePage() {
             type="text"
             value={addressLine}
             onChange={(e)=>setAddressLine(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
             placeholder="Start typing your address"
           />
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-3">
             <button
               type="button"
               onClick={useMyLocation}
-              className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              className="rounded-full bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-[#edfdfd] hover:bg-slate-900 transition"
             >
               Use my location
             </button>
             {typeof latitude === "number" && typeof longitude === "number" && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-slate-500">
                 Lat: {latitude.toFixed(5)}, Lng: {longitude.toFixed(5)}
               </span>
             )}
@@ -435,58 +458,62 @@ function ProfilePage() {
         </div>
 
         {/* Map picker */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Pick on Map
           </label>
           <div
             ref={mapContainerRef}
-            className="h-64 w-full rounded-lg border border-gray-200"
+            className="h-64 w-full rounded-2xl border border-slate-200"
           />
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-slate-500">
             Click on the map or drag the marker to refine your location.
           </p>
         </div>
 
         {/* Location details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">City</label>
-            <input value={city} onChange={e=>setCity(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
+            <input value={city} onChange={e=>setCity(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">State</label>
-            <input value={state} onChange={e=>setState(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <label className="block text-sm font-medium text-slate-700 mb-2">State</label>
+            <input value={state} onChange={e=>setState(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Postal Code</label>
-            <input value={postalCode} onChange={e=>setPostalCode(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <label className="block text-sm font-medium text-slate-700 mb-2">Postal Code</label>
+            <input value={postalCode} onChange={e=>setPostalCode(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Country</label>
-            <input value={country} onChange={e=>setCountry(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-3" />
+            <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
+            <input value={country} onChange={e=>setCountry(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
           </div>
         </div>
 
         <button
           type="submit"
-          className="self-end px-6 py-3 text-sm rounded bg-blue-500 text-white font-semibold shadow hover:bg-blue-600 transition"
+          className="mt-8 self-end px-6 py-3 text-sm rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold shadow hover:bg-slate-900 transition transform hover:-translate-y-[1px]"
         >
           Save
         </button>
       </form>
 
-      {/* Pets Section (unchanged) */}
-      <div className="w-full max-w-lg mt-14 border-t border-gray-200 pt-8">
-        <h2 className="text-3xl font-semibold mb-6 text-gray-800 font-sans animate-fade-in">
-          Your Pets
-        </h2>
+      {/* Pets Section */}
+      <div className="w-full max-w-[720px] mt-14 border-t border-slate-200 pt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs">
+            PP
+          </div>
+          <h2 className="text-2xl font-semibold text-slate-900">Your Pets</h2>
+        </div>
+
         {pets.length === 0 ? (
-          <div className="text-gray-500 text-center py-8">Currently no pets added.</div>
+          <div className="text-slate-500 text-center py-8">Currently no pets added.</div>
         ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
             {pets.map((pet, idx) => (
-              <div key={pet.id || idx} className={`animate-fade-in delay-${100 * (idx + 1)}`}>
+              <div key={pet.id || idx}>
                 <PhotoCard
                   name={pet.name}
                   avatarUrl={pet.avatar_url || "/placeholder.png"}
@@ -498,15 +525,38 @@ function ProfilePage() {
       </div>
 
       {/* Floating Add Button */}
-      <Link to="/addPet">
+      <Link to="/addPet" className="fixed bottom-8 right-8">
         <button
-          className="fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-2xl"
-          style={{ backgroundColor: "#B6CEB4" }}
+          className="w-16 h-16 rounded-full bg-[#0f172a] text-[#edfdfd] shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-2xl"
           aria-label="Add Pet"
         >
-          <span className="text-white text-3xl font-bold">+</span>
+          <span className="text-3xl font-bold">+</span>
         </button>
       </Link>
+
+      {/* keyframes (mirrors LandingPage) */}
+      <style>{`
+        @keyframes slideup {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes bouncey {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-12px) scale(1.03); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes slideDots {
+          0% { transform: translateY(0) translateX(0); }
+          100% { transform: translateY(-30px) translateX(30px); }
+        }
+      `}</style>
     </div>
   );
 }

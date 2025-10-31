@@ -1,7 +1,7 @@
+// SkinDiseaseDetection.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-
 
 export default function SkinDiseaseDetector() {
   const navigate = useNavigate();
@@ -59,59 +59,73 @@ export default function SkinDiseaseDetector() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-between"
-      style={{ backgroundColor: "#FFFDF6" }}
-    >
+    <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden flex flex-col">
+      {/* animated background shapes (LandingPage palette) */}
+      <div className="pointer-events-none fixed -top-28 -left-20 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
+      <div className="pointer-events-none fixed top-48 -right-8 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
+      <div className="pointer-events-none fixed bottom-14 left-10 h-16 w-16 bg-[#fdd142] rounded-full opacity-80 animate-[bouncey_4s_ease-in-out_infinite]" />
+      <div className="pointer-events-none fixed -bottom-28 right-24 h-72 w-72 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_20s_linear_infinite]" />
+
+      {/* diagonal dots accent */}
+      <div className="pointer-events-none absolute -top-6 right-8 h-32 w-32 opacity-30 animate-[slideDots_10s_linear_infinite]">
+        <div className="grid grid-cols-5 gap-3">
+          {Array.from({ length: 25 }).map((_, i) => (
+            <div key={i} className="h-1.5 w-1.5 rounded-full bg-[#0f172a]/40" />
+          ))}
+        </div>
+      </div>
+
       {/* Back to Dashboard Button */}
       <button
         onClick={() => navigate("/dashboard")}
-        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition z-20"
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-[#0f172a] text-[#edfdfd] rounded-lg shadow hover:bg-slate-900 transition z-20"
       >
-        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
         Dashboard
       </button>
+
       {/* Header */}
       <header className="w-full flex flex-col items-center p-6">
         <div className="flex items-center justify-center w-full mb-2">
-          <h1 className="text-4xl font-extrabold text-black text-center drop-shadow-lg tracking-wide">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 text-center drop-shadow-sm tracking-wide">
             Skin Disease Detector
           </h1>
+
           {/* Instructions button */}
           <div className="relative group ml-4">
             <button
-              className="w-9 h-9 flex items-center justify-center bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition"
+              className="w-9 h-9 flex items-center justify-center bg-[#0f172a] text-[#edfdfd] rounded-full shadow hover:bg-slate-900 transition"
               aria-label="Instructions"
               type="button"
             >
               <span className="text-lg font-bold">i</span>
             </button>
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white border border-gray-300 rounded shadow-lg p-4 text-sm text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-lg p-4 text-sm text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <p className="mb-2">
                 <strong>Instructions:</strong>
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>
-                  Please capture and upload a clear, well-lit image of the affected area.
-                </li>
-                <li>
-                  The system currently detects a limited range of skin anomalies. More diseases will be supported soon.
-                </li>
-                <li>
-                  Click the box below to select and upload your image.
-                </li>
+                <li>Upload a clear, well-lit image of the affected area.</li>
+                <li>Currently detects a limited set of anomalies.</li>
+                <li>Click the box below to select an image.</li>
               </ul>
             </div>
           </div>
         </div>
-        <div className="w-full border-b border-gray-200 mt-2"></div>
+        <div className="w-full border-b border-slate-200 mt-2" />
       </header>
 
       {/* Main content */}
-      <main className="flex flex-col items-center justify-center flex-grow w-full">
-        {/* File Picker Box */}
+      <main className="flex flex-col items-center justify-center flex-grow w-full px-6">
+        {/* File Picker (hidden input preserved) */}
         <input
           type="file"
           accept="image/*"
@@ -119,76 +133,130 @@ export default function SkinDiseaseDetector() {
           ref={fileInputRef}
           style={{ display: "none" }}
         />
-        <div
-          onClick={handleBoxClick}
-          className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-white shadow-lg transition hover:border-blue-500 hover:bg-blue-50 w-80 h-44 mb-6 ${
-            file ? "border-blue-600" : "border-gray-400"
-          }`}
-          style={{ backgroundColor: "#FFFDF6" }}
-        >
-          {file ? (
-            <>
-              <img
-                src={URL.createObjectURL(file)}
-                alt="Preview"
-                className="rounded-lg shadow border border-gray-300 max-h-32 max-w-xs object-contain mb-2"
-              />
-              <span className="text-xs text-gray-500">Preview: {file.name}</span>
-            </>
-          ) : (
-            <>
-              <span className="text-5xl text-blue-400 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-12 h-12">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m0 0l-4 4m4-4l4 4" />
-                  <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
-              </span>
-              <span className="text-lg font-medium text-gray-700">
-                Click to select an image
-              </span>
-              <span className="text-xs text-gray-500 mt-1">
-                (Supported: .jpg, .png, .jpeg)
-              </span>
-            </>
-          )}
-        </div>
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !file}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50 font-semibold mb-8 transition"
-        >
-          {loading ? "Processing..." : "Upload & Detect"}
-        </button>
 
-        {/* Results box */}
-        <div
-          className={`mt-2 w-96 p-6 border-2 rounded-2xl shadow-lg flex flex-col items-center
-    ${
-      result && typeof result === "string" && result.toLowerCase() !== "healthy"
-        ? "border-red-400 bg-red-100 bg-opacity-60"
-        : "border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100"
-    }
-  `}
-        >
-          <h2 className={`font-bold text-xl mb-3 ${
-    result && typeof result === "string" && result.toLowerCase() !== "healthy"
-      ? "text-red-700"
-      : "text-blue-700"
-  }`}>Results</h2>
-          <p className={`text-lg font-medium ${
-    result === "Error processing image"
-      ? "text-red-600"
-      : "text-gray-800"
-  }`}>
-            {result ? result : "No results yet"}
+        {/* Card wrapper */}
+        <div className="relative w-full max-w-2xl bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 md:p-8 animate-[slideup_0.6s_ease-out]">
+          {/* small brand chip */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs">
+              PP
+            </div>
+            <span className="font-semibold tracking-tight text-slate-900">PawPal</span>
+          </div>
+
+          <p className="text-sm text-slate-600 mb-5">
+            <span className="underline decoration-4 decoration-[#fdd14280]">
+              Analyze your pet’s skin
+            </span>{" "}
+            by uploading a photo.
           </p>
+
+          {/* File Picker Box */}
+          <div
+            onClick={handleBoxClick}
+            className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-white/70 hover:bg-white/90 transition w-full h-48 mb-6 ${
+              file ? "border-[#0f172a]" : "border-slate-300 hover:border-[#fdd142]"
+            }`}
+          >
+            {file ? (
+              <>
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Preview"
+                  className="rounded-xl shadow border border-slate-200 max-h-36 max-w-full object-contain mb-2"
+                />
+                <span className="text-xs text-slate-500">Preview: {file.name}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-5xl text-slate-400 mb-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2.2}
+                    stroke="currentColor"
+                    className="w-12 h-12"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m0 0l-4 4m4-4l4 4" />
+                    <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </span>
+                <span className="text-base font-medium text-slate-700">
+                  Click to select an image
+                </span>
+                <span className="text-xs text-slate-500 mt-1">(Supported: .jpg, .png, .jpeg)</span>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !file}
+            className="w-full px-6 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px] disabled:opacity-60"
+          >
+            {loading ? "Processing..." : "Upload & Detect"}
+          </button>
+
+          {/* Results box */}
+          <div
+            className={`mt-6 w-full p-6 border-2 rounded-2xl shadow-sm ${
+              result && typeof result === "string" && result.toLowerCase() !== "healthy"
+                ? "border-red-400 bg-red-50"
+                : "border-emerald-400 bg-emerald-50"
+            }`}
+          >
+            <h2
+              className={`font-bold text-xl mb-2 ${
+                result && typeof result === "string" && result.toLowerCase() !== "healthy"
+                  ? "text-red-700"
+                  : "text-emerald-700"
+              }`}
+            >
+              Results
+            </h2>
+            <p
+              className={`text-lg font-medium ${
+                result === "Error processing image" ? "text-red-600" : "text-slate-800"
+              }`}
+            >
+              {result ? result : "No results yet"}
+            </p>
+          </div>
+
+          {/* tiny floating accent inside card */}
+          <div className="pointer-events-none absolute -top-4 -right-4 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[float_6s_ease-in-out_infinite]" />
         </div>
       </main>
 
       {/* Footer disclaimer */}
-      <footer className="w-full text-center p-4 text-xs text-gray-600 border-t border-gray-300 bg-white">
+      <footer className="w-full text-center p-4 text-xs text-slate-600 border-t border-slate-200 bg-white/70 backdrop-blur">
         <span className="font-semibold text-red-500">Disclaimer:</span> This model may produce incorrect results. Please seek professional medical help if symptoms persist.
       </footer>
+
+      {/* keyframes (mirrors LandingPage) */}
+      <style>{`
+        @keyframes slideup {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes bouncey {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-12px) scale(1.03); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes slideDots {
+          0% { transform: translateY(0) translateX(0); }
+          100% { transform: translateY(-30px) translateX(30px); }
+        }
+      `}</style>
     </div>
   );
 }
