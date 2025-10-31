@@ -160,11 +160,19 @@ class UserController {
 
     register = async (req, res) => {
         try {
-            console.log(req.body);
-            
-            const { username, email, password } = req.body || {};
+            const { username, email, password, role } = req.body || {};
             if (!username || !email || !password) {
                 return res.status(400).json({ success: false, error: 'username, email, password required' });
+            }
+
+            const roleName = (role || 'owner').toLowerCase();
+            const allowedRoles = new Set(['owner', 'vet', 'admin', 'moderator']);
+
+            if (!allowedRoles.has(roleName)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Invalid role assigned'
+                });
             }
 
             const existingUserByUsername = await this.userModel.getUserByUsername(username);
@@ -187,12 +195,21 @@ class UserController {
                 })
             }
 
+            const roleResult = await this.userModel.assignRoleToUser(newUser.id, roleName);
+            if (!roleResult.success) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Failed to assign role to user'
+                });
+            }
+
             if(this.requireEmailVerification){
                 const token = EmailUtils.generateToken();
                 await this.userModel.setVerificationToken(newUser.id, token);
                 await EmailUtils.sendVerificationEmail(username, email, token);
 
                 const updatedUser = await this.userModel.getUserById(newUser.id);
+                const roles = await this.userModel.getUserRoles(newUser.id);
 
                 bus.emit(Events.USER_REGISTERED, {userId: newUser.id, email: newUser.email, username: newUser.username});
 
@@ -206,7 +223,8 @@ class UserController {
                         email_verified: updatedUser.email_verified,
                         requires_verification: true,
                         verification_token: updatedUser.verification_token,
-                        subscription_type: updatedUser.subscription_type
+                        subscription_type: updatedUser.subscription_type,
+                        roles
                     }
                 })
             } else {
@@ -217,6 +235,7 @@ class UserController {
                 });
 
                 await this.userModel.updateRefreshToken(newUser.id, refreshToken);
+                const roles = await this.userModel.getUserRoles(newUser.id);
                 bus.emit(Events.USER_REGISTERED, {userId: newUser.id, email: newUser.email, username: newUser.username});
 
                 return res.status(201).json({
@@ -228,7 +247,8 @@ class UserController {
                         email: newUser.email,
                         email_verified: true,
                         requires_verification: false,
-                        subscription_type: newUser.subscription_type
+                        subscription_type: newUser.subscription_type,
+                        roles
                     },
                     tokens: {
                         accessToken,
@@ -390,6 +410,7 @@ class UserController {
 
             const { accessToken, refreshToken } = this.generateTokens(user);
             await this.userModel.updateRefreshToken(user.id, refreshToken);
+            const roles = await this.userModel.getUserRoles(user.id);
 
             bus.emit(Events.USER_LOGIN, { userId: user.id });
 
@@ -404,7 +425,8 @@ class UserController {
                     full_name: user.full_name,
                     is_active: user.is_active,
                     avatar_url: user.avatar_url,
-                    subscription_type: user.subscription_type
+                    subscription_type: user.subscription_type,
+                    roles
                 },
                 tokens: { accessToken, refreshToken }
             });

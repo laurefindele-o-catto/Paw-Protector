@@ -109,7 +109,7 @@ class UserModel {
     }
 
     getUserByEmail = async(email)=>{
-        try {
+        try { 
             const query = `
                 SELECT *
                 FROM users
