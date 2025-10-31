@@ -24,6 +24,7 @@ const clinicVetRouter = require('./routes/clinicVetRoutes.js');
 const emergencyRouter = require('./routes/emergencyRoutes.js');
 const anomalyRouter = require('./routes/anomalyRoutes.js');
 const chatRouter = require('./routes/chatRoutes.js');
+const { diseaseRouter } = require('./routes/diseaseRoutes.js');
 
 
 const PORT = process.env.PORT || 3000;
@@ -107,6 +108,7 @@ app.use('/api', clinicVetRouter);
 app.use('/api', emergencyRouter);
 app.use('/api', anomalyRouter);
 app.use('/api', chatRouter);
+app.use('/api', diseaseRouter);
 
 
 if (process.env.ENABLE_SWAGGER !== 'false') {

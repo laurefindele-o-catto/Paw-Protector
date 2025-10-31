@@ -11,6 +11,7 @@ class CreateTables {
             await this.tables.create_users_table();
             await this.tables.create_roles_table();
             await this.tables.create_user_roles_table();
+            await this.tables.create_user_location_table(); 
 
             // Clinics first (FK for many tables)
             await this.tables.create_vet_clinics_table();
@@ -23,11 +24,12 @@ class CreateTables {
 
             // Pet-related logs (depend on pets, sometimes clinics/users)
             await this.tables.create_pet_health_metrics_table();
-            await this.tables.create_vaccinations_table();     // depends on pets + vet_clinics + users
-            await this.tables.create_dewormings_table();       // depends on pets
+            await this.tables.create_vaccinations_table();
+            await this.tables.create_dewormings_table();
             await this.tables.create_appointments_table();     // depends on pets + users + vet_clinics
             await this.tables.create_vet_reviews_table();      // depends on users + vet_clinics
             await this.tables.create_emergency_requests_table(); // depends on pets + users + vet_clinics
+            await this.tables.create_pet_diseases_table();
 
             // Media + anomaly (depend on users/pets, then media, then jobs)
             await this.tables.create_media_assets_table();     

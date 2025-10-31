@@ -3,54 +3,27 @@ import ProfilePictureCard from "../Components/profilePictureCard";
 // import catGif from "../assets/giphy/cat.gif"; // if you keep it in src
 import FeaturesSection from "../Components/FeaturesSection";
 import { useAuth } from "../context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
-
+const placeholder = "/placeholder.png";
 function Dashboard() {
+    
     const navigate = useNavigate();
     const {isAuthenticated} = useAuth();
     const { t, loading, error } = useAutoTranslate();
+
+    const [user, setUser] = useState(null)
 
     useEffect(()=>{
         if(!isAuthenticated){
             navigate('/');
         }
+
+        const user_local = JSON.parse(localStorage.getItem('user'));
+        setUser(user_local);
     }, [isAuthenticated, navigate]);
 
-    // const token = localStorage.getItem('token');
-    // console.log(t("Access token:"), localStorage.getItem('token'));
-
-    // const demo = async()=>{
-    //     try {
-    //         console.log(`${apiConfig.baseURL}${apiConfig.pets.create}`);
-            
-    //         const response = await fetch(`${apiConfig.baseURL}${apiConfig.pets.create}`, {
-    //             method: 'POST',
-    //             headers:{
-    //                 'Authorization': `Bearer ${token}`,
-    //                 'Content-Type': 'application/json'
-    //             },
-    //             body: JSON.stringify({
-    //                 "name": "Milo2",
-    //                 "species": "cat",
-    //                 "breed": "Local",
-    //                 "sex": "male",
-    //                 "birthdate": "2023-01-10",
-    //                 "weight_kg": 3.8,
-    //                 "avatar_url": null,
-    //                 "is_neutered": false,
-    //                 "notes": "Shy"
-    //             })
-    //         });
-    //         const result = await response.json();
-    //         console.log(result);
-            
-    //     } catch (error) {
-    //         console.error(error)
-    //     }
-    // }
-    const user = localStorage.getItem('user');
     console.log(user);
     
     return (
@@ -59,7 +32,10 @@ function Dashboard() {
             <header className="flex justify-between items-center p-4">
                 <div className="text-2xl font-bold text-indigo-600">{t("🐾 PawPal")}</div>
                 <Link to="/profile" aria-label={t("Profile")}>
-                    <ProfilePictureCard />
+                    <ProfilePictureCard
+                        avatarUrl={user?.avatar_url ? user.avatar_url : placeholder}
+                        name={user?.username}
+                    />
                 </Link>
             </header>
 
@@ -74,9 +50,6 @@ function Dashboard() {
             {/* Scrollable Row */}
             <FeaturesSection />
 
-            {/* <button onClick={()=>demo()} className="mt-4 self-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition">
-                {t("Demo Method")}
-            </button> */}
 
             {/* Bottom Bar */}
 
@@ -131,3 +104,36 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+  // const token = localStorage.getItem('token');
+    // console.log(t("Access token:"), localStorage.getItem('token'));
+
+    // const demo = async()=>{
+    //     try {
+    //         console.log(`${apiConfig.baseURL}${apiConfig.pets.create}`);
+            
+    //         const response = await fetch(`${apiConfig.baseURL}${apiConfig.pets.create}`, {
+    //             method: 'POST',
+    //             headers:{
+    //                 'Authorization': `Bearer ${token}`,
+    //                 'Content-Type': 'application/json'
+    //             },
+    //             body: JSON.stringify({
+    //                 "name": "Milo2",
+    //                 "species": "cat",
+    //                 "breed": "Local",
+    //                 "sex": "male",
+    //                 "birthdate": "2023-01-10",
+    //                 "weight_kg": 3.8,
+    //                 "avatar_url": null,
+    //                 "is_neutered": false,
+    //                 "notes": "Shy"
+    //             })
+    //         });
+    //         const result = await response.json();
+    //         console.log(result);
+            
+    //     } catch (error) {
+    //         console.error(error)
+    //     }
+    // }

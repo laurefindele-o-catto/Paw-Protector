@@ -26,6 +26,7 @@ class TableCreation {
                     google_id VARCHAR(100) UNIQUE,
                     provider VARCHAR(50),
                     avatar_url TEXT,
+                    phone_number VARCHAR(20),
                     subscription_type VARCHAR(20) NOT NULL DEFAULT 'free',
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
@@ -47,6 +48,35 @@ class TableCreation {
             throw error;            
         }
     };
+
+    create_user_location_table = async()=>{
+        try {
+            const query=`
+                CREATE TABLE user_locations (
+                    id SERIAL PRIMARY KEY,             -- or AUTO_INCREMENT for MySQL
+                    user_id INT NOT NULL,
+                    address_line VARCHAR(255),
+                    city VARCHAR(100),
+                    state VARCHAR(100),
+                    postal_code VARCHAR(20),
+                    country VARCHAR(100),
+                    latitude DECIMAL(10, 8),
+                    longitude DECIMAL(11, 8),
+                    place_id VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+            `;
+
+            await this.db_connection.query_executor(query);
+            console.log("User Location table table created successfully");
+            return {success: true};
+        } catch (error) {
+            console.log(`Error creating table: ${error.message}`);
+            throw error;
+        }
+    }
 
     create_roles_table = async()=>{
         try {
@@ -531,6 +561,36 @@ class TableCreation {
             return { success: true };
         } catch (error) {
             console.log(`Error creating rag_sources table: ${error.message}`);
+            throw error;
+        }
+    }
+
+    create_pet_diseases_table = async () => {
+        try {
+            const query = `
+                CREATE TABLE IF NOT EXISTS pet_diseases (
+                    id SERIAL PRIMARY KEY,
+                    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+                    disease_name VARCHAR(150) NOT NULL,
+                    symptoms TEXT,
+                    severity VARCHAR(20) CHECK (severity IN ('mild','moderate','severe')) DEFAULT 'mild',
+                    status VARCHAR(20) CHECK (status IN ('active','resolved')) DEFAULT 'active',
+                    diagnosed_on DATE,
+                    resolved_on DATE,
+                    vet_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    clinic_id INTEGER REFERENCES vet_clinics(id) ON DELETE SET NULL,
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_pet_diseases_pet_id ON pet_diseases(pet_id);
+                CREATE INDEX IF NOT EXISTS idx_pet_diseases_status ON pet_diseases(status);
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Pet Diseases table created successfully");
+            return { success: true };
+        } catch (error) {
+            console.log(`Error creating pet_diseases table: ${error.message}`);
             throw error;
         }
     }
