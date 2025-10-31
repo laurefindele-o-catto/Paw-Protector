@@ -46,6 +46,7 @@ function App() {
             <Route path="/addPet" element={< AddPetPage/>} />
             <Route path="/login" element = {<LoginPage/>}/>
             <Route path="/signup" element={<SignupPage/>}/>
+            
           </Routes>
         </AuthProvider>
       </TranslationProvider>
