@@ -2,10 +2,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useAutoTranslate } from "react-autolocalise";
 
 export default function SkinDiseaseDetector() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { t } = useAutoTranslate();
 
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
@@ -50,8 +52,10 @@ export default function SkinDiseaseDetector() {
       }
 
       const uploadData = await uploadRes.json();
+      // keep raw label as-is (don't translate ML output)
       setResult(uploadData.label || "No label returned");
     } catch (err) {
+      // use a fixed English sentinel for logic; translate only when rendering
       setResult("Error processing image");
     } finally {
       setLoading(false);
@@ -79,6 +83,7 @@ export default function SkinDiseaseDetector() {
       <button
         onClick={() => navigate("/dashboard")}
         className="absolute top-6 left-6 flex items-center px-4 py-2 bg-[#0f172a] text-[#edfdfd] rounded-lg shadow hover:bg-slate-900 transition z-20"
+        aria-label={t("Back to dashboard")}
       >
         <svg
           className="w-5 h-5 mr-2"
@@ -86,36 +91,37 @@ export default function SkinDiseaseDetector() {
           stroke="currentColor"
           strokeWidth={2.2}
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Dashboard
+        {t("Dashboard")}
       </button>
 
       {/* Header */}
       <header className="w-full flex flex-col items-center p-6">
         <div className="flex items-center justify-center w-full mb-2">
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 text-center drop-shadow-sm tracking-wide">
-            Skin Disease Detector
+            {t("Skin Disease Detector")}
           </h1>
 
           {/* Instructions button */}
           <div className="relative group ml-4">
             <button
               className="w-9 h-9 flex items-center justify-center bg-[#0f172a] text-[#edfdfd] rounded-full shadow hover:bg-slate-900 transition"
-              aria-label="Instructions"
+              aria-label={t("Instructions")}
               type="button"
             >
               <span className="text-lg font-bold">i</span>
             </button>
             <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-lg p-4 text-sm text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <p className="mb-2">
-                <strong>Instructions:</strong>
+                <strong>{t("Instructions:")}</strong>
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>Upload a clear, well-lit image of the affected area.</li>
-                <li>Currently detects a limited set of anomalies.</li>
-                <li>Click the box below to select an image.</li>
+                <li>{t("Upload a clear, well-lit image of the affected area.")}</li>
+                <li>{t("Currently detects a limited set of anomalies.")}</li>
+                <li>{t("Click the box below to select an image.")}</li>
               </ul>
             </div>
           </div>
@@ -132,6 +138,7 @@ export default function SkinDiseaseDetector() {
           onChange={handleFileChange}
           ref={fileInputRef}
           style={{ display: "none" }}
+          aria-label={t("Select image")}
         />
 
         {/* Card wrapper */}
@@ -146,9 +153,9 @@ export default function SkinDiseaseDetector() {
 
           <p className="text-sm text-slate-600 mb-5">
             <span className="underline decoration-4 decoration-[#fdd14280]">
-              Analyze your pet’s skin
+              {t("Analyze your pet’s skin")}
             </span>{" "}
-            by uploading a photo.
+            {t("by uploading a photo.")}
           </p>
 
           {/* File Picker Box */}
@@ -157,19 +164,23 @@ export default function SkinDiseaseDetector() {
             className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-white/70 hover:bg-white/90 transition w-full h-48 mb-6 ${
               file ? "border-[#0f172a]" : "border-slate-300 hover:border-[#fdd142]"
             }`}
+            aria-label={t("Click to select an image")}
+            role="button"
           >
             {file ? (
               <>
                 <img
                   src={URL.createObjectURL(file)}
-                  alt="Preview"
+                  alt={t("Preview")}
                   className="rounded-xl shadow border border-slate-200 max-h-36 max-w-full object-contain mb-2"
                 />
-                <span className="text-xs text-slate-500">Preview: {file.name}</span>
+                <span className="text-xs text-slate-500">
+                  {t("Preview:")} {file.name}
+                </span>
               </>
             ) : (
               <>
-                <span className="text-5xl text-slate-400 mb-2">
+                <span className="text-5xl text-slate-400 mb-2" aria-hidden="true">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -183,9 +194,11 @@ export default function SkinDiseaseDetector() {
                   </svg>
                 </span>
                 <span className="text-base font-medium text-slate-700">
-                  Click to select an image
+                  {t("Click to select an image")}
                 </span>
-                <span className="text-xs text-slate-500 mt-1">(Supported: .jpg, .png, .jpeg)</span>
+                <span className="text-xs text-slate-500 mt-1">
+                  {t("(Supported: .jpg, .png, .jpeg)")}
+                </span>
               </>
             )}
           </div>
@@ -194,8 +207,9 @@ export default function SkinDiseaseDetector() {
             onClick={handleSubmit}
             disabled={loading || !file}
             className="w-full px-6 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px] disabled:opacity-60"
+            aria-label={t("Upload and detect")}
           >
-            {loading ? "Processing..." : "Upload & Detect"}
+            {loading ? t("Processing...") : t("Upload & Detect")}
           </button>
 
           {/* Results box */}
@@ -213,14 +227,20 @@ export default function SkinDiseaseDetector() {
                   : "text-emerald-700"
               }`}
             >
-              Results
+              {t("Results")}
             </h2>
             <p
               className={`text-lg font-medium ${
                 result === "Error processing image" ? "text-red-600" : "text-slate-800"
               }`}
+              aria-live="polite"
             >
-              {result ? result : "No results yet"}
+              {/* show translated messages for app-status strings; keep ML label raw */}
+              {result
+                ? result === "Error processing image"
+                  ? t("Error processing image")
+                  : result
+                : t("No results yet")}
             </p>
           </div>
 
@@ -231,7 +251,10 @@ export default function SkinDiseaseDetector() {
 
       {/* Footer disclaimer */}
       <footer className="w-full text-center p-4 text-xs text-slate-600 border-t border-slate-200 bg-white/70 backdrop-blur">
-        <span className="font-semibold text-red-500">Disclaimer:</span> This model may produce incorrect results. Please seek professional medical help if symptoms persist.
+        <span className="font-semibold text-red-500">{t("Disclaimer:")}</span>{" "}
+        {t(
+          "This model may produce incorrect results. Please seek professional medical help if symptoms persist."
+        )}
       </footer>
 
       {/* keyframes (mirrors LandingPage) */}

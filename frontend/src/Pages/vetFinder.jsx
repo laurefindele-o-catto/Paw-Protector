@@ -390,7 +390,7 @@ export default function VetFinder() {
         </div>
       )}
 
-      <main className="px-6 md:px-16 pb-8 grid grid-cols-1 lg:grid-cols-5 gap-6 relative z-10 flex-1">
+      <main className=" px-6 md:px-16 pb-8 grid grid-cols-1 lg:grid-cols-5 gap-6 relative z-10 flex-1">
         {/* Left: Controls + Map */}
         <section className="lg:col-span-2 flex flex-col gap-4">
           {/* Address bar (glass card) */}
