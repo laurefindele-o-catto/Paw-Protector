@@ -10,7 +10,8 @@ class PetController {
             const owner_id = req.user.id; // assuming auth middleware sets req.user
             const {
                 name, species, breed, sex,
-                birthdate, weight_kg, avatar_url, is_neutered, notes
+                birthdate, weight_kg, avatar_url, is_neutered, notes,
+                last_rabies_vac, last_flu_vac, last_deworm
             } = req.body;
 
             // const file = req.file;
@@ -21,7 +22,8 @@ class PetController {
 
             const pet = await this.petModel.createPet({
                 owner_id, name, species, breed, sex,
-                birthdate, weight_kg, avatar_url, is_neutered, notes
+                birthdate, weight_kg, avatar_url, is_neutered, notes,
+                last_rabies_vac, last_flu_vac, last_deworm
             });
 
             if (!pet || pet.success === false) {

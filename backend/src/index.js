@@ -24,6 +24,10 @@ const clinicVetRouter = require('./routes/clinicVetRoutes.js');
 const emergencyRouter = require('./routes/emergencyRoutes.js');
 const anomalyRouter = require('./routes/anomalyRoutes.js');
 const chatRouter = require('./routes/chatRoutes.js');
+const { vaccinationRouter } = require('./routes/vaccinationRoutes.js');
+const { dewormingRouter } = require('./routes/dewormingRoutes.js');
+
+
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 const socketLayer = createSocketServer(server);
@@ -105,6 +109,8 @@ app.use('/api', clinicVetRouter);
 app.use('/api', emergencyRouter);
 app.use('/api', anomalyRouter);
 app.use('/api', chatRouter);
+app.use('/api/vaccinations', apiLimiter, vaccinationRouter);
+app.use('/api/dewormings', apiLimiter, dewormingRouter);
 
 
 if (process.env.ENABLE_SWAGGER !== 'false') {

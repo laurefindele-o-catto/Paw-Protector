@@ -5,7 +5,7 @@ import About from "./Pages/About";
 import Dashboard from "./pages/dashboard";
 import DiseaseDetection from "./pages/diseaseDetection";
 import VetFinder from "./Pages/VetFinder";
-import VaccineAlert from "./Pages/VaccineAlert";
+import VaccineAlert from "./Pages/vaccineAlert";
 import PetCare from "./Pages/PetCare";
 import PawPal from "./Pages/PawPal";
 import ProfilePage from "./Pages/profilePage";
