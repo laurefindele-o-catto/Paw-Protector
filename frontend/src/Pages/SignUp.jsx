@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "../hooks/useLoader";
 import { Loader } from "../Components/Loader";
-
+//UI update
 const SignupPage = () => {
   const { isAuthenticated, register } = useAuth();
   const navigate = useNavigate();

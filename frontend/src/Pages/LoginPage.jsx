@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useLoader } from '../hooks/useLoader';
 import { Loader } from '../Components/Loader';
 
+//Ui
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
