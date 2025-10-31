@@ -9,7 +9,7 @@ class PetModel {
         try {
             const {
                 owner_id, name, species, breed, sex,
-                birthdate, weight_kg, avatar_url, is_neutered, notes,
+                birthdate, weight_kg, avatar_url, is_neutered, notes
             } = petData;
 
             const query = `

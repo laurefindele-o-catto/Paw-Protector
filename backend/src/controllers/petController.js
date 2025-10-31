@@ -11,6 +11,7 @@ class PetController {
             const {
                 name, species, breed, sex,
                 birthdate, weight_kg, avatar_url, is_neutered, notes
+                
             } = req.body;
 
             // const file = req.file;
@@ -22,6 +23,7 @@ class PetController {
             const pet = await this.petModel.createPet({
                 owner_id, name, species, breed, sex,
                 birthdate, weight_kg, avatar_url, is_neutered, notes
+                
             });
 
             if (!pet || pet.success === false) {

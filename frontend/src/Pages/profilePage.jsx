@@ -3,7 +3,7 @@ import PhotoCard from "../Components/profilePictureCard";
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
-
+import { useNavigate } from "react-router-dom";
 // Simple loader for Google Places script
 function useGooglePlaces(apiKey) {
   const [loaded, setLoaded] = useState(false);
@@ -25,7 +25,7 @@ function useGooglePlaces(apiKey) {
 const placeholder = "/placeholder.png";
 
 function ProfilePage() {
-  const [user, setUser]= useState(null);
+  const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   // Phone number with region picker
@@ -47,7 +47,7 @@ function ProfilePage() {
   const fileInputRef = useRef();
   const addressInputRef = useRef();
   const googleLoaded = useGooglePlaces('AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds');
-//TODO: Hardcoded change it before submission
+  //TODO: Hardcoded change it before submission
 
   // ADD: map + geocoder refs
   const mapContainerRef = useRef(null);
@@ -60,7 +60,7 @@ function ProfilePage() {
     if (!googleLoaded || !addressInputRef.current) return;
 
     const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      fields: ['formatted_address','address_components','geometry','place_id']
+      fields: ['formatted_address', 'address_components', 'geometry', 'place_id']
     });
 
     ac.addListener('place_changed', () => {
@@ -128,7 +128,7 @@ function ProfilePage() {
         setLongitude(first.longitude || null);
         setPlaceId(first.place_id || "");
       }
-    } catch {}
+    } catch { }
   };
 
   // Preload user + pets + location
@@ -145,7 +145,7 @@ function ProfilePage() {
           if (m) { setDialCode(m[1]); setPhoneLocal(m[2]); }
         }
       }
-    } catch {}
+    } catch { }
     getPets();
     loadMyLocations();
   }, []);
@@ -307,7 +307,7 @@ function ProfilePage() {
 
       if (markerRef.current) markerRef.current.setPosition({ lat, lng });
       if (mapRef.current) mapRef.current.setCenter({ lat, lng });
-    } catch {}
+    } catch { }
   };
 
   // ADD: use browser geolocation
@@ -320,10 +320,11 @@ function ProfilePage() {
         updateFromLatLng(lat, lng);
         if (mapRef.current) mapRef.current.setZoom(15);
       },
-      () => {},
+      () => { },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
+  const navigate = useNavigate();
 
   return (
     <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden flex flex-col items-center pt-20 px-4">
