@@ -16,6 +16,9 @@ import SignupPage from "./Pages/SignUp";
 import SkinDiseaseDetector from "./Pages/SkinDiseaseDetection";
 import { TranslationProvider } from "react-autolocalise";
 
+import LandingPage from "./Pages/LandingPage";
+
+
 
 
 function App() {
@@ -30,6 +33,7 @@ function App() {
         <AuthProvider>
           <Routes>
             {/* <Route path="/" element={<Home />} /> */}
+            <Route path="/" element={<LandingPage/>} />
             <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
             <Route path="/about" element={<About />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -40,7 +44,7 @@ function App() {
             <Route path="/paw-pal" element={<PawPal />} />
             <Route path="/profile" element={< ProfilePage/>} />
             <Route path="/addPet" element={< AddPetPage/>} />
-            <Route path="/" element = {<LoginPage/>}/>
+            <Route path="/login" element = {<LoginPage/>}/>
             <Route path="/signup" element={<SignupPage/>}/>
           </Routes>
         </AuthProvider>
