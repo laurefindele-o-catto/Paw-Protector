@@ -1,7 +1,7 @@
 // src/components/FeaturesSection.jsx
 import { useEffect, useRef } from "react";
 import FeatureCard from "./FeatureCard";
-
+import { useNavigate } from "react-router-dom";
 export default function FeaturesSection() {
   const scrollRef = useRef(null);
 
@@ -67,7 +67,7 @@ export default function FeaturesSection() {
         "
       >
         <FeatureCard to="/paw-pal" color="#A7AAE1">🐾 PawPal</FeatureCard>
-        <FeatureCard to="/disease-detection" color = "#F2AEBB">Disease<br/>Detection</FeatureCard>
+        <FeatureCard to="/skinDiseaseDetection" color = "#F2AEBB">Disease<br/>Detection</FeatureCard>
         <FeatureCard to="/petcare" color="#A1D6CB">Pet Care</FeatureCard>
         <FeatureCard to="/find-a-vet" color="#BFECFF">Find a Vet</FeatureCard>
         <FeatureCard to="/vaccination-alerts" color="#E6D9A2"> Vaccination<br/>Alerts</FeatureCard>

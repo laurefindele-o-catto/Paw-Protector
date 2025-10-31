@@ -13,6 +13,8 @@ import AddPetPage from "./Pages/AddPetPage";
 import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./Pages/LoginPage";
 import SignupPage from "./Pages/SignUp";
+import SkinDiseaseDetector from "./Pages/SkinDiseaseDetection";
+
 
 
 
@@ -23,6 +25,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* <Route path="/" element={<Home />} /> */}
+          <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
           <Route path="/about" element={<About />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/disease-detection" element={<DiseaseDetection />} />
