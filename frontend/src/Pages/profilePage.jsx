@@ -161,11 +161,9 @@ function ProfilePage() {
     e.preventDefault();
     if (!user?.id) return;
 
-    // build E.164
     const phone_number = (dialCode + phoneLocal).replace(/\s+/g, '');
 
     try {
-      // 1) Update profile (JSON)
       const profileRes = await fetch(
         `${apiConfig.baseURL}${apiConfig.users.updateProfile(user.id)}`,
         {
@@ -186,15 +184,15 @@ function ProfilePage() {
         const err = await profileRes.json();
         throw new Error(err?.error || "Profile update failed");
       }
+      const profileJson = await profileRes.json();
+      let nextUser = profileJson.user;
 
-      // 2) Upsert first location
       const locationBody = {
         address_line: addressLine,
         city, state, postal_code: postalCode, country,
         latitude, longitude, place_id: placeId
       };
 
-      let locOk = true;
       if (locationId) {
         const locRes = await fetch(`${apiConfig.baseURL}${apiConfig.users.locations.update(locationId)}`, {
           method: 'PATCH',
@@ -204,7 +202,7 @@ function ProfilePage() {
           },
           body: JSON.stringify(locationBody)
         });
-        locOk = locRes.ok;
+        if (!locRes.ok) throw new Error("Failed to save location");
       } else {
         const locRes = await fetch(`${apiConfig.baseURL}${apiConfig.users.locations.create}`, {
           method: 'POST',
@@ -214,11 +212,9 @@ function ProfilePage() {
           },
           body: JSON.stringify(locationBody)
         });
-        locOk = locRes.ok;
+        if (!locRes.ok) throw new Error("Failed to save location");
       }
-      if (!locOk) throw new Error("Failed to save location");
 
-      // 3) Avatar (optional)
       if (selectedFile) {
         const fd = new FormData();
         fd.append("avatar", selectedFile);
@@ -231,13 +227,17 @@ function ProfilePage() {
           const err = await avatarRes.json();
           throw new Error(err?.error || "Avatar upload failed");
         }
+        const avatarJson = await avatarRes.json();
+        nextUser = { ...nextUser, avatar_url: avatarJson.avatar_url };
+      } else {
+        // keep existing avatar if not changed
+        nextUser = { ...nextUser, avatar_url: user?.avatar_url || null };
       }
 
-      // Refresh local user
-      const updated = await profileRes.json();
-      localStorage.setItem("user", JSON.stringify(updated.user));
+      setUser(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      setSelectedFile(null);
       alert("Profile updated!");
-      window.location.reload();
     } catch (error) {
       alert(error.message || "Failed to update profile.");
     }

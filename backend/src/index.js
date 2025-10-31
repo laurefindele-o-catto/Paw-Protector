@@ -103,7 +103,7 @@ app.use('/api/auth', loginLimiter, authRouter);
 app.use('/api/user', apiLimiter, userRouter);
 app.use('/api', tableRouter);
 app.use('/api', petRouter);
-app.use('/api', careRouter);
+app.use('/api/care', careRouter);
 app.use('/api', clinicVetRouter);
 app.use('/api', emergencyRouter);
 app.use('/api', anomalyRouter);

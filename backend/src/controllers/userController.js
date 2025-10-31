@@ -463,7 +463,7 @@ class UserController {
 
             return res.status(200).json({
                 success: true,
-                 user: {
+                user: {
                     id: user.id,
                     uuid: user.uuid,
                     username: user.username,
@@ -471,7 +471,8 @@ class UserController {
                     full_name: user.full_name,
                     is_active: user.is_active,
                     subscription_type: user.subscription_type,
-                    phone_number: user.phone_number // include phone
+                    phone_number: user.phone_number,
+                    avatar_url: user.avatar_url
                 }
             });
         } catch (error) {
@@ -490,12 +491,12 @@ class UserController {
             if (!updatedUser || updatedUser.success === false) {
                 return res.status(400).json({ success: false, error: 'Update failed' });
             }
-            bus.emit(Events.USER_PROFILE_UPDATED, { userId, changed: Object.keys(req.body || {}) });
-            return res.status(200).json({ 
-                success: true, 
+            return res.status(200).json({
+                success: true,
                 user: {
                     ...updatedUser,
-                    subscription_type: updatedUser.subscription_type
+                    subscription_type: updatedUser.subscription_type,
+                    avatar_url: updatedUser.avatar_url
                 }
             });
         } catch (error) {

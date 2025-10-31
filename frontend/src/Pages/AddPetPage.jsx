@@ -22,7 +22,9 @@ function AddPetPage() {
   });
   const [spayed, setSpayed] = useState(false);
   const [image, setImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [hasDisease, setHasDisease] = useState(false);
   const catUrl = "https://images.unsplash.com/photo-1592194996308-7b43878e84a6";
 
   const handleAddDisease = () => setDiseases([...diseases, { disease_name: "", symptoms: "", severity: "", status: "", diagnosed_on: "", notes: "" }]);
@@ -47,8 +49,10 @@ function AddPetPage() {
   };
 
   const handleImageUpload = (e) => {
-    if (e.target.files[0]) {
-      setImage(URL.createObjectURL(e.target.files[0]));
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setImage(URL.createObjectURL(file));
     }
   };
 
@@ -59,6 +63,10 @@ function AddPetPage() {
     }
     catch { }
   }, []);
+
+  const safeParseError = async (res) => {
+    try { return await res.json(); } catch { return { error: await res.text() }; }
+  };
 
   const submitPet = async (e) => {
     e.preventDefault();
@@ -74,98 +82,86 @@ function AddPetPage() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            name: name,
-            breed: breed,
+            name,
+            breed,
             species: "cat",
             sex: gender,
             weight_kg: weight,
-            avatar_url: catUrl,
+            avatar_url: selectedFile ? null : "https://images.unsplash.com/photo-1592194996308-7b43878e84a6",
             is_neutered: spayed,
           })
         }
       );
       if (!perRes.ok) {
-        const err = await perRes.json();
-        throw new Error(err?.error || "Profile update failed");
+        const err = await safeParseError(perRes);
+        throw new Error(err?.error || "Failed to create pet");
       }
-      
+
       const data = await perRes.json();
-      console.log(data.pet);
-      const petId = data.pet.id;
-      
-      for (const disease of diseases) {
-        const res = await fetch(`${apiConfig.baseURL}${apiConfig.pets.diseases.create(petId)}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(disease)
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err?.error || "Failed to add disease");
+      const petId = data.pet?.id;
+      if (!petId) throw new Error("Pet id missing in response");
+
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("avatar", selectedFile);
+        const uploadRes = await fetch(
+          `${apiConfig.baseURL}${apiConfig.pets.uploadAvatar(petId)}`,
+          {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData
+          }
+        );
+        if (!uploadRes.ok) {
+          const err = await safeParseError(uploadRes);
+          throw new Error(err?.error || "Failed to upload pet image");
+        }
+      }
+
+      if (hasDisease) {
+        for (const disease of diseases) {
+          if (!disease.disease_name?.trim()) continue;
+          const res = await fetch(`${apiConfig.baseURL}${apiConfig.pets.diseases.create(petId)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(disease)
+          });
+          if (!res.ok) {
+            const err = await safeParseError(res);
+            throw new Error(err?.error || "Failed to add disease");
+          }
         }
       }
 
       if (vaccines.rabies.checked && vaccines.rabies.date) {
         const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addVaccination}`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            pet_id: petId,
-            vaccine_name: "rabies",
-            administered_on: vaccines.rabies.date
-          })
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pet_id: petId, vaccine_name: "rabies", administered_on: vaccines.rabies.date })
         });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err?.error || "Failed to add rabies vaccination");
-        }
+        if (!res.ok) { const err = await safeParseError(res); throw new Error(err?.error || "Failed to add rabies vaccination"); }
       }
       if (vaccines.flu.checked && vaccines.flu.date) {
         const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addVaccination}`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            pet_id: petId,
-            vaccine_name: "flu",
-            administered_on: vaccines.flu.date
-          })
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pet_id: petId, vaccine_name: "flu", administered_on: vaccines.flu.date })
         });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err?.error || "Failed to add flu vaccination");
-        }
+        if (!res.ok) { const err = await safeParseError(res); throw new Error(err?.error || "Failed to add flu vaccination"); }
       }
       if (vaccines.deworming.checked && vaccines.deworming.date) {
         const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addDeworming}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            pet_id: petId,
-            product_name: 'Deworming',
-            administered_on: vaccines.deworming.date
-          })
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ pet_id: petId, product_name: 'Deworming', administered_on: vaccines.deworming.date })
         });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err?.error || "Failed to add deworming treatment");
-        }
+        if (!res.ok) { const err = await safeParseError(res); throw new Error(err?.error || "Failed to add deworming treatment"); }
       }
-      alert("Pet, diseases, and care info saved!");
-      navigate("/profile")
+
+      alert("Pet saved!");
+      navigate("/profile");
     } catch (err) {
-      alert(err.message || "Failed to add pet")
+      alert(err.message || "Failed to add pet");
     }
   };
 
@@ -301,67 +297,83 @@ function AddPetPage() {
             </div>
           </div>
 
-          {/* Known Diseases */}
+          {/* Known Diseases (optional) */}
           <div className="mt-10">
-            <label className="block text-sm font-medium text-slate-700 mb-4">Known Diseases</label>
-            {diseases.map((disease, i) => (
-              <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-xl">
-                <input
-                  type="text"
-                  value={disease.disease_name}
-                  onChange={e => handleDiseaseChange(i, "disease_name", e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-                  placeholder="Disease Name"
-                />
-                <input
-                  type="text"
-                  value={disease.symptoms}
-                  onChange={e => handleDiseaseChange(i, "symptoms", e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-                  placeholder="Symptoms"
-                />
-                <select
-                  value={disease.severity}
-                  onChange={e => handleDiseaseChange(i, "severity", e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                id="hasDisease"
+                type="checkbox"
+                checked={hasDisease}
+                onChange={e => setHasDisease(e.target.checked)}
+                className="h-5 w-5 text-[#0f172a] focus:ring-[#fdd142] border-slate-300 rounded"
+              />
+              <label htmlFor="hasDisease" className="text-slate-800">
+                Has previous illness?
+              </label>
+            </div>
+
+            {hasDisease && (
+              <>
+                <label className="block text-sm font-medium text-slate-700 mb-4">Known Diseases</label>
+                {diseases.map((disease, i) => (
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-xl">
+                    <input
+                      type="text"
+                      value={disease.disease_name}
+                      onChange={e => handleDiseaseChange(i, "disease_name", e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                      placeholder="Disease Name"
+                    />
+                    <input
+                      type="text"
+                      value={disease.symptoms}
+                      onChange={e => handleDiseaseChange(i, "symptoms", e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                      placeholder="Symptoms"
+                    />
+                    <select
+                      value={disease.severity}
+                      onChange={e => handleDiseaseChange(i, "severity", e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                    >
+                      <option value="">Select Severity</option>
+                      <option value="mild">Mild</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="severe">Severe</option>
+                    </select>
+                    <select
+                      value={disease.status}
+                      onChange={e => handleDiseaseChange(i, "status", e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="active">Active</option>
+                      <option value="resolved">Resolved</option>
+                    </select>
+                    <input
+                      type="date"
+                      value={disease.diagnosed_on}
+                      onChange={e => handleDiseaseChange(i, "diagnosed_on", e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                    />
+                    <input
+                      type="text"
+                      value={disease.notes}
+                      onChange={e => handleDiseaseChange(i, "notes", e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                      placeholder="Notes"
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddDisease}
+                  className="text-sm font-medium text-slate-800 bg-white border border-slate-200 rounded-full px-4 py-2 hover:shadow-sm hover:-translate-y-[1px] transition"
                 >
-                  <option value="">Select Severity</option>
-                  <option value="mild">Mild</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="severe">Severe</option>
-                </select>
-                <select
-                  value={disease.status}
-                  onChange={e => handleDiseaseChange(i, "status", e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-                >
-                  <option value="">Select Status</option>
-                  <option value="active">Active</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="chronic">Chronic</option>
-                </select>
-                <input
-                  type="date"
-                  value={disease.diagnosed_on}
-                  onChange={e => handleDiseaseChange(i, "diagnosed_on", e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-                />
-                <input
-                  type="text"
-                  value={disease.notes}
-                  onChange={e => handleDiseaseChange(i, "notes", e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-                  placeholder="Notes"
-                />
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={handleAddDisease}
-              className="text-sm font-medium text-slate-800 bg-white border border-slate-200 rounded-full px-4 py-2 hover:shadow-sm hover:-translate-y-[1px] transition"
-            >
-              + Add another disease
-            </button>
+                  + Add another disease
+                </button>
+              </>
+            )}
           </div>
 
           {/* Vaccines */}

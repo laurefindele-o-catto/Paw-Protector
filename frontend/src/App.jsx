@@ -7,7 +7,7 @@ import VetFinder from "./Pages/VetFinder";
 import VaccineAlert from "./Pages/vaccineAlert";
 import PetCare from "./Pages/PetCare";
 import PawPal from "./Pages/PawPal";
-import ProfilePage from "./Pages/profilePage";
+import ProfilePage from "./pages/profilePage";
 import AddPetPage from "./Pages/AddPetPage";
 import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./Pages/LoginPage";
@@ -26,7 +26,7 @@ function App() {
     targetLocale: "bn", // Language to translate to
   }
   return (
-    <>
+    <>f
       <TranslationProvider config={config}>
         <AuthProvider>
           <Routes>

@@ -30,7 +30,7 @@ const SignupPage = () => {
         role
       );
       if (success) {
-        navigate("/dashboard");
+        navigate("/login");
       } else {
         setError(errMsg || "Registration failed");
       }

@@ -1,5 +1,5 @@
 const apiConfig = {
-  baseURL: 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
   auth: {
     register: '/api/auth/register',
     login: '/api/auth/login',
@@ -30,6 +30,7 @@ const apiConfig = {
   pets: {
     create: '/api/pets',
     listMine: '/api/pets',
+    uploadAvatar: (petId) => `/api/pets/${petId}/avatar`,
     diseases: {
       list: (petId) => `/api/pets/${petId}/diseases`,
       listActive: (petId) => `/api/pets/${petId}/diseases/active`,
@@ -40,10 +41,8 @@ const apiConfig = {
     }
   },
   care: {
-    addVaccination: '/api/care/vaccination',
-    addDeworming: '/api/care/deworming',
-    addReminder: '/api/care/reminder',
-    addNotification: '/api/care/notification',
+    addVaccination: '/api/care/vaccinations',
+    addDeworming: '/api/care/dewormings'
   },
   clinics: {
     createClinic: '/api/clinics',
