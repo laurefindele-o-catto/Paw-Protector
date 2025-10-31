@@ -3,7 +3,7 @@ import ProfilePictureCard from "../Components/profilePictureCard";
 // import catGif from "../assets/giphy/cat.gif"; // if you keep it in src
 import FeaturesSection from "../Components/FeaturesSection";
 import { useAuth } from "../context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
 const placeholder = "/placeholder.png";
@@ -13,14 +13,18 @@ function Dashboard() {
     const {isAuthenticated} = useAuth();
     const { t, loading, error } = useAutoTranslate();
 
+    const [user, setUser] = useState(null)
+
     useEffect(()=>{
         if(!isAuthenticated){
             navigate('/');
         }
+
+        const user_local = JSON.parse(localStorage.getItem('user'));
+        setUser(user_local);
     }, [isAuthenticated, navigate]);
 
-  
-    const user = localStorage.getItem('user');
+    console.log(user);
     
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800" style={{ backgroundColor: "#FAF6E9" }}>
@@ -28,7 +32,10 @@ function Dashboard() {
             <header className="flex justify-between items-center p-4">
                 <div className="text-2xl font-bold text-indigo-600">{t("🐾 PawPal")}</div>
                 <Link to="/profile" aria-label={t("Profile")}>
-                    <ProfilePictureCard avatarUrl={user.avatar_url ? user.avatar_url : user.avatar_url||placeholder} />
+                    <ProfilePictureCard
+                        avatarUrl={user?.avatar_url ? user.avatar_url : placeholder}
+                        name={user?.username}
+                    />
                 </Link>
             </header>
 
