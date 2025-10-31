@@ -67,6 +67,9 @@ const apiConfig = {
     listMessages: (sessionId) => `/api/chat/session/${sessionId}/messages`,
     addRagSource: '/api/chat/rag-source',
   },
+
+  googleMapsApiKey: "AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds", 
+  //Raisa(I) added this when making vetFinder.jsx, you can use this in profilePage.jsx
 }
 
 export default apiConfig
