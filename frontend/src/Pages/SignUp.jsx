@@ -1,10 +1,14 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "../hooks/useLoader";
+import { Loader } from "../Components/Loader";
 
 const SignupPage = () => {
     
-    const {isAuthenticated, loading, register} = useAuth();
+
+    const { isAuthenticated, register } = useAuth();
     const navigate = useNavigate();
 
     const [username, setUsername] = useState("");
@@ -14,24 +18,24 @@ const SignupPage = () => {
     const [error, setError] = useState("");
     const [info, setInfo] = useState("");
 
+    const { run: runRegister, loading: loaderLoading } = useLoader(register);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
         setInfo("");
 
-        const {success, error: errMsg, requiresVerification, message} = await register(username, email, password, role);
-        if(success){
-            // if(requiresVerification){
-            //     setInfo(message || 'Account created. Please verify your email before logging in.');
-            // } else {
-            //     navigate('/dashboard');
-            // }
-
-            navigate('/dashboard')
-        } else {
-            setError(errMsg || 'Registration failed');
+        try {
+            const { success, error: errMsg } = await runRegister(username, email, password, role);
+            if (success) {
+                navigate('/dashboard');
+            } else {
+                setError(errMsg || 'Registration failed');
+            }
+        } catch (err) {
+            setError('Registration failed');
         }
-    }
+    }    
 
     return (
         <div
@@ -42,6 +46,7 @@ const SignupPage = () => {
                 <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
                     Create Account
                 </h2>
+                {loaderLoading && <Loader />}
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <input
                         type="text"
@@ -50,6 +55,7 @@ const SignupPage = () => {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        disabled={loaderLoading}
                     />
                     <input
                         type="email"
@@ -58,6 +64,7 @@ const SignupPage = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        disabled={loaderLoading}
                     />
                     <input
                         type="password"
@@ -66,11 +73,13 @@ const SignupPage = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        disabled={loaderLoading}
                     />
                     <select
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        disabled={loaderLoading}
                     >
                         <option value="owner">Owner</option>
                         <option value="vet">Veterinarian</option>
@@ -80,6 +89,7 @@ const SignupPage = () => {
                     <button
                         type="submit"
                         className="w-full bg-gray-800 text-white py-2 rounded-md hover:bg-gray-700 transition-colors"
+                        disabled={loaderLoading}
                     >
                         Sign Up
                     </button>
