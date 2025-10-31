@@ -30,6 +30,14 @@ const apiConfig = {
   pets: {
     create: '/api/pets',
     listMine: '/api/pets',
+    diseases: {
+      list: (petId) => `/api/pets/${petId}/diseases`,
+      listActive: (petId) => `/api/pets/${petId}/diseases/active`,
+      create: (petId) => `/api/pets/${petId}/diseases`,
+      getOne: (id) => `/api/diseases/${id}`,
+      update: (id) => `/api/diseases/${id}`,
+      remove: (id) => `/api/diseases/${id}`,
+    }
   },
   care: {
     addVaccination: '/api/care/vaccination',
