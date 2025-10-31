@@ -426,7 +426,7 @@ function ProfilePage() {
             >
               Use my location
             </button>
-            {latitude && longitude && (
+            {typeof latitude === "number" && typeof longitude === "number" && (
               <span className="text-xs text-gray-500">
                 Lat: {latitude.toFixed(5)}, Lng: {longitude.toFixed(5)}
               </span>
