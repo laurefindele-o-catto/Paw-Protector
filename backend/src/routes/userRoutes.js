@@ -133,6 +133,14 @@ userRouter.post('/avatar/:userId',
     userController.uploadAvatar
 );
 
+/**
+ * Locations (self)
+ */
+userRouter.get('/locations', authenticateToken.authenticateToken, userController.getMyLocations);
+userRouter.post('/locations', authenticateToken.authenticateToken, userController.createLocation);
+userRouter.patch('/locations/:id', authenticateToken.authenticateToken, userController.updateLocation);
+userRouter.delete('/locations/:id', authenticateToken.authenticateToken, userController.deleteLocation);
+
 module.exports = {
     userRouter
 };

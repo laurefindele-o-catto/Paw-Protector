@@ -17,6 +17,12 @@ const apiConfig = {
     updateProfile: (userId) => `/api/user/update-profile/${userId}`,
     updateSubscription: (userId) => `/api/user/subscription/${userId}`,
     uploadAvatar: (userId) => `/api/user/avatar/${userId}`,
+    locations: {
+      listMine: '/api/user/locations',
+      create: '/api/user/locations',
+      update: (id) => `/api/user/locations/${id}`,
+      remove: (id) => `/api/user/locations/${id}`,
+    }
   },
   tables: {
     init: '/api/init-tables',
