@@ -9,13 +9,13 @@ class PetModel {
         try {
             const {
                 owner_id, name, species, breed, sex,
-                birthdate, weight_kg, avatar_url, is_neutered, notes
+                birthdate, weight_kg, avatar_url, is_neutered, notes,
             } = petData;
 
             const query = `
                 INSERT INTO pets (
                     owner_id, name, species, breed, sex, birthdate,
-                    weight_kg, avatar_url, is_neutered, notes
+                    weight_kg, avatar_url, is_neutered, notes,
                 ) VALUES (
                     $1, $2, $3, $4, $5, $6,
                     $7, $8, $9, $10
@@ -24,7 +24,8 @@ class PetModel {
             `;
             const params = [
                 owner_id, name, species, breed, sex,
-                birthdate, weight_kg, avatar_url, !!is_neutered, notes
+                birthdate, weight_kg, avatar_url, !!is_neutered, notes,
+                last_rabies_vac, last_flu_vac, last_deworm
             ];
             const result = await this.db_connection.query_executor(query, params);
             return result.rows[0];
