@@ -564,6 +564,36 @@ class TableCreation {
             throw error;
         }
     }
+
+    create_pet_diseases_table = async () => {
+        try {
+            const query = `
+                CREATE TABLE IF NOT EXISTS pet_diseases (
+                    id SERIAL PRIMARY KEY,
+                    pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+                    disease_name VARCHAR(150) NOT NULL,
+                    symptoms TEXT,
+                    severity VARCHAR(20) CHECK (severity IN ('mild','moderate','severe')) DEFAULT 'mild',
+                    status VARCHAR(20) CHECK (status IN ('active','resolved')) DEFAULT 'active',
+                    diagnosed_on DATE,
+                    resolved_on DATE,
+                    vet_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    clinic_id INTEGER REFERENCES vet_clinics(id) ON DELETE SET NULL,
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_pet_diseases_pet_id ON pet_diseases(pet_id);
+                CREATE INDEX IF NOT EXISTS idx_pet_diseases_status ON pet_diseases(status);
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Pet Diseases table created successfully");
+            return { success: true };
+        } catch (error) {
+            console.log(`Error creating pet_diseases table: ${error.message}`);
+            throw error;
+        }
+    }
 }
 
 module.exports = TableCreation;
