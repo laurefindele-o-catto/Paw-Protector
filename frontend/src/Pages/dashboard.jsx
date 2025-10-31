@@ -7,22 +7,36 @@ import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
 const placeholder = "/placeholder.png";
+
+
+
 function Dashboard() {
     
     const navigate = useNavigate();
-    const {isAuthenticated} = useAuth();
+    const {isAuthenticated, logout} = useAuth();
     const { t, loading, error } = useAutoTranslate();
 
     const [user, setUser] = useState(null)
 
     useEffect(()=>{
         if(!isAuthenticated){
-            navigate('/');
+            navigate('/login');
         }
 
         const user_local = JSON.parse(localStorage.getItem('user'));
         setUser(user_local);
     }, [isAuthenticated, navigate]);
+
+    const handleLogout = async(e)=>{
+        try {
+            // e.preventDefault();
+
+            await logout();
+        } catch (error) {
+            console.error(error);
+            
+        }
+    }
 
     console.log(user);
     
@@ -31,6 +45,9 @@ function Dashboard() {
             {/* Top Bar */}
             <header className="flex justify-between items-center p-4">
                 <div className="text-2xl font-bold text-indigo-600">{t("🐾 PawPal")}</div>
+                <button onClick={()=>handleLogout()}>
+                    Logout
+                </button>
                 <Link to="/profile" aria-label={t("Profile")}>
                     <ProfilePictureCard
                         avatarUrl={user?.avatar_url ? user.avatar_url : placeholder}

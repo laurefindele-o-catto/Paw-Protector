@@ -15,16 +15,15 @@ class CareController {
                 return res.status(400).json({ success: false, error: 'pet_id, vaccine_name, and administered_on required' });
             }
 
-            // find last dose_number
             const last = await db.query_executor(
                 'SELECT dose_number FROM vaccinations WHERE pet_id=$1 AND vaccine_name=$2 ORDER BY dose_number DESC LIMIT 1',
                 [pet_id, vaccine_name]
             );
             const nextDose = last.rows.length ? last.rows[0].dose_number + 1 : 1;
 
-            // calc due date (+1 year for Rabies/Flu)
             const date = new Date(administered_on);
-            if (['Rabies', 'Flu'].includes(vaccine_name)) {
+            const vn = String(vaccine_name).toLowerCase();
+            if (['rabies', 'flu'].includes(vn)) {
                 date.setFullYear(date.getFullYear() + 1);
             }
             const due_on = date.toISOString().split('T')[0];

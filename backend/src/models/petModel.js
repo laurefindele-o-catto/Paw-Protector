@@ -5,6 +5,7 @@ class PetModel {
         this.db_connection = new DB_Connection();
     }
 
+    // Creates a pet
     createPet = async (petData) => {
         try {
             const {
@@ -35,6 +36,37 @@ class PetModel {
         }
     };
 
+    // Returns pet by id
+    getPetById = async (petId) => {
+        try {
+            const q = `SELECT * FROM pets WHERE id = $1 LIMIT 1`;
+            const r = await this.db_connection.query_executor(q, [petId]);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Get pet by id failed: ${e.message}`);
+            return null;
+        }
+    };
+
+    // Updates avatar_url
+    updatePetAvatar = async (petId, avatarUrl) => {
+        try {
+            const q = `
+                UPDATE pets
+                SET avatar_url = $1, updated_at = NOW()
+                WHERE id = $2
+                RETURNING id, owner_id, name, species, breed, sex, birthdate,
+                          weight_kg, avatar_url, is_neutered, notes, created_at, updated_at;
+            `;
+            const r = await this.db_connection.query_executor(q, [avatarUrl, petId]);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Update pet avatar failed: ${e.message}`);
+            return null;
+        }
+    };
+
+    // Lists pets by owner
     getPetsByOwner = async (owner_id) => {
         try {
             const query = `
