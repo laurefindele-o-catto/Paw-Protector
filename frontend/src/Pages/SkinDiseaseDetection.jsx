@@ -61,7 +61,7 @@ export default function SkinDiseaseDetector() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-between"
-      style={{ backgroundColor: "#F7FAFC" }}
+      style={{ backgroundColor: "#FFFDF6" }}
     >
       {/* Back to Dashboard Button */}
       <button
@@ -124,6 +124,7 @@ export default function SkinDiseaseDetector() {
           className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-white shadow-lg transition hover:border-blue-500 hover:bg-blue-50 w-80 h-44 mb-6 ${
             file ? "border-blue-600" : "border-gray-400"
           }`}
+          style={{ backgroundColor: "#FFFDF6" }}
         >
           {file ? (
             <>
