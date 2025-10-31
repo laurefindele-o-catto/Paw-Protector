@@ -1,6 +1,7 @@
 // vaccineAlert.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useAutoTranslate } from "react-autolocalise";
 
 const VaccineAlert = ({ userId }) => {
   const [pets, setPets] = useState([]);
@@ -8,6 +9,7 @@ const VaccineAlert = ({ userId }) => {
   const [vaccinations, setVaccinations] = useState([]);
   const [dewormings, setDewormings] = useState([]);
   const [dewormProduct, setDewormProduct] = useState("");
+  const { t } = useAutoTranslate();
 
   // Fetch user's pets
   useEffect(() => {
@@ -117,24 +119,25 @@ const VaccineAlert = ({ userId }) => {
             PP
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Vaccine & Deworming Alerts
+            {t("Vaccine & Deworming Alerts")}
           </h1>
         </div>
         <p className="text-slate-600">
-          Keep your pet’s health on track.{" "}
+          {t("Keep your pet’s health on track.")}{" "}
           <span className="underline decoration-4 decoration-[#fdd14280]">
-            Select a pet
+            {t("Select a pet")}
           </span>{" "}
-          to see due dates and update doses.
+          {t("to see due dates and update doses.")}
         </p>
       </div>
 
       {/* Pet Selector */}
       <div className="mb-8 max-w-5xl mx-auto bg-white/85 backdrop-blur border border-white rounded-3xl shadow p-6 animate-[slideup_0.6s_ease-out]">
         <label className="block text-sm font-medium text-slate-800 mb-2">
-          Select Your Pet
+          {t("Select Your Pet")}
         </label>
         <select
+          aria-label={t("Select Your Pet")}
           value={selectedPet || ""}
           onChange={(e) => setSelectedPet(Number(e.target.value))}
           className="w-full md:w-1/3 px-4 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
@@ -153,26 +156,32 @@ const VaccineAlert = ({ userId }) => {
         {/* Rabies */}
         <div className="relative bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 flex flex-col h-fit animate-[slideup_0.6s_ease-out]">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">
-            Rabies
+            {t("Rabies")}
           </h2>
           <div className="flex-1 text-sm text-slate-700 space-y-1">
             {getVaccineInfo("Rabies") ? (
               <>
-                <p>● Last dose on {getVaccineInfo("Rabies").administered_on}</p>
-                <p>● Upcoming dose - {getVaccineInfo("Rabies").due_on || "Not set"}</p>
+                <p>
+                  ● {t("Last dose on")} {getVaccineInfo("Rabies").administered_on}
+                </p>
+                <p>
+                  ● {t("Upcoming dose")} - {getVaccineInfo("Rabies").due_on || t("Not set")}
+                </p>
               </>
             ) : (
               <p>
-                No vaccination record found. Rabies vaccine must be administered at
-                3 months of age and reboosted yearly.
+                {t(
+                  "No vaccination record found. Rabies vaccine must be administered at 3 months of age and reboosted yearly."
+                )}
               </p>
             )}
           </div>
           <button
             onClick={() => handleUpdateDose("vaccination", "Rabies")}
+            aria-label={t("Update Last Dose for Rabies")}
             className="mt-4 px-5 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px]"
           >
-            Update Last Dose
+            {t("Update Last Dose")}
           </button>
 
           {/* tiny floating accent */}
@@ -182,26 +191,32 @@ const VaccineAlert = ({ userId }) => {
         {/* Flu */}
         <div className="relative bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 flex flex-col h-fit animate-[slideup_0.6s_ease-out]">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">
-            Flu
+            {t("Flu")}
           </h2>
           <div className="flex-1 text-sm text-slate-700 space-y-1">
             {getVaccineInfo("Flu") ? (
               <>
-                <p>● Last dose on {getVaccineInfo("Flu").administered_on}</p>
-                <p>● Upcoming dose - {getVaccineInfo("Flu").due_on || "Not set"}</p>
+                <p>
+                  ● {t("Last dose on")} {getVaccineInfo("Flu").administered_on}
+                </p>
+                <p>
+                  ● {t("Upcoming dose")} - {getVaccineInfo("Flu").due_on || t("Not set")}
+                </p>
               </>
             ) : (
               <p>
-                No vaccination record found. Flu vaccine should be given at 2 months
-                of age and reboosted yearly.
+                {t(
+                  "No vaccination record found. Flu vaccine should be given at 2 months of age and reboosted yearly."
+                )}
               </p>
             )}
           </div>
           <button
             onClick={() => handleUpdateDose("vaccination", "Flu")}
+            aria-label={t("Update Last Dose for Flu")}
             className="mt-4 px-5 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px]"
           >
-            Update Last Dose
+            {t("Update Last Dose")}
           </button>
 
           {/* tiny floating accent */}
@@ -211,40 +226,47 @@ const VaccineAlert = ({ userId }) => {
         {/* Deworming */}
         <div className="relative bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 flex flex-col sm:col-span-2 h-fit animate-[slideup_0.6s_ease-out]">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">
-            Deworming
+            {t("Deworming")}
           </h2>
           <div className="flex-1 text-sm text-slate-700 space-y-1">
             {getDewormingInfo() ? (
               <>
-                <p>● Last dose on {getDewormingInfo().administered_on}</p>
-                <p>● Upcoming dose - {getDewormingInfo().due_on || "Not set"}</p>
+                <p>
+                  ● {t("Last dose on")} {getDewormingInfo().administered_on}
+                </p>
+                <p>
+                  ● {t("Upcoming dose")} - {getDewormingInfo().due_on || t("Not set")}
+                </p>
               </>
             ) : (
-              <p>No deworming record found. Please provide details.</p>
+              <p>{t("No deworming record found. Please provide details.")}</p>
             )}
           </div>
 
           {/* Product selector */}
-          <label className="mt-4 text-sm text-slate-700">Select Product</label>
+          <label className="mt-4 text-sm text-slate-700">{t("Select Product")}</label>
           <select
+            aria-label={t("Select Deworming Product")}
             value={dewormProduct}
             onChange={(e) => setDewormProduct(e.target.value)}
             className="w-full md:w-1/2 px-4 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition mt-1"
           >
-            <option value="">-- Choose a product --</option>
-            <option value="Albendazole">Albendazole</option>
-            <option value="Fenbendazole">Fenbendazole</option>
-            <option value="Helminticide-L">Helminticide-L</option>
-            <option value="Drontal">Drontal</option>
-            <option value="Other">Other</option>
+            <option value="">{t("-- Choose a product --")}</option>
+            {/* Keep values stable for backend; labels are translated */}
+            <option value="Albendazole">{t("Albendazole")}</option>
+            <option value="Fenbendazole">{t("Fenbendazole")}</option>
+            <option value="Helminticide-L">{t("Helminticide-L")}</option>
+            <option value="Drontal">{t("Drontal")}</option>
+            <option value="Other">{t("Other")}</option>
           </select>
 
           <button
             onClick={() => handleUpdateDose("deworming", dewormProduct)}
             disabled={!dewormProduct}
+            aria-label={t("Update Last Deworming Dose")}
             className="mt-4 px-5 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px] disabled:opacity-50"
           >
-            Update Last Dose
+            {t("Update Last Dose")}
           </button>
 
           {/* tiny floating accent */}
@@ -255,13 +277,13 @@ const VaccineAlert = ({ userId }) => {
       {/* Footer */}
       <div className="mt-12 bg-white/85 backdrop-blur border border-white rounded-3xl shadow p-6 max-w-3xl mx-auto">
         <h3 className="text-lg font-semibold text-slate-900 mb-3">
-          Other Recommended Vaccines
+          {t("Other Recommended Vaccines")}
         </h3>
         <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
-          <li>Feline Panleukopenia (Distemper) – yearly booster</li>
-          <li>Feline Calicivirus – yearly booster</li>
-          <li>Feline Herpesvirus – yearly booster</li>
-          <li>Optional: Feline Leukemia (FeLV) – for outdoor cats</li>
+          <li>{t("Feline Panleukopenia (Distemper) – yearly booster")}</li>
+          <li>{t("Feline Calicivirus – yearly booster")}</li>
+          <li>{t("Feline Herpesvirus – yearly booster")}</li>
+          <li>{t("Optional: Feline Leukemia (FeLV) – for outdoor cats")}</li>
         </ul>
       </div>
 
