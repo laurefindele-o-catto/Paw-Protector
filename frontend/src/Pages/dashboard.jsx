@@ -180,7 +180,7 @@ export default Dashboard;
 //         "breed": "Local",
 //         "sex": "male",
 //         "birthdate": "2023-01-10",
-//         "weight_kg": 3.8,
+//         "weight_kg": 3.8,g
 //         "avatar_url": null,
 //         "is_neutered": false,
 //         "notes": "Shy"
