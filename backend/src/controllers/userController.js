@@ -470,7 +470,8 @@ class UserController {
                     email: user.email,
                     full_name: user.full_name,
                     is_active: user.is_active,
-                    subscription_type: user.subscription_type
+                    subscription_type: user.subscription_type,
+                    phone_number: user.phone_number // include phone
                 }
             });
         } catch (error) {
@@ -740,6 +741,60 @@ class UserController {
         } catch (error) {
             console.error('Avatar upload error:', error);
             return res.status(500).json({ success:false, error:'Internal server error' });
+        }
+    }
+
+    // Locations
+    getMyLocations = async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const rows = await this.userModel.getLocationsByUser(userId);
+            return res.status(200).json({ success: true, locations: rows });
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    }
+
+    createLocation = async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const created = await this.userModel.createLocation(userId, req.body || {});
+            if (!created || created.success === false) {
+                return res.status(400).json({ success: false, error: 'Failed to create location' });
+            }
+            return res.status(201).json({ success: true, location: created });
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    }
+
+    updateLocation = async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const { id } = req.params;
+            if (!id) return res.status(400).json({ success: false, error: 'location id required' });
+            const updated = await this.userModel.updateLocation(id, userId, req.body || {});
+            if (!updated || updated.success === false) {
+                return res.status(400).json({ success: false, error: 'Failed to update location' });
+            }
+            return res.status(200).json({ success: true, location: updated });
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    }
+
+    deleteLocation = async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const { id } = req.params;
+            if (!id) return res.status(400).json({ success: false, error: 'location id required' });
+            const deleted = await this.userModel.deleteLocation(id, userId);
+            if (!deleted || deleted.success === false) {
+                return res.status(400).json({ success: false, error: 'Failed to delete location' });
+            }
+            return res.status(200).json({ success: true, id: deleted.id });
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Internal server error' });
         }
     }
 }

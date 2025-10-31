@@ -11,6 +11,7 @@ class CreateTables {
             await this.tables.create_users_table();
             await this.tables.create_roles_table();
             await this.tables.create_user_roles_table();
+            await this.tables.create_user_location_table(); 
 
             // Clinics first (FK for many tables)
             await this.tables.create_vet_clinics_table();
