@@ -5,18 +5,21 @@ import FeaturesSection from "../Components/FeaturesSection";
 import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
 import apiConfig from "../config/apiConfig";
+import { useAutoTranslate } from "react-autolocalise";
 
 function Dashboard() {
     const navigate = useNavigate();
     const {isAuthenticated} = useAuth();
+    const { t, loading, error } = useAutoTranslate();
+
     useEffect(()=>{
         if(!isAuthenticated){
             navigate('/');
         }
-    }, []);
+    }, [isAuthenticated, navigate]);
 
     const token = localStorage.getItem('token');
-    console.log("accesstoken: " + localStorage.getItem('token'));
+    console.log(t("Access token:"), localStorage.getItem('token'));
 
     const demo = async()=>{
         try {
@@ -52,8 +55,8 @@ function Dashboard() {
         <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800" style={{ backgroundColor: "#FAF6E9" }}>
             {/* Top Bar */}
             <header className="flex justify-between items-center p-4">
-                <div className="text-2xl font-bold text-indigo-600">🐾 PawPal</div>
-                <Link to="/profile">
+                <div className="text-2xl font-bold text-indigo-600">{t("🐾 PawPal")}</div>
+                <Link to="/profile" aria-label={t("Profile")}>
                     <ProfilePictureCard />
                 </Link>
             </header>
@@ -61,16 +64,16 @@ function Dashboard() {
             {/* Random Cat Fact */}
             <section className="p-6 text-center mt-4">
                 <h2 className="text-lg italic text-gray-600">
-                    {/* Replace with API call */}
-                    "Cats sleep for 70% of their lives."
+                    {t("Cats sleep for 70% of their lives.")}
                 </h2>
+                <p>{t("This text will be automatically translated")}</p>
             </section>
 
             {/* Scrollable Row */}
             <FeaturesSection />
 
-            <button onClick={()=>demo()}>
-                Demo Method
+            <button onClick={()=>demo()} className="mt-4 self-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition">
+                {t("Demo Method")}
             </button>
 
             {/* Bottom Bar */}
@@ -84,7 +87,7 @@ function Dashboard() {
                     <div className="flex justify-center w-full">
                         <img
                             src="/giphy/cat playing a recorder.gif" // put your gif in public/ folder
-                            alt="Cat"
+                            alt={t("Cat playing a recorder")}
                             className="h-16 w-auto"
                         />
                     </div>
@@ -92,16 +95,19 @@ function Dashboard() {
                     {/* Info button */}
                     <a
                         href="/about"
-                        className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg hover:from-blue-600 hover:to-indigo-600 transition transform hover:scale-110"
-                        title="About"
+                        className="bg-linear-to-r from-blue-500 to-indigo-500 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg hover:from-blue-600 hover:to-indigo-600 transition transform hover:scale-110"
+                        title={t("About")}
                     >
-                        i
+                        {t("i")}
                     </a>
                 </div>
 
                 {/* Bottom text */}
                 <p className="mt-3 text-sm text-gray-500">
-                    Leave a review at <a href="pawmeowmanool@gmail.com" className="text-indigo-600 underline">pawmeowmanool@gmail.com</a>
+                    {t("Leave a review at")}{" "}
+                    <a href="pawmeowmanool@gmail.com" className="text-indigo-600 underline">
+                        pawmeowmanool@gmail.com
+                    </a>
                 </p>
             </footer>
 
@@ -109,10 +115,11 @@ function Dashboard() {
             <a
                 href="tel:+8801888548012"
                 className="fixed bottom-12 left-12 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition pulse-glow text-center"
+                aria-label={t("Call emergency contact")}
             >
-                <img src="/icons/call-icon.png" alt="Call" className="w-6 h-6 mb-1" />
+                <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />
                 <span className="text-[10px] font-semibold text-white leading-none">
-                    Emergency
+                    {t("Emergency")}
                 </span>
             </a>
 
