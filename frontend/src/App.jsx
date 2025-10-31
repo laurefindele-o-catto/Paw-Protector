@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Home from "./Pages/Home";
 import About from "./Pages/About";
-import Dashboard from "./Pages/dashboard";
+import Dashboard from "./pages/dashboard";
 import DiseaseDetection from "./pages/diseaseDetection";
 import VetFinder from "./Pages/VetFinder";
 import VaccineAlert from "./Pages/VaccineAlert";
@@ -14,31 +14,37 @@ import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./Pages/LoginPage";
 import SignupPage from "./Pages/SignUp";
 import SkinDiseaseDetector from "./Pages/SkinDiseaseDetection";
-
+import { TranslationProvider } from "react-autolocalise";
 
 
 
 function App() {
+  const config = {
+    apiKey: "at_client_6sJVCGCBLTia",
+    sourceLocale: "en", // Your app's original language
+    targetLocale: "bn", // Language to translate to
+  }
   return (
-      
     <>
-      <AuthProvider>
-        <Routes>
-          {/* <Route path="/" element={<Home />} /> */}
-          <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
-          <Route path="/about" element={<About />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/disease-detection" element={<DiseaseDetection />} />
-          <Route path="/find-a-vet" element={<VetFinder />} />
-          <Route path="/vaccination-alerts" element={<VaccineAlert />} />
-          <Route path="/petcare" element={<PetCare />} />
-          <Route path="/paw-pal" element={<PawPal />} />
-          <Route path="/profile" element={< ProfilePage/>} />
-          <Route path="/addPet" element={< AddPetPage/>} />
-          <Route path="/" element = {<LoginPage/>}/>
-          <Route path="/signup" element={<SignupPage/>}/>
-        </Routes>
-      </AuthProvider>
+      <TranslationProvider config={config}>
+        <AuthProvider>
+          <Routes>
+            {/* <Route path="/" element={<Home />} /> */}
+            <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
+            <Route path="/about" element={<About />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/disease-detection" element={<DiseaseDetection />} />
+            <Route path="/find-a-vet" element={<VetFinder />} />
+            <Route path="/vaccination-alerts" element={<VaccineAlert />} />
+            <Route path="/petcare" element={<PetCare />} />
+            <Route path="/paw-pal" element={<PawPal />} />
+            <Route path="/profile" element={< ProfilePage/>} />
+            <Route path="/addPet" element={< AddPetPage/>} />
+            <Route path="/" element = {<LoginPage/>}/>
+            <Route path="/signup" element={<SignupPage/>}/>
+          </Routes>
+        </AuthProvider>
+      </TranslationProvider>
     </>
   );
 }
