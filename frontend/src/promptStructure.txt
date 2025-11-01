@@ -20,3 +20,36 @@ Extra Instructions:
 - Avoid alarming language; explain medical terms simply.  
 - Always remind the user this is not a substitute for professional veterinary care.  
 - Encourage consulting a licensed vet for confirmation and treatment.
+
+
+
+<footer className="mx-auto max-w-6xl w-full px-4 mt-8 mb-20">
+        {/* Top row: cat gif + about */}
+        <div className="flex items-center justify-between gap-4 bg-white/80 backdrop-blur-md border border-white rounded-2xl shadow p-4">
+          {/* Cat gif center on small screens */}
+          <div className="flex justify-center w-full">
+            <img
+              src="/giphy/cat playing a recorder.gif" // put your gif in public/ folder
+              alt={t("Cat playing a recorder")}
+              className="h-16 w-auto"
+            />
+          </div>
+
+          {/* Info button */}
+          <a
+            href="/about"
+            className="bg-[#0f172a] text-[#edfdfd] w-10 h-10 flex items-center justify-center rounded-full shadow-lg hover:bg-slate-900 transition transform hover:scale-110"
+            title={t("About")}
+          >
+            {t("i")}
+          </a>
+        </div>
+
+        {/* Bottom text */}
+        <p className="mt-3 text-sm text-slate-600 text-center">
+          {t("Leave a review at")}{" "}
+          <a href="pawmeowmanool@gmail.com" className="text-slate-900 underline decoration-[#fdd142] decoration-2 underline-offset-2">
+            pawmeowmanool@gmail.com
+          </a>
+        </p>
+      </footer>

@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
+import Footer from "../Components/Footer";
 const placeholder = "/placeholder.png";
 
 
@@ -123,39 +124,11 @@ function Dashboard() {
       </section>
 
       {/* Bottom Bar */}
-      <footer className="mx-auto max-w-6xl w-full px-4 mt-8 mb-20">
-        {/* Top row: cat gif + about */}
-        <div className="flex items-center justify-between gap-4 bg-white/80 backdrop-blur-md border border-white rounded-2xl shadow p-4">
-          {/* Cat gif center on small screens */}
-          <div className="flex justify-center w-full">
-            <img
-              src="/giphy/cat playing a recorder.gif" // put your gif in public/ folder
-              alt={t("Cat playing a recorder")}
-              className="h-16 w-auto"
-            />
-          </div>
-
-          {/* Info button */}
-          <a
-            href="/about"
-            className="bg-[#0f172a] text-[#edfdfd] w-10 h-10 flex items-center justify-center rounded-full shadow-lg hover:bg-slate-900 transition transform hover:scale-110"
-            title={t("About")}
-          >
-            {t("i")}
-          </a>
-        </div>
-
-        {/* Bottom text */}
-        <p className="mt-3 text-sm text-slate-600 text-center">
-          {t("Leave a review at")}{" "}
-          <a href="pawmeowmanool@gmail.com" className="text-slate-900 underline decoration-[#fdd142] decoration-2 underline-offset-2">
-            pawmeowmanool@gmail.com
-          </a>
-        </p>
-      </footer>
+      <br></br><br></br><br></br><br></br>
+        <Footer/>
 
       {/* Floating Call Button */}
-      <a
+      {/* <a
         href="tel:+8801888548012"
         className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
         aria-label={t("Call emergency contact")}
@@ -164,7 +137,7 @@ function Dashboard() {
         <span className="text-[10px] font-semibold text-white leading-none">
           {t("Emergency")}
         </span>
-      </a>
+      </a> */}
 
       {/* keyframes (mirrors LandingPage) */}
       <style>{`

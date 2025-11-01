@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginPage from "./LoginPage";
 import { useAutoTranslate } from 'react-autolocalise'
+import Footer from "../Components/Footer";
 
 const diseaseCards = [
   {
@@ -235,6 +236,7 @@ const LandingPage = () => {
           © {new Date().getFullYear()} PawProtector. {t('Protect every paw')} 🐾
         </p>
       </section>
+        <Footer/>
 
       {/* keyframes */}
       <style>{`
