@@ -1,7 +1,9 @@
-// vaccineAlert.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useAutoTranslate } from "react-autolocalise";
+import apiConfig from "../config/apiConfig";
+import { Loader } from "../Components/Loader";
+import { useLoader } from "../hooks/useLoader";
+
 import { useNavigate } from "react-router-dom";
 
 const VaccineAlert = ({ userId }) => {
@@ -11,89 +13,166 @@ const VaccineAlert = ({ userId }) => {
   const [dewormings, setDewormings] = useState([]);
   const [dewormProduct, setDewormProduct] = useState("");
   const { t } = useAutoTranslate();
+  const [rabiesDate, setRabiesDate] = useState("");
+  const [fluDate, setFluDate] = useState("");
+  const [dewormingDate, setDewormingDate] = useState("");
 
-  // Fetch user's pets
+  // Fetch user's pets when userId changes
   useEffect(() => {
     const fetchPets = async () => {
+      const token = localStorage.getItem("token");
       try {
-        const res = await axios.get(`/api/pets/owner/${userId}`);
-        setPets(res.data.pets || []);
-        if (res.data.pets && res.data.pets.length > 0) {
-          setSelectedPet(res.data.pets[0].id);
+        const res = await fetch(`${apiConfig.baseURL}/api/pets`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await res.json();
+        console.log("Pets response:", data);
+        setPets(data.pets || []);
+        if (data.pets?.length > 0) {
+          setSelectedPet(data.pets[0].id);
+        } else {
+          setSelectedPet(null);
         }
       } catch (err) {
         console.error("Failed to fetch pets", err);
         setPets([]);
+        setSelectedPet(null);
       }
     };
     fetchPets();
-  }, [userId]);
+  }, []);
+
 
   // Fetch vaccinations + dewormings for selected pet
   useEffect(() => {
-    if (!selectedPet) return;
-    const fetchData = async () => {
+    const fetchCareForPet = async () => {
+      if (!selectedPet) {
+        setVaccinations([]);
+        setDewormings([]);
+        return;
+      }
       try {
-        const vacRes = await axios.get(`/api/care/vaccinations/${selectedPet}`);
-        setVaccinations(vacRes.data);
+        const token = localStorage.getItem("token");
 
-        const dewRes = await axios.get(`/api/care/dewormings/${selectedPet}`);
-        setDewormings(dewRes.data);
+        const vacRes = await fetch(
+          `${apiConfig.baseURL}/api/care/vaccinations/${selectedPet}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const vacData = await vacRes.json();
+        setVaccinations(vacData.vaccinations || vacData || []);
+
+        const dewRes = await fetch(
+          `${apiConfig.baseURL}/api/care/dewormings/${selectedPet}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const dewData = await dewRes.json();
+        setDewormings(dewData.dewormings || dewData || []);
       } catch (err) {
         console.error("Failed to fetch care data", err);
+        setVaccinations([]);
+        setDewormings([]);
       }
     };
-    fetchData();
+
+    fetchCareForPet();
   }, [selectedPet]);
 
   // Update last dosage
-  const handleUpdateDose = async (type, name) => {
+  const handleUpdateDose = async (type, name, date) => {
+    if (!selectedPet) {
+      alert(t("Please select a pet first."));
+      return;
+    }
+    if (!name) {
+      alert(t("Please choose a product/name before updating."));
+      return;
+    }
+    if (!date) {
+      alert(t("Please select a date."));
+      return;
+    }
+
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const token = localStorage.getItem("token");
 
       if (type === "vaccination") {
-        await axios.post("/api/care/vaccination", {
-          pet_id: selectedPet,
-          vaccine_name: name,
-          administered_on: today,
-          notes: "Updated via app",
+        await fetch(`${apiConfig.baseURL}/api/care/vaccinations`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            pet_id: selectedPet,
+            vaccine_name: name,
+            administered_on: date,
+            notes: "Updated via app",
+          }),
         });
+
+        // refresh
+        const vacRes = await fetch(
+          `${apiConfig.baseURL}/api/care/vaccinations/${selectedPet}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const vacData = await vacRes.json();
+        setVaccinations(vacData.vaccinations || vacData || []);
       } else if (type === "deworming") {
-        await axios.post("/api/care/deworming", {
-          pet_id: selectedPet,
-          product_name: name,
-          administered_on: today,
-          weight_based_dose: null,
-          notes: "Updated via app",
+        await fetch(`${apiConfig.baseURL}/api/care/dewormings`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            pet_id: selectedPet,
+            product_name: name,
+            administered_on: date,
+            weight_based_dose: null,
+            notes: "Updated via app",
+          }),
         });
-      }
 
-      // refresh data
-      if (type === "vaccination") {
-        const vacRes = await axios.get(`/api/care/vaccinations/${selectedPet}`);
-        setVaccinations(vacRes.data);
-      } else {
-        const dewRes = await axios.get(`/api/care/dewormings/${selectedPet}`);
-        setDewormings(dewRes.data);
+        // refresh
+        const dewRes = await fetch(
+          `${apiConfig.baseURL}/api/care/dewormings/${selectedPet}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const dewData = await dewRes.json();
+        setDewormings(dewData.dewormings || dewData || []);
       }
     } catch (err) {
       console.error("Failed to update dose", err);
+      alert(t("Failed to update. Please try again."));
     }
   };
 
   // Helpers
   const getVaccineInfo = (name) => {
+    if (!Array.isArray(vaccinations)) return null;
     const record = vaccinations
-      .filter((v) => v.vaccine_name.toLowerCase() === name.toLowerCase())
-      .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on))[0];
+      .filter(
+        (v) =>
+          (v?.vaccine_name || "").toLowerCase() === (name || "").toLowerCase()
+      )
+      .sort(
+        (a, b) =>
+          new Date(b?.administered_on || 0) - new Date(a?.administered_on || 0)
+      )[0];
     return record || null;
   };
 
   const getDewormingInfo = () => {
-    if (!dewormings.length) return null;
-    return dewormings.sort(
-      (a, b) => new Date(b.administered_on) - new Date(a.administered_on)
-    )[0];
+    if (!Array.isArray(dewormings) || dewormings.length === 0) return null;
+    return dewormings
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b?.administered_on || 0) - new Date(a?.administered_on || 0)
+      )[0];
   };
   const navigate = useNavigate();
   return (
@@ -176,26 +255,49 @@ const VaccineAlert = ({ userId }) => {
           <h2 className="text-lg font-semibold text-slate-900 mb-3">
             {t("Rabies")}
           </h2>
-          <div className="flex-1 text-sm text-slate-700 space-y-1">
-            {getVaccineInfo("Rabies") ? (
+          <div className="flex-1 text-sm text-slate-700 space-y-2">
+            {vaccinations.filter(v => v.vaccine_name.toLowerCase() === "rabies").length > 0 ? (
               <>
-                <p>
-                  ● {t("Last dose on")} {getVaccineInfo("Rabies").administered_on}
-                </p>
-                <p>
-                  ● {t("Upcoming dose")} - {getVaccineInfo("Rabies").due_on || t("Not set")}
-                </p>
+                {/* Highlight latest */}
+                {(() => {
+                  const rabiesSorted = vaccinations
+                    .filter(v => v.vaccine_name.toLowerCase() === "rabies")
+                    .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on));
+                  const latest = rabiesSorted[0];
+                  return (
+                    <div className="mb-2">
+                      <p>● {t("Last dose on")} {latest.administered_on}</p>
+                      <p>● {t("Upcoming dose")} - {latest.due_on || t("Not set")}</p>
+                    </div>
+                  );
+                })()}
+                {/* Full history */}
+                <ul className="list-disc list-inside space-y-1">
+                  {vaccinations
+                    .filter(v => v.vaccine_name.toLowerCase() === "rabies")
+                    .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on))
+                    .map(v => (
+                      <li key={v.dose_number}>
+                        {t("Dose")} {v.dose_number}: {v.administered_on} → {t("due")} {v.due_on || t("Not set")} ({v.notes || t("No notes")})
+                      </li>
+                    ))}
+                </ul>
               </>
             ) : (
               <p>
-                {t(
-                  "No vaccination record found. Rabies vaccine must be administered at 3 months of age and reboosted yearly."
-                )}
+                {t("No vaccination record found. Rabies vaccine must be administered at 3 months of age and reboosted yearly.")}
               </p>
             )}
           </div>
+
+          <input
+            type="date"
+            value={rabiesDate}
+            onChange={(e) => setRabiesDate(e.target.value)}
+            className="mt-2 border rounded-md p-2"
+          />
           <button
-            onClick={() => handleUpdateDose("vaccination", "Rabies")}
+            onClick={() => handleUpdateDose("vaccination", "Rabies", rabiesDate)}
             aria-label={t("Update Last Dose for Rabies")}
             className="mt-4 px-5 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px]"
           >
@@ -211,26 +313,48 @@ const VaccineAlert = ({ userId }) => {
           <h2 className="text-lg font-semibold text-slate-900 mb-3">
             {t("Flu")}
           </h2>
-          <div className="flex-1 text-sm text-slate-700 space-y-1">
-            {getVaccineInfo("Flu") ? (
+          <div className="flex-1 text-sm text-slate-700 space-y-2">
+            {vaccinations.filter(v => v.vaccine_name.toLowerCase() === "flu").length > 0 ? (
               <>
-                <p>
-                  ● {t("Last dose on")} {getVaccineInfo("Flu").administered_on}
-                </p>
-                <p>
-                  ● {t("Upcoming dose")} - {getVaccineInfo("Flu").due_on || t("Not set")}
-                </p>
+                {(() => {
+                  const fluSorted = vaccinations
+                    .filter(v => v.vaccine_name.toLowerCase() === "flu")
+                    .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on));
+                  const latest = fluSorted[0];
+                  return (
+                    <div className="mb-2">
+                      <p>● {t("Last dose on")} {latest.administered_on}</p>
+                      <p>● {t("Upcoming dose")} - {latest.due_on || t("Not set")}</p>
+                    </div>
+                  );
+                })()}
+                <ul className="list-disc list-inside space-y-1">
+                  {vaccinations
+                    .filter(v => v.vaccine_name.toLowerCase() === "flu")
+                    .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on))
+                    .map(v => (
+                      <li key={v.dose_number}>
+                        {t("Dose")} {v.dose_number}: {v.administered_on} → {t("due")} {v.due_on || t("Not set")} ({v.notes || t("No notes")})
+                      </li>
+                    ))}
+                </ul>
               </>
             ) : (
               <p>
-                {t(
-                  "No vaccination record found. Flu vaccine should be given at 2 months of age and reboosted yearly."
-                )}
+                {t("No vaccination record found. Flu vaccine should be given at 2 months of age and reboosted yearly.")}
               </p>
             )}
           </div>
+
+          <input
+            type="date"
+            value={fluDate}
+            onChange={(e) => setFluDate(e.target.value)}
+            className="mt-2 border rounded-md p-2"
+          />
+
           <button
-            onClick={() => handleUpdateDose("vaccination", "Flu")}
+            onClick={() => handleUpdateDose("vaccination", "Flu", fluDate)}
             aria-label={t("Update Last Dose for Flu")}
             className="mt-4 px-5 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px]"
           >
@@ -246,15 +370,33 @@ const VaccineAlert = ({ userId }) => {
           <h2 className="text-lg font-semibold text-slate-900 mb-3">
             {t("Deworming")}
           </h2>
-          <div className="flex-1 text-sm text-slate-700 space-y-1">
-            {getDewormingInfo() ? (
+          <div className="flex-1 text-sm text-slate-700 space-y-2">
+            {Array.isArray(dewormings) && dewormings.length > 0 ? (
               <>
-                <p>
-                  ● {t("Last dose on")} {getDewormingInfo().administered_on}
-                </p>
-                <p>
-                  ● {t("Upcoming dose")} - {getDewormingInfo().due_on || t("Not set")}
-                </p>
+                {/* Highlight latest */}
+                {(() => {
+                  const sorted = [...dewormings].sort(
+                    (a, b) => new Date(b.administered_on) - new Date(a.administered_on)
+                  );
+                  const latest = sorted[0];
+                  return (
+                    <div className="mb-2">
+                      <p>● {t("Last dose on")} {latest.administered_on}</p>
+                      <p>● {t("Upcoming dose")} - {latest.due_on || t("Not set")}</p>
+                    </div>
+                  );
+                })()}
+
+                {/* Full history */}
+                <ul className="list-disc list-inside space-y-1">
+                  {[...dewormings]
+                    .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on))
+                    .map((d, idx) => (
+                      <li key={idx}>
+                        {d.product_name} — {d.administered_on} → {t("due")} {d.due_on || t("Not set")} ({d.notes || t("No notes")})
+                      </li>
+                    ))}
+                </ul>
               </>
             ) : (
               <p>{t("No deworming record found. Please provide details.")}</p>
@@ -270,7 +412,6 @@ const VaccineAlert = ({ userId }) => {
             className="w-full md:w-1/2 px-4 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition mt-1"
           >
             <option value="">{t("-- Choose a product --")}</option>
-            {/* Keep values stable for backend; labels are translated */}
             <option value="Albendazole">{t("Albendazole")}</option>
             <option value="Fenbendazole">{t("Fenbendazole")}</option>
             <option value="Helminticide-L">{t("Helminticide-L")}</option>
@@ -278,8 +419,15 @@ const VaccineAlert = ({ userId }) => {
             <option value="Other">{t("Other")}</option>
           </select>
 
+          <input
+            type="date"
+            value={dewormingDate}
+            onChange={(e) => setDewormingDate(e.target.value)}
+            className="mt-2 border rounded-md p-2"
+          />
+
           <button
-            onClick={() => handleUpdateDose("deworming", dewormProduct)}
+            onClick={() => handleUpdateDose("deworming", dewormProduct, dewormingDate)}
             disabled={!dewormProduct}
             aria-label={t("Update Last Deworming Dose")}
             className="mt-4 px-5 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px] disabled:opacity-50"
