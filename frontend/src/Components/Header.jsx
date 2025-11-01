@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import ProfilePictureCard from '../components/profilePictureCard';
+import ProfilePictureCard from '../Components/profilePictureCard';
 const placeholder = "/placeholder.png";
 
 function Header() {

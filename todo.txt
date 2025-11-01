@@ -9,9 +9,13 @@ importants:
 6. The pet care should be used by RAG and generate automatic daily routine based on cat's info - Pritom
 7. Make 'find a vet' page realistic - Add real vet info into database and let the code find the vet near you.
 8. Vaccination Alerts should Also use AI and database hybridly - Pritom
+9. Create a very basic vet Interface.
+10.Feature:
+    A summary will be generated for each diagnosis. Users will have the option to get the diagnostics certified by a real
+    vet for a small amount of money(50tk ish). This addresses the concern by judge in phase 1
+    
 
-
-9. replace the initial pet assigning with nothing. let the user first choose the pet, not just give first pet to the user. - Pritom
+11. replace the initial pet assigning with nothing. let the user first choose the pet, not just give first pet to the user. - Pritom
 
 optionals:
 1. Add other navigations to header.
