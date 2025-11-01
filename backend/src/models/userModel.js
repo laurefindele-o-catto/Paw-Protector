@@ -4,8 +4,7 @@ class UserModel {
     constructor(){
         this.db_connection = new DB_Connection();
     }
-
-    // TODO: Make sign up using phone numbers
+d
     createUser = async(userData)=>{
         try {
             const {username, email, passwordHash} = userData;
@@ -146,7 +145,8 @@ class UserModel {
                 throw new Error("No updates were sent from frontend");
             }
 
-            const allowed = new Set(["username", "email", "full_name", "is_active"]);
+            // ADD phone_number to allowed fields
+            const allowed = new Set(["username", "email", "full_name", "is_active", "phone_number"]);
             const sets = [];
             const values = [];
             let idx = 1;
@@ -578,6 +578,88 @@ class UserModel {
             return { success: true };
         } catch (error) {
             console.log(`Remove role failed: ${error.message}`);
+            return { success: false };
+        }
+    }
+
+    // User locations CRUD
+    getLocationsByUser = async(userId) => {
+        try {
+            const q = `
+                SELECT id, address_line, city, state, postal_code, country, latitude, longitude, place_id, created_at, updated_at
+                FROM user_locations WHERE user_id = $1 ORDER BY id ASC
+            `;
+            const r = await this.db_connection.query_executor(q, [userId]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get locations failed: ${e.message}`);
+            return [];
+        }
+    }
+
+    createLocation = async(userId, payload) => {
+        try {
+            const {
+                address_line, city, state, postal_code, country,
+                latitude, longitude, place_id
+            } = payload;
+            const q = `
+                INSERT INTO user_locations (
+                    user_id, address_line, city, state, postal_code, country, latitude, longitude, place_id, created_at, updated_at
+                ) VALUES (
+                    $1,$2,$3,$4,$5,$6,$7,$8,$9, NOW(), NOW()
+                )
+                RETURNING id, address_line, city, state, postal_code, country, latitude, longitude, place_id, created_at, updated_at
+            `;
+            const r = await this.db_connection.query_executor(q, [
+                userId, address_line || null, city || null, state || null,
+                postal_code || null, country || null, latitude || null,
+                longitude || null, place_id || null
+            ]);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Create location failed: ${e.message}`);
+            return { success: false };
+        }
+    }
+
+    updateLocation = async(locationId, userId, payload) => {
+        try {
+            const allowed = new Set(["address_line","city","state","postal_code","country","latitude","longitude","place_id"]);
+            const sets = [];
+            const values = [];
+            let idx = 1;
+
+            for (const [k,v] of Object.entries(payload || {})) {
+                if (!allowed.has(k)) continue;
+                sets.push(`${k} = $${idx++}`);
+                values.push(v);
+            }
+            if (sets.length === 0) throw new Error("No valid value was sent");
+
+            sets.push(`updated_at = NOW()`);
+            const q = `
+                UPDATE user_locations
+                SET ${sets.join(', ')}
+                WHERE id = $${idx} AND user_id = $${idx+1}
+                RETURNING id, address_line, city, state, postal_code, country, latitude, longitude, place_id, created_at, updated_at
+            `;
+            values.push(locationId, userId);
+            const r = await this.db_connection.query_executor(q, values);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Update location failed: ${e.message}`);
+            return { success: false };
+        }
+    }
+
+    deleteLocation = async(locationId, userId) => {
+        try {
+            const q = `DELETE FROM user_locations WHERE id = $1 AND user_id = $2 RETURNING id`;
+            const r = await this.db_connection.query_executor(q, [locationId, userId]);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Delete location failed: ${e.message}`);
             return { success: false };
         }
     }

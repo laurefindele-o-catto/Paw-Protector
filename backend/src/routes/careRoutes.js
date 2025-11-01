@@ -1,21 +1,21 @@
 const express = require('express');
 const CareController = require('../controllers/careController.js');
-const AuthenticateToken = require('../middlewares/authenticateToken.js'); // fixed
+const AuthenticateToken = require('../middlewares/authenticateToken.js');
 
 const router = express.Router();
 const careController = new CareController();
 const authenticateToken = new AuthenticateToken();
 
-// Vaccination
-router.post('/care/vaccination', authenticateToken.authenticateToken, careController.addVaccination);
+// Vaccinations
+router.post('/vaccinations', authenticateToken.authenticateToken, careController.addVaccination);
+router.get('/vaccinations/:petId', authenticateToken.authenticateToken, careController.getVaccinationsByPet);
 
-// Deworming
-router.post('/care/deworming', authenticateToken.authenticateToken, careController.addDeworming);
+// Dewormings
+router.post('/dewormings', authenticateToken.authenticateToken, careController.addDeworming);
+router.get('/dewormings/:petId', authenticateToken.authenticateToken, careController.getDewormingsByPet);
 
-// Reminder
-router.post('/care/reminder', authenticateToken.authenticateToken, careController.addReminder);
-
-// Notification
-router.post('/care/notification', authenticateToken.authenticateToken, careController.addNotification);
+// Reminders/Notifications
+router.post('/reminder', authenticateToken.authenticateToken, careController.addReminder);
+router.post('/notification', authenticateToken.authenticateToken, careController.addNotification);
 
 module.exports = router;

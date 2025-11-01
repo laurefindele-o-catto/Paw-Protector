@@ -3,19 +3,17 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./Pages/Home";
 import About from "./Pages/About";
 import Dashboard from "./pages/dashboard";
-import DiseaseDetection from "./pages/diseaseDetection";
 import VetFinder from "./Pages/VetFinder";
 import VaccineAlert from "./Pages/vaccineAlert";
 import PetCare from "./Pages/PetCare";
 import PawPal from "./Pages/PawPal";
-import ProfilePage from "./Pages/profilePage";
+import ProfilePage from "./pages/profilePage";
 import AddPetPage from "./Pages/AddPetPage";
 import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./Pages/LoginPage";
 import SignupPage from "./Pages/SignUp";
 import SkinDiseaseDetector from "./Pages/SkinDiseaseDetection";
 import { TranslationProvider } from "react-autolocalise";
-
 import LandingPage from "./Pages/LandingPage";
 
 
@@ -28,7 +26,7 @@ function App() {
     targetLocale: "bn", // Language to translate to
   }
   return (
-    <>
+    <>f
       <TranslationProvider config={config}>
         <AuthProvider>
           <Routes>
@@ -37,7 +35,6 @@ function App() {
             <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
             <Route path="/about" element={<About />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/disease-detection" element={<DiseaseDetection />} />
             <Route path="/find-a-vet" element={<VetFinder />} />
             <Route path="/vaccination-alerts" element={<VaccineAlert />} />
             <Route path="/petcare" element={<PetCare />} />
@@ -46,6 +43,7 @@ function App() {
             <Route path="/addPet" element={< AddPetPage/>} />
             <Route path="/login" element = {<LoginPage/>}/>
             <Route path="/signup" element={<SignupPage/>}/>
+            
           </Routes>
         </AuthProvider>
       </TranslationProvider>

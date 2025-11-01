@@ -1,5 +1,5 @@
 const apiConfig = {
-  baseURL: 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
   auth: {
     register: '/api/auth/register',
     login: '/api/auth/login',
@@ -17,6 +17,12 @@ const apiConfig = {
     updateProfile: (userId) => `/api/user/update-profile/${userId}`,
     updateSubscription: (userId) => `/api/user/subscription/${userId}`,
     uploadAvatar: (userId) => `/api/user/avatar/${userId}`,
+    locations: {
+      listMine: '/api/user/locations',
+      create: '/api/user/locations',
+      update: (id) => `/api/user/locations/${id}`,
+      remove: (id) => `/api/user/locations/${id}`,
+    }
   },
   tables: {
     init: '/api/init-tables',
@@ -24,12 +30,19 @@ const apiConfig = {
   pets: {
     create: '/api/pets',
     listMine: '/api/pets',
+    uploadAvatar: (petId) => `/api/pets/${petId}/avatar`,
+    diseases: {
+      list: (petId) => `/api/pets/${petId}/diseases`,
+      listActive: (petId) => `/api/pets/${petId}/diseases/active`,
+      create: (petId) => `/api/pets/${petId}/diseases`,
+      getOne: (id) => `/api/diseases/${id}`,
+      update: (id) => `/api/diseases/${id}`,
+      remove: (id) => `/api/diseases/${id}`,
+    }
   },
   care: {
-    addVaccination: '/api/care/vaccination',
-    addDeworming: '/api/care/deworming',
-    addReminder: '/api/care/reminder',
-    addNotification: '/api/care/notification',
+    addVaccination: '/api/care/vaccinations',
+    addDeworming: '/api/care/dewormings'
   },
   clinics: {
     createClinic: '/api/clinics',
@@ -53,6 +66,9 @@ const apiConfig = {
     listMessages: (sessionId) => `/api/chat/session/${sessionId}/messages`,
     addRagSource: '/api/chat/rag-source',
   },
+
+  googleMapsApiKey: "AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds", 
+  //Raisa(I) added this when making vetFinder.jsx, you can use this in profilePage.jsx
 }
 
 export default apiConfig

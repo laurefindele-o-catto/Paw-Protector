@@ -1,7 +1,8 @@
 import mimtens from "../assets/mimtens.jpg";
+import placeholder from "/public/placeholder.png"
 
 function PhotoCard(props) {
-    const src = props.avatarUrl || mimtens;
+    const src = props.avatarUrl || placeholder;
     return (
       <div className="flex flex-col items-center cursor-pointer">
         <img

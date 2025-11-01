@@ -29,6 +29,30 @@ const uploadAvatarBuffer = (buffer, userId) => {
     });
 };
 
+const uploadPetAvatarBuffer = (buffer, petId) => {
+    return new Promise((resolve, reject) => {
+        const folder = process.env.CLOUDINARY_PET_FOLDER || 'pets';
+        const upload = cloudinary.uploader.upload_stream(
+            {
+                folder,
+                public_id: `pet_${petId}_${Date.now()}`,
+                resource_type: 'image',
+                overwrite: true,
+                transformation: [
+                    { width: 600, height: 600, crop: 'fill', gravity: 'auto' },
+                    { quality: 'auto', fetch_format: 'auto' }
+                ]
+            },
+            (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            }
+        );
+        upload.end(buffer);
+    });
+};
+
 module.exports = {
-    uploadAvatarBuffer
+    uploadAvatarBuffer,
+    uploadPetAvatarBuffer
 }

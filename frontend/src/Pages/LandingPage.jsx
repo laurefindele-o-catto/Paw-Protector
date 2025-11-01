@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginPage from "./LoginPage";
+import { useAutoTranslate } from 'react-autolocalise'
 
 const diseaseCards = [
   {
@@ -29,6 +30,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const infoRef = useRef(null);
   const [infoVisible, setInfoVisible] = useState(false);
+  const { t } = useAutoTranslate();
 
   const goLogin = () => navigate("/login");
   const scrollDown = () => infoRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,9 +63,10 @@ const LandingPage = () => {
         </div>
         <button
           onClick={goLogin}
+          aria-label={t('Login')}
           className="hidden md:inline-flex px-5 py-2 rounded-full bg-[#0f172a] text-[#edfdfd] text-sm font-medium hover:bg-slate-900 transition"
         >
-          Login
+          {t('Login')}
         </button>
       </header>
 
@@ -83,45 +86,46 @@ const LandingPage = () => {
           <div className="space-y-6 animate-[slideup_0.6s_ease-out]">
             <span className="inline-flex items-center gap-2 bg-white/70 border border-white/80 rounded-full px-4 py-1 text-xs text-slate-700 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-              Real-time cat protection platform
+              {t('Real-time cat protection platform')}
             </span>
             <h1 className="text-4xl md:text-5xl font-bold leading-tight text-slate-900">
-              Protect every{" "}
+              {t('Protect every')}{" "}
               <span className="text-[#0f172a] underline decoration-4 decoration-[#fdd14280]">
                 paw
               </span>{" "}
-              in your area.
+              {t('in your area.')}
             </h1>
             <p className="text-slate-700 max-w-xl">
-              PawProtector helps shelters, rescuers, and pet parents log incidents, track health,
-              and alert volunteers — in one friendly dashboard.
+              {t('PawProtector helps shelters, rescuers, and pet parents log incidents, track health, and alert volunteers — in one friendly dashboard.')}
             </p>
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={goLogin}
+                aria-label={t('Login to dashboard')}
                 className="px-6 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px]"
               >
-                Login to dashboard
+                {t('Login to dashboard')}
               </button>
               <button
                 onClick={scrollDown}
+                aria-label={t('How it works')}
                 className="px-6 py-3 rounded-full bg-white text-slate-900 font-medium border border-slate-200 hover:border-slate-300 transition"
               >
-                How it works
+                {t('How it works')}
               </button>
             </div>
             <div className="flex gap-8 pt-2">
               <div className="animate-[fadein_1s_ease]">
                 <p className="text-2xl font-bold text-slate-900">1.2k+</p>
-                <p className="text-xs text-slate-500">active caretakers</p>
+                <p className="text-xs text-slate-500">{t('active caretakers')}</p>
               </div>
               <div className="animate-[fadein_1.2s_ease]">
                 <p className="text-2xl font-bold text-slate-900">24/7</p>
-                <p className="text-xs text-slate-500">monitoring ready</p>
+                <p className="text-xs text-slate-500">{t('monitoring ready')}</p>
               </div>
               <div className="animate-[fadein_1.4s_ease]">
                 <p className="text-2xl font-bold text-slate-900">60%</p>
-                <p className="text-xs text-slate-500">faster response</p>
+                <p className="text-xs text-slate-500">{t('faster response')}</p>
               </div>
             </div>
           </div>
@@ -136,14 +140,14 @@ const LandingPage = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-[#0f172a]/70">
-                    Same zone illnesses
+                    {t('Same zone illnesses')}
                   </p>
                   <p className="text-sm font-semibold text-slate-900">
-                    Recent flags in 200m radius
+                    {t('Recent flags in 200m radius')}
                   </p>
                 </div>
                 <span className="text-[10px] bg-[#fdd142] text-black px-2 py-1 rounded-full">
-                  Live
+                  {t('Live')}
                 </span>
               </div>
               {/* horizontal cards */}
@@ -156,25 +160,28 @@ const LandingPage = () => {
                     <div className="h-24 bg-slate-200 overflow-hidden">
                       <img
                         src={d.img}
-                        alt={d.name}
+                        alt={t(d.name)}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="p-3">
-                      <p className="text-sm font-semibold text-slate-900">{d.name}</p>
-                      <p className="text-[11px] text-slate-500 mb-2">Detected in {d.zone}</p>
+                      <p className="text-sm font-semibold text-slate-900">{t(d.name)}</p>
+                      <p className="text-[11px] text-slate-500 mb-2">
+                        {t('Detected in')} {t(d.zone)}
+                      </p>
                       <button
                         onClick={goLogin}
+                        aria-label={t('View log')}
                         className="text-[11px] px-3 py-1 rounded-full bg-[#0f172a] text-[#edfdfd] hover:bg-slate-900 transition"
                       >
-                        view log
+                        {t('view log')}
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
               <p className="mt-3 text-[10px] text-slate-400">
-                *replace these images with your real disease dataset
+                {t('*replace these images with your real disease dataset')}
               </p>
             </div>
           </div>
@@ -190,41 +197,42 @@ const LandingPage = () => {
           }`}
         >
           <h2 className="text-2xl font-semibold text-slate-900 mb-3">
-            What PawProtector gives you
+            {t('What PawProtector gives you')}
           </h2>
           <p className="text-slate-600 mb-6">
-            Your operational view of outdoor / stray / community cats in one place.
+            {t('Your operational view of outdoor / stray / community cats in one place.')}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-[#edfdfd] border border-slate-100 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-sm transition">
-              <p className="text-sm font-medium text-slate-900">Live alerts</p>
+              <p className="text-sm font-medium text-slate-900">{t('Live alerts')}</p>
               <p className="text-xs text-slate-500 mt-1">
-                See when a cat is injured or in unsafe location.
+                {t('See when a cat is injured or in unsafe location.')}
               </p>
             </div>
             <div className="bg-[#edfdfd] border border-slate-100 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-sm transition delay-75">
-              <p className="text-sm font-medium text-slate-900">Health notes</p>
+              <p className="text-sm font-medium text-slate-900">{t('Health notes')}</p>
               <p className="text-xs text-slate-500 mt-1">
-                Volunteers add notes, you get a clean history.
+                {t('Volunteers add notes, you get a clean history.')}
               </p>
             </div>
             <div className="bg-[#edfdfd] border border-slate-100 rounded-2xl p-4 hover:-translate-y-1 hover:shadow-sm transition delay-100">
-              <p className="text-sm font-medium text-slate-900">Rescue zones</p>
+              <p className="text-sm font-medium text-slate-900">{t('Rescue zones')}</p>
               <p className="text-xs text-slate-500 mt-1">
-                Map hot spots, feeders, and unsafe streets.
+                {t('Map hot spots, feeders, and unsafe streets.')}
               </p>
             </div>
           </div>
           <button
             onClick={goLogin}
+            aria-label={t('Login to continue')}
             className="mt-6 px-6 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] text-sm font-semibold hover:bg-slate-900 transition"
           >
-            Login to continue
+            {t('Login to continue')}
           </button>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-10">
-          © {new Date().getFullYear()} PawProtector. Protect every paw 🐾
+          © {new Date().getFullYear()} PawProtector. {t('Protect every paw')} 🐾
         </p>
       </section>
 

@@ -74,7 +74,12 @@ export const AuthProvider = ({children})=>{
     }
 
     const register = async (username, email, password, role) => {
+        
         try {
+            if(localStorage.getItem('user')){
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+            }
             const response = await fetch(`${apiConfig.baseURL}${apiConfig.auth.register}`, {
                 method: 'POST',
                 headers: {
@@ -91,12 +96,12 @@ export const AuthProvider = ({children})=>{
             const data = await response.json();
 
             if(response.ok){
-                if (data?.tokens?.accessToken) {
-                    setUser(data.user);
-                    setToken(data.tokens.accessToken);
-                    localStorage.setItem('token', data.tokens.accessToken);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                }
+                // if (data?.tokens?.accessToken) {
+                //     setUser(data.user);
+                //     setToken(data.tokens.accessToken);
+                //     localStorage.setItem('token', data.tokens.accessToken);
+                //     localStorage.setItem('user', JSON.stringify(data.user));
+                // }
                 return {
                     success: true,
                     message: data.message,
