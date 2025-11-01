@@ -1,6 +1,7 @@
 // petCare.jsx — engaging flashcard UI for cat care (with auto-translate)
 import React from "react";
 import { useAutoTranslate } from "react-autolocalise";
+import { useNavigate } from "react-router-dom";
 
 /**
  * This version focuses on *readability* and *delight*:
@@ -13,6 +14,7 @@ import { useAutoTranslate } from "react-autolocalise";
  */
 export default function PetCare() {
   const { t } = useAutoTranslate();
+  const navigate = useNavigate();
 
   const daily = [
     {
@@ -91,7 +93,7 @@ export default function PetCare() {
       {/* Background accents */}
       <div className="pointer-events-none absolute -top-28 -left-24 h-72 w-72 bg-[#fdd142]/50 rounded-full blur-3xl animate-[float_8s_ease-in-out_infinite]" />
       <div className="pointer-events-none absolute -bottom-32 right-12 h-64 w-64 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_28s_linear_infinite]" />
-
+      
       {/* Hero */}
       <section className="relative mx-auto max-w-6xl px-4 pt-10">
         <div className="bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-lg p-6 md:p-10">
@@ -130,6 +132,23 @@ export default function PetCare() {
           </div>
         </div>
       </section>
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Back to dashboard"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Dashboard
+      </button>
 
       {/* Daily flashcards */}
       <section id="daily" className="mx-auto max-w-6xl px-4 mt-8">
