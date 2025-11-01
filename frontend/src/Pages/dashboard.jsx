@@ -7,7 +7,6 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
-import useLoader from "../hooks/useLoader";
 const placeholder = "/placeholder.png";
 
 
@@ -18,7 +17,7 @@ function Dashboard() {
   const { t, loading, error } = useAutoTranslate();
 
   const [user, setUser] = useState(null);
-  const [isLoading, setLoading] = useLoader();
+ 
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Add this
 
   useEffect(() => {
@@ -32,9 +31,9 @@ function Dashboard() {
   
   const { logout } = useAuth();
   const handleLogout = async () => {
-    setIsLoggingOut(true); // Change to use local state
+   
     await logout();
-    setIsLoggingOut(false); // Change to use local state
+    
     navigate("/");
   }
 
@@ -84,7 +83,7 @@ function Dashboard() {
             {/* Button on the right */}
             <button
               onClick={handleLogout}
-              disabled={isLoggingOut} // Change here
+              // Change here
               className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center px-4 py-2 bg-red-700 text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20 disabled:opacity-60"
               aria-label="Back to profile"
             >
@@ -98,7 +97,7 @@ function Dashboard() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              {isLoggingOut ? "Logging out..." : "Logout"} // Change here
+              Logout
             </button>
           </div>
         </div>
