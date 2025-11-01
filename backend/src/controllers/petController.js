@@ -59,6 +59,40 @@ class PetController {
             return res.status(500).json({ success: false, error: 'Internal server error' });
         }
     };
+
+    // Returns a summarized snapshot for a pet
+    getPetSummary = async (req, res) => {
+        try {
+            const petId = parseInt(req.params.petId, 10);
+            if (!petId) return res.status(400).json({ success: false, error: 'petId required' });
+
+            const pet = await this.petModel.getPetById(petId);
+            if (!pet || pet.owner_id !== req.user.id) return res.status(404).json({ success: false, error: 'Pet not found' });
+
+            const metrics = await this.petModel.getLatestHealthMetrics(petId, 7);
+            const activeDiseases = await this.petModel.getActiveDiseases(petId);
+            const recentVaccines = await this.petModel.getRecentVaccinations(petId, 5);
+            const nextVaccine = await this.petModel.getNextDueVaccination(petId);
+            const recentDeworm = await this.petModel.getRecentDewormings(petId, 3);
+            const nextDeworm = await this.petModel.getNextDueDeworming(petId);
+
+            const latestWeight = metrics.find(m => m.weight_kg != null)?.weight_kg ?? null;
+            const latestTemp = metrics.find(m => m.body_temp_c != null)?.body_temp_c ?? null;
+
+            return res.status(200).json({
+                success: true,
+                summary: {
+                    pet,
+                    metrics: { latestWeightKg: latestWeight, latestTempC: latestTemp, trend: metrics },
+                    diseases: { active: activeDiseases },
+                    vaccinations: { recent: recentVaccines, nextDue: nextVaccine },
+                    dewormings: { recent: recentDeworm, nextDue: nextDeworm }
+                }
+            });
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    };
 }
 
 module.exports = PetController;

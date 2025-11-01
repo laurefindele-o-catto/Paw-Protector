@@ -79,6 +79,113 @@ class PetModel {
             return [];
         }
     };
+
+    // Returns latest health metrics rows for a pet
+    getLatestHealthMetrics = async (petId, limit = 7) => {
+        try {
+            const q = `
+                SELECT measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm
+                FROM pet_health_metrics
+                WHERE pet_id = $1
+                ORDER BY measured_at DESC
+                LIMIT $2
+            `;
+            const r = await this.db_connection.query_executor(q, [petId, limit]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get latest health metrics failed: ${e.message}`);
+            return [];
+        }
+    }
+
+    // Returns active diseases for a pet
+    getActiveDiseases = async (petId) => {
+        try {
+            const q = `
+                SELECT id, disease_name, symptoms, severity, status, diagnosed_on, notes
+                FROM pet_diseases
+                WHERE pet_id = $1 AND status = 'active'
+                ORDER BY diagnosed_on DESC NULLS LAST, id DESC
+            `;
+            const r = await this.db_connection.query_executor(q, [petId]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get active diseases failed: ${e.message}`);
+            return [];
+        }
+    }
+
+    // Returns recent vaccinations for a pet
+    getRecentVaccinations = async (petId, limit = 5) => {
+        try {
+            const q = `
+                SELECT id, vaccine_name, dose_number, administered_on, due_on, notes
+                FROM vaccinations
+                WHERE pet_id = $1
+                ORDER BY administered_on DESC NULLS LAST, id DESC
+                LIMIT $2
+            `;
+            const r = await this.db_connection.query_executor(q, [petId, limit]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get recent vaccinations failed: ${e.message}`);
+            return [];
+        }
+    }
+
+    // Returns next due vaccination for a pet
+    getNextDueVaccination = async (petId) => {
+        try {
+            const q = `
+                SELECT id, vaccine_name, dose_number, administered_on, due_on, notes
+                FROM vaccinations
+                WHERE pet_id = $1 AND due_on IS NOT NULL AND due_on >= CURRENT_DATE
+                ORDER BY due_on ASC
+                LIMIT 1
+            `;
+            const r = await this.db_connection.query_executor(q, [petId]);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Get next due vaccination failed: ${e.message}`);
+            return null;
+        }
+    }
+
+    // Returns recent dewormings for a pet
+    getRecentDewormings = async (petId, limit = 3) => {
+        try {
+            const q = `
+                SELECT id, product_name, administered_on, due_on, notes
+                FROM dewormings
+                WHERE pet_id = $1
+                ORDER BY administered_on DESC NULLS LAST, id DESC
+                LIMIT $2
+            `;
+            const r = await this.db_connection.query_executor(q, [petId, limit]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get recent dewormings failed: ${e.message}`);
+            return [];
+        }
+    }
+
+    // Returns next due deworming for a pet
+    getNextDueDeworming = async (petId) => {
+        try {
+            const q = `
+                SELECT id, product_name, administered_on, due_on, notes
+                FROM dewormings
+                WHERE pet_id = $1 AND due_on IS NOT NULL AND due_on >= CURRENT_DATE
+                ORDER BY due_on ASC
+                LIMIT 1
+            `;
+            const r = await this.db_connection.query_executor(q, [petId]);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Get next due deworming failed: ${e.message}`);
+            return null;
+        }
+    }
 }
 
 module.exports = PetModel;

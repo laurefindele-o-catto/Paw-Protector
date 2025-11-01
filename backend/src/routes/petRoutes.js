@@ -17,4 +17,7 @@ router.get('/pets', authenticateToken.authenticateToken, petController.getMyPets
 // Upload pet avatar
 router.post('/pets/:petId/avatar', authenticateToken.authenticateToken, upload.single('avatar'), petController.uploadAvatar);
 
+// Gets a summarized snapshot for a pet (health, diseases, vaccines, deworming)
+router.get('/pets/:petId/summary', authenticateToken.authenticateToken, petController.getPetSummary);
+
 module.exports = router;
