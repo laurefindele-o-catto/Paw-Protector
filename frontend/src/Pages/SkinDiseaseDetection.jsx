@@ -82,8 +82,8 @@ export default function SkinDiseaseDetector() {
       {/* Back to Dashboard Button */}
       <button
         onClick={() => navigate("/dashboard")}
-        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-[#0f172a] text-[#edfdfd] rounded-lg shadow hover:bg-slate-900 transition z-20"
-        aria-label={t("Back to dashboard")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Back to dashboard"
       >
         <svg
           className="w-5 h-5 mr-2"
@@ -95,7 +95,7 @@ export default function SkinDiseaseDetector() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        {t("Dashboard")}
+        Dashboard
       </button>
 
       {/* Header */}

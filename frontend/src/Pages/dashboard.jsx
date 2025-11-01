@@ -7,7 +7,10 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
+import useLoader from "../hooks/useLoader";
 const placeholder = "/placeholder.png";
+
+
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -15,6 +18,8 @@ function Dashboard() {
   const { t, loading, error } = useAutoTranslate();
 
   const [user, setUser] = useState(null);
+  const [isLoading, setLoading] = useLoader();
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Add this
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -24,8 +29,16 @@ function Dashboard() {
     const user_local = JSON.parse(localStorage.getItem("user"));
     setUser(user_local);
   }, [isAuthenticated, navigate]);
+  
+  const { logout } = useAuth();
+  const handleLogout = async () => {
+    setIsLoggingOut(true); // Change to use local state
+    await logout();
+    setIsLoggingOut(false); // Change to use local state
+    navigate("/");
+  }
 
-  console.log(user);
+  // console.log(user);
 
   return (
     <div
@@ -47,24 +60,46 @@ function Dashboard() {
       </div>
 
       {/* Top Bar */}
-      <header className="z-10">
+      <header className="z-10 relative">
         <div className="mx-auto max-w-6xl px-4 pt-6">
-          <div className="flex justify-between items-center bg-white/70 backdrop-blur-md border border-white rounded-2xl shadow p-3 md:p-4 animate-[slideup_0.6s_ease-out]">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs select-none">
-                PP
-              </div>
-              <div className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
-                {t("🐾 PawPal")}
-              </div>
-            </div>
-
-            <Link to="/profile" aria-label={t("Profile")} className="shrink-0">
+          <div className="flex items-center bg-white/70 backdrop-blur-md border border-white rounded-2xl shadow p-3 md:p-4 animate-[slideup_0.6s_ease-out] relative">
+            {/* Profile picture on the left */}
+            <Link to="/profile" aria-label={t("Profile")} className="shrink-0 mr-4">
               <ProfilePictureCard
                 avatarUrl={user?.avatar_url ? user.avatar_url : placeholder}
                 name={user?.username}
               />
             </Link>
+            {/* Centered logo and text */}
+            <div className="flex-1 flex flex-col items-center">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs select-none">
+                  PP
+                </div>
+                <div className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
+                  {t("🐾 PawPal")}
+                </div>
+              </div>
+            </div>
+            {/* Button on the right */}
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut} // Change here
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center px-4 py-2 bg-red-700 text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20 disabled:opacity-60"
+              aria-label="Back to profile"
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.2}
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              {isLoggingOut ? "Logging out..." : "Logout"} // Change here
+            </button>
           </div>
         </div>
       </header>
@@ -161,35 +196,3 @@ function Dashboard() {
 
 export default Dashboard;
 
-// const token = localStorage.getItem('token');
-// console.log(t("Access token:"), localStorage.getItem('token'));
-
-// const demo = async()=>{
-//   try {
-//     console.log(`${apiConfig.baseURL}${apiConfig.pets.create}`);
-    
-//     const response = await fetch(`${apiConfig.baseURL}${apiConfig.pets.create}`, {
-//       method: 'POST',
-//       headers:{
-//         'Authorization': `Bearer ${token}`,
-//         'Content-Type': 'application/json'
-//       },
-//       body: JSON.stringify({
-//         "name": "Milo2",
-//         "species": "cat",
-//         "breed": "Local",
-//         "sex": "male",
-//         "birthdate": "2023-01-10",
-//         "weight_kg": 3.8,g
-//         "avatar_url": null,
-//         "is_neutered": false,
-//         "notes": "Shy"
-//       })
-//     });
-//     const result = await response.json();
-//     console.log(result);
-    
-//   } catch (error) {
-//     console.error(error)
-//   }
-// }
