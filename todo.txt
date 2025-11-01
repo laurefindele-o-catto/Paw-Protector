@@ -10,6 +10,9 @@ importants:
 7. Make 'find a vet' page realistic - Add real vet info into database and let the code find the vet near you.
 8. Vaccination Alerts should Also use AI and database hybridly - Pritom
 
+
+9. replace the initial pet assigning with nothing. let the user first choose the pet, not just give first pet to the user. - Pritom
+
 optionals:
 1. Add other navigations to header.
 2. Add terms and services
