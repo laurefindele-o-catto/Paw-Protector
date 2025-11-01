@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
 import { Loader } from "../Components/Loader";
 import { useLoader } from "../hooks/useLoader";
+import { usePet } from "../context/PetContext";
 
 function AddPetPage() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ function AddPetPage() {
   const [isHovered, setIsHovered] = useState(false);
   const [hasDisease, setHasDisease] = useState(false);
   const catUrl = "https://images.unsplash.com/photo-1592194996308-7b43878e84a6";
+  const { selectPet, reload } = usePet();
 
   const handleAddDisease = () => setDiseases([...diseases, { disease_name: "", symptoms: "", severity: "", status: "", diagnosed_on: "", notes: "" }]);
   const handleDiseaseChange = (i, field, value) => {
@@ -98,7 +100,8 @@ function AddPetPage() {
       }
 
       const data = await perRes.json();
-      const petId = data.pet?.id;
+      let finalPet = data.pet;
+      const petId = finalPet?.id;
       if (!petId) throw new Error("Pet id missing in response");
 
       if (selectedFile) {
@@ -106,17 +109,19 @@ function AddPetPage() {
         formData.append("avatar", selectedFile);
         const uploadRes = await fetch(
           `${apiConfig.baseURL}${apiConfig.pets.uploadAvatar(petId)}`,
-          {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
-            body: formData
-          }
+          { method: "POST", headers: { "Authorization": `Bearer ${token}` }, body: formData }
         );
         if (!uploadRes.ok) {
           const err = await safeParseError(uploadRes);
           throw new Error(err?.error || "Failed to upload pet image");
         }
+        const upJson = await uploadRes.json();
+        finalPet = upJson.pet || finalPet;
       }
+      localStorage.setItem("current_pet_id", String(finalPet.id));
+      localStorage.setItem("current_pet", JSON.stringify(finalPet));
+      try { selectPet(finalPet.id); } catch {}
+      try { await reload(); } catch {}
 
       if (hasDisease) {
         for (const disease of diseases) {

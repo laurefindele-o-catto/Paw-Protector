@@ -1,0 +1,17 @@
+All these after chem exam. Nothing before. And add anything if missed in here.
+
+importants:
+1. Make chat interface and integate the Disease detection into RAG. - Pritom
+2. Make the pet info section in dashboard more robust. also keep update info functionality for easy update.
+3. Add one glimpse analytics (graph or summary) + AI insight on pet health on dashboard
+4. Have a meeting and consult about the bangla translation of the words
+5. give header (Header.jsx) file to each page (see if that does not break aestheticness (did i make up this word myself?))
+6. The pet care should be used by RAG and generate automatic daily routine based on cat's info - Pritom
+7. Make 'find a vet' page realistic - Add real vet info into database and let the code find the vet near you.
+8. Vaccination Alerts should Also use AI and database hybridly - Pritom
+
+optionals:
+1. Add other navigations to header.
+2. Add terms and services
+3. Call an api and circle the text in dashboard
+4. make dropdown selectors nicer
