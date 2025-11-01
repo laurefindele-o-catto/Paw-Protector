@@ -17,7 +17,7 @@ export default function PetSwitcher() {
 
   // Extract summary data
   const summary = currentPetSummary;
-  const latestWeight = summary?.metrics?.latestWeightKg ?? null;
+  const latestWeight = summary?.metrics?.latestWeightKg ?? currentPet?.weight_kg ?? null;
   const latestTemp = summary?.metrics?.latestTempC ?? null;
   const trend = summary?.metrics?.trend || [];
   const lastCheck = trend?.[0]?.measured_at || null;
