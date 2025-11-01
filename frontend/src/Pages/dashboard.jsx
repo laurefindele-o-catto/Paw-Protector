@@ -1,7 +1,6 @@
 // dashboard.jsx
 import { Link, useNavigate } from "react-router-dom";
 import ProfilePictureCard from "../Components/profilePictureCard";
-// import catGif from "../assets/giphy/cat.gif"; // if you keep it in src
 import FeaturesSection from "../Components/FeaturesSection";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
@@ -10,6 +9,9 @@ import { useAutoTranslate } from "react-autolocalise";
 import Header from "../components/Header";
 import { usePet } from "../context/PetContext";
 import PetSwitcher from "../Components/PetSwitcher";
+import Footer from "../Components/Footer";
+
+const placeholder = "/placeholder.png";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -27,14 +29,12 @@ function Dashboard() {
     const user_local = JSON.parse(localStorage.getItem("user"));
     setUser(user_local);
   }, [isAuthenticated, navigate]);
-  
-  // console.log(user);
 
   return (
     <>
-      <Header/>
+      <Header />
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden my-24">
-        {/* animated background shapes (LandingPage palette) */}
+        {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
         <div className="pointer-events-none fixed top-40 -right-10 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
         <div className="pointer-events-none fixed bottom-10 left-10 h-16 w-16 bg-[#fdd142] rounded-full opacity-80 animate-[bouncey_4s_ease-in-out_infinite]" />
@@ -51,66 +51,65 @@ function Dashboard() {
 
         {pets.length !== 0 && (
           <section className="mx-auto w-full px-2 sm:px-4">
-          <FeaturesSection />
-          <div className="w-full flex justify-center my-2">
-            <div className="h-[3px] w-2/3 bg-linear-to-r from-[#fdd142] via-[#0f172a]/30 to-[#fdd142] rounded-full shadow-md opacity-70" />
-          </div>
-        </section>
+            <FeaturesSection />
+            <div className="w-full flex justify-center my-2">
+              <div className="h-[3px] w-2/3 bg-linear-to-r from-[#fdd142] via-[#0f172a]/30 to-[#fdd142] rounded-full shadow-md opacity-70" />
+            </div>
+          </section>
         )}
-        <PetSwitcher/>
+
+        <PetSwitcher />
 
         {/* Random Cat Fact */}
         <section className="mx-auto max-w-6xl w-full px-4 mt-6">
-          <div className="text-center backdrop-blur-md  rounded-3xl  p-6">
+          <div className="text-center backdrop-blur-md rounded-3xl p-6">
             <h2 className="text-lg md:text-xl italic text-slate-700">
-              {("Cats sleep for 70% of their lives.")}
+              {t("Cats sleep for 70% of their lives.")}
             </h2>
           </div>
         </section>
 
-        {/* Scrollable Row */}
-        
-
-        {/* Bottom Bar */}
-        
-        
-
-        {/* Floating Call Button */}
-        <a
-          href="tel:+8801888548012"
-          className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
-          aria-label={t("Call emergency contact")}
-        >
-          <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />
-          <span className="text-[10px] font-semibold text-white leading-none">
-            {t("Emergency")}
-          </span>
-        </a>
-
-        {/* keyframes (mirrors LandingPage) */}
-        <style>{`
-          @keyframes slideup {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-          }
-          @keyframes bouncey {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-12px) scale(1.03); }
-          }
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          @keyframes slideDots {
-            0% { transform: translateY(0) translateX(0); }
-            100% { transform: translateY(-30px) translateX(30px); }
-          }
-        `}</style>
+        {/* Bottom spacing */}
+        <br /><br /><br /><br />
       </div>
+
+      <Footer />
+
+      {/* Floating Call Button */}
+      <a
+        href="tel:+8801888548012"
+        className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
+        aria-label={t("Call emergency contact")}
+      >
+        <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />
+        <span className="text-[10px] font-semibold text-white leading-none">
+          {t("Emergency")}
+        </span>
+      </a>
+
+      {/* keyframes */}
+      <style>{`
+        @keyframes slideup {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes bouncey {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-12px) scale(1.03); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes slideDots {
+          0% { transform: translateY(0) translateX(0); }
+          100% { transform: translateY(-30px) translateX(30px); }
+        }
+      `}</style>
     </>
   );
 }

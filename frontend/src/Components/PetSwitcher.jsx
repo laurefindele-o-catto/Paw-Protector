@@ -73,7 +73,7 @@ export default function PetSwitcher() {
       {/* Current Pet Card */}
       {currentPet && (
         <>
-          <div className="mt-3 w-[70%] bg-white/80 backdrop-blur-md border border-white rounded-2xl shadow p-4 text-center items-center justify-center">
+          <div className="mt-3 w-[70%] bg-white/80 backdrop-blur-md border border-white rounded-2xl shadow p-4 text-left">
             <div className="flex items-center gap-4">
               <img
                 src={currentPet.avatar_url || placeholder}
