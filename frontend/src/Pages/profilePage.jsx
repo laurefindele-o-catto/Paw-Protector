@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
+import { useLoader } from "../hooks/useLoader";
+import { Loader } from "../Components/Loader";
+
 // Simple loader for Google Places script
 function useGooglePlaces(apiKey) {
   const [loaded, setLoaded] = useState(false);
@@ -156,8 +159,8 @@ function ProfilePage() {
     if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
   };
 
-  // Submit profile + location
-  const handleSubmit = async (e) => {
+  // Replace handleSubmit with useLoader
+  const { run: handleSubmit, loading } = useLoader(async (e) => {
     e.preventDefault();
     if (!user?.id) return;
 
@@ -241,7 +244,7 @@ function ProfilePage() {
     } catch (error) {
       alert(error.message || "Failed to update profile.");
     }
-  };
+  });
 
   // ADD: init map + geocoder
   useEffect(() => {
@@ -342,6 +345,23 @@ function ProfilePage() {
           ))}
         </div>
       </div>
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Back to dashboard"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Dashboard
+      </button>
 
       {/* Profile avatar button */}
       <div
@@ -495,8 +515,21 @@ function ProfilePage() {
         <button
           type="submit"
           className="mt-8 self-end px-6 py-3 text-sm rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold shadow hover:bg-slate-900 transition transform hover:-translate-y-[1px]"
+          disabled={loading}
+          style={{
+            backgroundColor: loading ? "#9DB89B" : "#0f172a",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1
+          }}
         >
-          Save
+          {loading ? (
+            <>
+              <Loader />
+              <span className="ml-2">Processing...</span>
+            </>
+          ) : (
+            "Save"
+          )}
         </button>
       </form>
 

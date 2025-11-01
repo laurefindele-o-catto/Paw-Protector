@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAutoTranslate } from "react-autolocalise";
+import { useNavigate } from "react-router-dom";
 
 const VaccineAlert = ({ userId }) => {
   const [pets, setPets] = useState([]);
@@ -94,7 +95,7 @@ const VaccineAlert = ({ userId }) => {
       (a, b) => new Date(b.administered_on) - new Date(a.administered_on)
     )[0];
   };
-
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden px-6 py-10">
       {/* animated background shapes (LandingPage palette) */}
@@ -130,6 +131,23 @@ const VaccineAlert = ({ userId }) => {
           {t("to see due dates and update doses.")}
         </p>
       </div>
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Back to dashboard"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Dashboard
+      </button>
 
       {/* Pet Selector */}
       <div className="mb-8 max-w-5xl mx-auto bg-white/85 backdrop-blur border border-white rounded-3xl shadow p-6 animate-[slideup_0.6s_ease-out]">

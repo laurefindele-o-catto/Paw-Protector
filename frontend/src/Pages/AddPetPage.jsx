@@ -183,6 +183,23 @@ function AddPetPage() {
           ))}
         </div>
       </div>
+      <button
+        onClick={() => navigate("/profile")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Back to profile"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Profile
+      </button>
 
       <div className="relative mx-auto max-w-6xl px-6 py-14">
         {/* Header */}

@@ -1,11 +1,13 @@
 // src/pages/vetFinder.jsx
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import apiConfig from "../config/apiConfig";
+import { useNavigate } from "react-router-dom";
 
 /** Load Google Maps JS (Places) once */
 function useGooglePlaces(explicitKey) {
   const [loaded, setLoaded] = useState(false);
   const [missingKey, setMissingKey] = useState(false);
+  
 
   useEffect(() => {
     const keyFromEnv = typeof import.meta !== "undefined" ? import.meta.env?.VITE_GOOGLE_MAPS_API_KEY : "";
@@ -363,6 +365,7 @@ export default function VetFinder() {
       }).open({ anchor: marker, map: mapRef.current });
     }
   };
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden relative flex flex-col">
@@ -373,15 +376,32 @@ export default function VetFinder() {
       <div className="pointer-events-none fixed -bottom-24 right-20 h-72 w-72 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_20s_linear_infinite]" />
 
       {/* NAV / Title */}
-      <header className="w-full mx-auto flex items-center justify-between px-6 md:px-16 py-5 z-20 relative">
+      <header className="w-full mx-auto flex items-center justify-center px-6 md:px-16 py-5 z-20 relative">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-sm animate-[popin_0.5s_ease]">
             PP
           </div>
           <span className="font-semibold tracking-tight text-slate-900">PawPal</span>
+          <span className="hidden md:inline-flex text-xs text-slate-600 ml-4">Vet Finder</span>
         </div>
-        <span className="hidden md:inline-flex text-xs text-slate-600">Vet Finder</span>
       </header>
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Back to dashboard"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Dashboard
+      </button>
 
       {/* MAIN */}
       {missingKey && (
@@ -389,6 +409,7 @@ export default function VetFinder() {
           Google Maps key not found. Set <code>apiConfig.googleMapsApiKey</code> or <code>VITE_GOOGLE_MAPS_API_KEY</code>. Also enable “Maps JavaScript API” and “Places API”.
         </div>
       )}
+      
 
       <main className=" px-6 md:px-16 pb-8 grid grid-cols-1 lg:grid-cols-5 gap-6 relative z-10 flex-1">
         {/* Left: Controls + Map */}
