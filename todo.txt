@@ -14,6 +14,9 @@ importants:
     A summary will be generated for each diagnosis. Users will have the option to get the diagnostics certified by a real
     vet for a small amount of money(50tk ish). This addresses the concern by judge in phase 1
     
+
+11. replace the initial pet assigning with nothing. let the user first choose the pet, not just give first pet to the user. - Pritom
+
 optionals:
 1. Add other navigations to header.
 2. Add terms and services

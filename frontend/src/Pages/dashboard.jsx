@@ -19,7 +19,7 @@ function Dashboard() {
   const { t, loading, error } = useAutoTranslate();
 
   const [user, setUser] = useState(null);
-  const current_pet = localStorage.getItem('current_pet');
+  const current_pet_count = localStorage.getItem('pet_count');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -49,7 +49,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {current_pet && (
+        {current_pet_count !== 0 && (
           <section className="mx-auto w-full px-2 sm:px-4">
             <FeaturesSection />
             <div className="w-full flex justify-center my-2">

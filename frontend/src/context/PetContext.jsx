@@ -76,6 +76,7 @@ export const PetProvider = ({ children }) => {
       const json = await res.json();
       const list = json?.pets || [];
       setPets(list);
+      localStorage.setItem('pet_count', list.length);
       pickDefault(list);
     } catch {
       setPets([]);
