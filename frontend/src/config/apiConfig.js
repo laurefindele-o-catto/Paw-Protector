@@ -76,7 +76,7 @@ const apiConfig = {
   },
 
   googleMapsApiKey: "AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds", 
-  //Raisa(I) added this when making vetFinder.jsx, you can use this in profilePage.jsx
+ 
 }
 
 export default apiConfig

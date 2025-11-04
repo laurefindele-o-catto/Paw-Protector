@@ -3,10 +3,10 @@ import PetProfile from "./pages/PetProfile";
 
 import Home from "./Pages/Home";
 import About from "./Pages/About";
-import Dashboard from "./pages/dashboard";
-import VetFinder from "./pages/VetFinder";
+import Dashboard from "./Pages/dashboard";
+import VetFinder from "./Pages/VetFinder";
 import VaccineAlert from "./Pages/vaccineAlert";
-import PetCare from "./Pages/PetCare";
+import PetCare from "./Pages/petCare";
 import PawPal from "./Pages/PawPal";
 import ProfilePage from "./pages/profilePage";
 import AddPetPage from "./Pages/AddPetPage";
@@ -17,6 +17,7 @@ import SkinDiseaseDetector from "./Pages/SkinDiseaseDetection";
 import { TranslationProvider } from "react-autolocalise";
 import LandingPage from "./Pages/LandingPage";
 import { PetProvider } from "./context/PetContext";
+import VetDashboard from "./Pages/VetDashboard";
 
 
 
@@ -33,6 +34,7 @@ function App() {
           <PetProvider>
             <Routes>
               {/* <Route path="/" element={<Home />} /> */}
+              <Route path="/vdashboard" element={<VetDashboard/>} />
               <Route path="/" element={<LandingPage/>} />
               <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
               <Route path="/about" element={<About />} />
