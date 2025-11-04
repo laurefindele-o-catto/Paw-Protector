@@ -90,9 +90,9 @@ function VerificationProcessPage() {
 
             {/* back button */}
             <button
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate("/vdashboard")}
                 className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
-                aria-label="Back to profile"
+                aria-label="Back to dashboard"
             >
                 <svg
                     className="w-5 h-5 mr-2"
@@ -104,7 +104,7 @@ function VerificationProcessPage() {
                 >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
-                Profile
+                Dashboard
             </button>
 
             <div className="relative mx-auto max-w-6xl px-6 py-14">
