@@ -12,6 +12,9 @@ router.post('/clinics', authenticateToken.authenticateToken, controller.addClini
 // Add a vet profile
 router.post('/vets', authenticateToken.authenticateToken, controller.addVet);
 
+// Update a vet profile
+router.patch('/vets/:user_id', authenticateToken.authenticateToken, controller.updateVet);
+
 // Add a vet review
 router.post('/vet-reviews', authenticateToken.authenticateToken, controller.addReview);
 
