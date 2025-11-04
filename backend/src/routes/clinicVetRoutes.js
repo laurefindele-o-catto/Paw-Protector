@@ -1,6 +1,6 @@
 const express = require('express');
 const ClinicVetController = require('../controllers/clinicVetController.js');
-const AuthenticateToken = require('../middlewares/authenticateToken.js'); // fixed
+const AuthenticateToken = require('../middlewares/authenticateToken.js'); 
 
 const router = express.Router();
 const controller = new ClinicVetController();

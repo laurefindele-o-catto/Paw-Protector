@@ -49,6 +49,9 @@ const apiConfig = {
     addVaccination: '/api/care/vaccinations',
     addDeworming: '/api/care/dewormings'
   },
+  vets:{
+    update: (user_id) => `/api/vets/${user_id}`,
+  },
   clinics: {
     createClinic: '/api/clinics',
     createVetProfile: '/api/vets',
