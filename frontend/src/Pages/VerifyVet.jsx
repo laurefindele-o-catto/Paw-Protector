@@ -37,8 +37,8 @@ function VerificationProcessPage() {
         }
 
         try {
-            const res = await fetch(
-                `${apiConfig.baseURL}${apiConfig.vets.update(user.id)}`, // your updateVet endpoint
+            const res = await fetch(  
+                `${apiConfig.baseURL}/api/vets/${user.id}`, // your updateVet endpoint
                 {
                     method: "PATCH",
                     headers: {
