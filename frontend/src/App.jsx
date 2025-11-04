@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import PetProfile from "./pages/PetProfile";
 
-import Home from "./Pages/Home";
+
 import About from "./Pages/About";
 import Dashboard from "./Pages/dashboard";
 import VetFinder from "./Pages/VetFinder";
@@ -18,6 +18,7 @@ import { TranslationProvider } from "react-autolocalise";
 import LandingPage from "./Pages/LandingPage";
 import { PetProvider } from "./context/PetContext";
 import VetDashboard from "./Pages/VetDashboard";
+import CheckDiagnostics from "./Pages/CheckDIagnostics";
 import VerifyVet from "./Pages/VerifyVet";
 
 
@@ -35,6 +36,7 @@ function App() {
           <PetProvider>
             <Routes>
               {/* <Route path="/" element={<Home />} /> */}
+              <Route path="/check" element={<CheckDiagnostics/>} />
               <Route path="/vdashboard" element={<VetDashboard/>} />
               <Route path="/verification" element={<VerifyVet/>} />
               <Route path="/" element={<LandingPage/>} />
