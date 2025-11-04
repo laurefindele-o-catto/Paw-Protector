@@ -29,6 +29,19 @@ class ClinicVetController {
         }
     };
 
+    updateVet = async(req, res)=>{
+        try {
+            const data = req.body;
+            const id = req.params.user_id;
+            if (id || !data.name) return res.status(400).json({ success: false, error: 'user_id and name required' });
+            const result = await this.model.updateVet(id, data);
+            if (!result || result.success === false) return res.status(500).json({ success: false, error: 'Failed to update vet' });
+            return res.status(201).json({ success: true, vet: result });
+        } catch (error) {
+           return res.status(500).json({ success: false, error: 'Internal server error' });c 
+        }
+    }
+
     addReview = async (req, res) => {
         try {
             const data = req.body;
