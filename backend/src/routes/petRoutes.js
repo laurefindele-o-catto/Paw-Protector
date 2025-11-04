@@ -1,23 +1,26 @@
 const express = require('express');
-const PetController = require('../controllers/petController.js');
-const AuthenticateToken = require('../middlewares/authenticateToken.js');
 const multer = require('multer');
+const AuthenticateToken = require('../middlewares/authenticateToken.js');
+const PetController = require('../controllers/petController.js');
 
 const router = express.Router();
-const petController = new PetController();
+const upload = multer({ storage: multer.memoryStorage() });
 const authenticateToken = new AuthenticateToken();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const petController = new PetController();
 
-// Add a pet
-router.post('/pets', authenticateToken.authenticateToken, petController.addPet);
-
-// Get all pets for logged-in user
+// List my pets
 router.get('/pets', authenticateToken.authenticateToken, petController.getMyPets);
 
-// Upload pet avatar
-router.post('/pets/:petId/avatar', authenticateToken.authenticateToken, upload.single('avatar'), petController.uploadAvatar);
-
-// Gets a summarized snapshot for a pet (health, diseases, vaccines, deworming)
+// Pet summary
 router.get('/pets/:petId/summary', authenticateToken.authenticateToken, petController.getPetSummary);
+
+// Update pet (basic info)
+router.patch('/pets/:petId', authenticateToken.authenticateToken, petController.updatePet);
+
+// Add health metric
+router.post('/pets/:petId/metrics', authenticateToken.authenticateToken, petController.addHealthMetric);
+
+// Upload pet avatar
+router.post('/pets/:petId/avatar', authenticateToken.authenticateToken, upload.single('avatar'), petController.uploadPetAvatar);
 
 module.exports = router;

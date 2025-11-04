@@ -2,12 +2,16 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import ProfilePictureCard from '../Components/profilePictureCard';
+import { usePet } from '../context/PetContext';
 const placeholder = "/placeholder.png";
 
 function Header() {
     const { loading, logout, user } = useAuth();
+    const {currentPet} = usePet();
     const navigate = useNavigate();
 
+    // console.log(currentPet);
+    
     const handleLogout = async () => {
         await logout();
         navigate("/");
@@ -17,14 +21,16 @@ function Header() {
         <header className="fixed top-0 left-0 w-full bg-white/30 backdrop-blur-md border-b border-white shadow z-30">
             <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between">
                 {/* Logo left */}
-                <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs select-none">
-                        PP
+                <Link to='/dashboard'>
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs select-none">
+                            PP
+                        </div>
+                        <div className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
+                            🐾 PawPal
+                        </div>
                     </div>
-                    <div className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
-                        🐾 PawPal
-                    </div>
-                </div>
+                </Link>
                 {/* Right side: logout then profile */}
                 <div className="flex items-center gap-4">
                     <button
@@ -48,6 +54,17 @@ function Header() {
                         <ProfilePictureCard
                             avatarUrl={user?.avatar_url ? user.avatar_url : placeholder}
                             name={user?.username}
+                        />
+                    </Link>
+                    {/* Pet Profile link */}
+                    <Link
+                        to="/pet-profile"
+                        className="px-3 py-2 rounded-lg text-sm hover:bg-slate-50"
+                        aria-label="Pet Profile"
+                    >
+                        <ProfilePictureCard
+                            avatarUrl={currentPet?.avatar_url ? currentPet.avatar_url : placeholder}
+                            name={currentPet?.name}
                         />
                     </Link>
                 </div>

@@ -107,6 +107,40 @@ class CareModel {
             return { success: false };
         }
     };
+
+    // List vaccinations for a pet (recent first)
+    getVaccinationsByPet = async (pet_id, limit = 10) => {
+        try {
+            const q = `
+                SELECT * FROM vaccinations
+                WHERE pet_id = $1
+                ORDER BY administered_on DESC NULLS LAST, id DESC
+                LIMIT $2;
+            `;
+            const r = await this.db_connection.query_executor(q, [pet_id, limit]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get vaccinations failed: ${e.message}`);
+            return [];
+        }
+    };
+
+    // List dewormings for a pet (recent first)
+    getDewormingsByPet = async (pet_id, limit = 10) => {
+        try {
+            const q = `
+                SELECT * FROM dewormings
+                WHERE pet_id = $1
+                ORDER BY administered_on DESC NULLS LAST, id DESC
+                LIMIT $2;
+            `;
+            const r = await this.db_connection.query_executor(q, [pet_id, limit]);
+            return r.rows || [];
+        } catch (e) {
+            console.log(`Get dewormings failed: ${e.message}`);
+            return [];
+        }
+    };
 }
 
 module.exports = CareModel;

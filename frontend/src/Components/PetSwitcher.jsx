@@ -26,7 +26,7 @@ export default function PetSwitcher() {
   const activeCnt = activeDiseases.length;
   const activeNames = activeDiseases.map(d => d.disease_name).slice(0, 3);
 
-  const nextVac = summary?.vaccinations?.nextDue || null;
+  const nextVac = summary?.vaccinations?.nextDue || summary?.vaccinations?.recent[0];
   const nextVacDays = nextVac ? daysUntil(nextVac.due_on) : null;
 
   const nextDew = summary?.dewormings?.nextDue || null;

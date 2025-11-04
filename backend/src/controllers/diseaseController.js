@@ -1,4 +1,30 @@
-const DiseaseModel = require('../models/diseaseModel.js');
+const DB_Connection = require('../database/db');
+const DiseaseModel = require('../models/diseaseModel');
+const db = new DB_Connection();
+const diseaseModel = new DiseaseModel();
+
+async function assertPetOwner(userId, petId) {
+  const rs = await db.query_executor(`SELECT id FROM pets WHERE id = $1 AND owner_id = $2`, [petId, userId]);
+  if (!rs?.rows?.length) {
+    const err = new Error('Pet not found');
+    err.status = 404;
+    throw err;
+  }
+}
+
+async function assertDiseaseOwner(userId, diseaseId) {
+  const q = `
+    SELECT d.id FROM pet_diseases d
+    JOIN pets p ON p.id = d.pet_id
+    WHERE d.id = $1 AND p.owner_id = $2
+  `;
+  const rs = await db.query_executor(q, [diseaseId, userId]);
+  if (!rs?.rows?.length) {
+    const err = new Error('Disease not found');
+    err.status = 404;
+    throw err;
+  }
+}
 
 class DiseaseController {
     constructor() {
@@ -9,7 +35,8 @@ class DiseaseController {
     addDisease = async (req, res) => {
         try {
             const { petId } = req.params;
-            const data = { ...req.body, pet_id: parseInt(petId) };
+            await assertPetOwner(req.user.id, parseInt(petId, 10)); // guard
+            const data = { ...req.body, pet_id: parseInt(petId, 10) };
             if (!data.pet_id || !data.disease_name) {
                 return res.status(400).json({ success: false, error: 'pet_id and disease_name required' });
             }
@@ -19,7 +46,7 @@ class DiseaseController {
             }
             return res.status(201).json({ success: true, disease: result });
         } catch (e) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(e.status || 500).json({ success: false, error: e.message || 'Internal server error' });
         }
     }
 
@@ -61,13 +88,14 @@ class DiseaseController {
     updateOne = async (req, res) => {
         try {
             const { id } = req.params;
-            const updated = await this.diseaseModel.updateDisease(parseInt(id), req.body || {});
+            await assertDiseaseOwner(req.user.id, parseInt(id, 10)); // guard
+            const updated = await this.diseaseModel.updateDisease(parseInt(id, 10), req.body || {});
             if (!updated || updated.success === false) {
                 return res.status(400).json({ success: false, error: 'Update failed' });
             }
             return res.status(200).json({ success: true, disease: updated });
         } catch (e) {
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(e.status || 500).json({ success: false, error: e.message || 'Internal server error' });
         }
     }
 

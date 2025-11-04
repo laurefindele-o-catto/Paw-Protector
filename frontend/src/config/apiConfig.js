@@ -32,6 +32,10 @@ const apiConfig = {
     listMine: '/api/pets',
     uploadAvatar: (petId) => `/api/pets/${petId}/avatar`,
     summary: (petId) => `/api/pets/${petId}/summary`,
+    update: (petId) => `/api/pets/${petId}`,           
+    metrics: {                                          
+      add: (petId) => `/api/pets/${petId}/metrics`,     
+    },
     diseases: {
       list: (petId) => `/api/pets/${petId}/diseases`,
       listActive: (petId) => `/api/pets/${petId}/diseases/active`,

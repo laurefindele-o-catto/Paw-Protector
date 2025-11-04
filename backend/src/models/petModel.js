@@ -174,6 +174,77 @@ class PetModel {
             return [];
         }
     }
+
+    // Updates core pet fields
+    updatePet = async (petId, updates) => {
+        try {
+            const allowed = new Set([
+                'name','species','breed','sex','birthdate','weight_kg','is_neutered','notes'
+            ]);
+            const sets = [];
+            const vals = [];
+            let i = 1;
+            for (const [k, v] of Object.entries(updates || {})) {
+                if (!allowed.has(k)) continue;
+                sets.push(`${k} = $${i++}`);
+                vals.push(v);
+            }
+            if (sets.length === 0) throw new Error('No valid field to update');
+            sets.push(`updated_at = NOW()`);
+            const q = `
+                UPDATE pets
+                SET ${sets.join(', ')}
+                WHERE id = $${i}
+                RETURNING id, owner_id, name, species, breed, sex, birthdate,
+                          weight_kg, avatar_url, is_neutered, notes, created_at, updated_at;
+            `;
+            vals.push(petId);
+            const r = await this.db_connection.query_executor(q, vals);
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Update pet failed: ${e.message}`);
+            return { success: false };
+        }
+    }
+
+    // Inserts a health metric row for the pet
+    addHealthMetric = async (petId, data) => {
+        try {
+            const {
+                measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note
+            } = data || {};
+            const q = `
+                INSERT INTO pet_health_metrics
+                    (pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note)
+                VALUES
+                    ($1, COALESCE($2, NOW()), $3, $4, $5, $6, $7)
+                RETURNING *;
+            `;
+            const p = [
+                petId,
+                measured_at || null,
+                typeof weight_kg === 'number' ? weight_kg : null,
+                typeof body_temp_c === 'number' ? body_temp_c : null,
+                typeof heart_rate_bpm === 'number' ? heart_rate_bpm : null,
+                typeof respiration_rate_bpm === 'number' ? respiration_rate_bpm : null,
+                note || null
+            ];
+            const r = await this.db_connection.query_executor(q, p);
+
+            // Keep pets.weight_kg in sync when provided
+            if (typeof weight_kg === 'number') {
+                await this.db_connection.query_executor(
+                    `UPDATE pets SET weight_kg = $1, updated_at = NOW() WHERE id = $2`,
+                    [weight_kg, petId]
+                );
+            }
+
+            return r.rows[0] || null;
+        } catch (e) {
+            console.log(`Insert health metric failed: ${e.message}`);
+            return { success: false };
+        }
+    }
 }
 
 module.exports = PetModel;
