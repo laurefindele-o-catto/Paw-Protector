@@ -1,28 +1,10 @@
-import { useNavigate } from "react-router-dom";
-import { useAutoTranslate } from "react-autolocalise";
 import Header from "../components/Header";
 import Footer from "../Components/Footer";
-import { useAuth } from "../context/AuthContext";
-import { useEffect } from "react";
 
-function VetDashboard() {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/");
-    }
-    const user_local = JSON.parse(localStorage.getItem("user"));
-    if (user_local?.roles[0] !== "vet") {
-      navigate("/");
-    }
-  }, [isAuthenticated, navigate]);
-
+function CheckDiagnostics() {
   return (
     <>
-      {/* <Header /> */}
+      
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
@@ -39,37 +21,20 @@ function VetDashboard() {
           </div>
         </div>
 
-        {/* Main vet actions */}
-        <section className="mx-auto max-w-xl w-full px-4 mt-10">
-          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-8 flex flex-col items-center gap-8">
-            <h1 className="text-2xl font-bold text-slate-800 mb-2">Vet Dashboard</h1>
-            <button
-              onClick={() => navigate("/verify-credentials")}
-              className="w-full py-4 px-6 bg-[#0f172a] text-[#edfdfd] rounded-xl font-semibold text-lg shadow hover:bg-[#22304a] transition"
-            >
-              Verify credentials
-            </button>
-            <button
-              onClick={() => navigate("/check")}
-              className="w-full py-4 px-6 bg-[#fdd142] text-[#0f172a] rounded-xl font-semibold text-lg shadow hover:bg-[#ffe066] transition"
-            >
-              Check Diagnostics
-            </button>
-          </div>
-        </section>
+        {/* Placeholder Content */}
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-5xl md:text-7xl font-bold text-gray-400 opacity-70 select-none">
+            This is a placeholder
+          </span>
+        </div>
 
         {/* Bottom spacing */}
         <br /><br /><br /><br />
       </div>
-
       <Footer />
 
-      {/* Keyframes */}
+      {/* keyframes */}
       <style>{`
-        @keyframes slideup {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
         @keyframes float {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
@@ -91,4 +56,4 @@ function VetDashboard() {
   );
 }
 
-export default VetDashboard;
+export default CheckDiagnostics;
