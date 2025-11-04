@@ -18,6 +18,7 @@ import { TranslationProvider } from "react-autolocalise";
 import LandingPage from "./Pages/LandingPage";
 import { PetProvider } from "./context/PetContext";
 import VetDashboard from "./Pages/VetDashboard";
+import VerifyVet from "./Pages/VerifyVet";
 
 
 
@@ -35,6 +36,7 @@ function App() {
             <Routes>
               {/* <Route path="/" element={<Home />} /> */}
               <Route path="/vdashboard" element={<VetDashboard/>} />
+              <Route path="/verification" element={<VerifyVet/>} />
               <Route path="/" element={<LandingPage/>} />
               <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
               <Route path="/about" element={<About />} />

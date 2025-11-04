@@ -4,6 +4,7 @@ import apiConfig from "../config/apiConfig";
 
 function VerificationProcessPage() {
     const navigate = useNavigate();
+    const [name, setName] = useState("");
     const [user, setUser] = useState(null);
     const [clinicId, setClinicId] = useState("");
     const [licenseNumber, setLicenseNumber] = useState("");
@@ -39,20 +40,19 @@ function VerificationProcessPage() {
             const res = await fetch(
                 `${apiConfig.baseURL}${apiConfig.vets.update(user.id)}`, // your updateVet endpoint
                 {
-                    method: "PUT",
+                    method: "PATCH",
                     headers: {
                         "Authorization": `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        name,
+                        name: name,
                         clinic_id: clinicId,
                         license_number: licenseNumber,
                         license_issuer: licenseIssuer,
                         license_valid_until: licenseValidUntil,
-                        specialization,
-                        photo_url: photoUrl || null,
-                        verified: true, // auto-verify logic here
+                        specialization: specialization,
+                        verified: false
                     }),
                 }
             );
