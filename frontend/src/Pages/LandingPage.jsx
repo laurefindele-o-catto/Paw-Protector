@@ -31,7 +31,13 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const infoRef = useRef(null);
   const [infoVisible, setInfoVisible] = useState(false);
-  const { t } = useAutoTranslate();
+  const { t: translate } = useAutoTranslate();
+
+  // toggle state
+  const [useTranslation, setUseTranslation] = useState(true);
+
+  // fallback translator
+  const t = useTranslation && translate ? translate : (s) => s;
 
   const goLogin = () => navigate("/login");
   const scrollDown = () => infoRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,6 +75,15 @@ const LandingPage = () => {
         >
           {t('Login')}
         </button>
+
+        <button
+          onClick={() => setUseTranslation((prev) => !prev)}
+          className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition"
+          aria-label="Toggle language"
+        >
+          {useTranslation ? "BN" : "EN"}
+        </button>
+
       </header>
 
       {/* HERO */}
@@ -193,9 +208,8 @@ const LandingPage = () => {
       <section ref={infoRef} className="px-6 md:px-16 pb-16 relative z-10">
         <div className="pointer-events-none absolute -top-10 left-36 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[bouncey_5s_ease-in-out_infinite]" />
         <div
-          className={`max-w-5xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-10 transition-all duration-700 ${
-            infoVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-          }`}
+          className={`max-w-5xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-10 transition-all duration-700 ${infoVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
         >
           <h2 className="text-2xl font-semibold text-slate-900 mb-3">
             {t('What PawProtector gives you')}
@@ -236,7 +250,7 @@ const LandingPage = () => {
           © {new Date().getFullYear()} PawProtector. {t('Protect every paw')} 🐾
         </p>
       </section>
-        <Footer/>
+      <Footer />
 
       {/* keyframes */}
       <style>{`
