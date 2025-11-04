@@ -59,14 +59,14 @@ export default function HealthMetricsTab({ pet, summary, onSaved }) {
           <label className="text-xs text-slate-600">body_temp_c</label>
           <input type="number" step="0.1" value={form.body_temp_c} onChange={onChange('body_temp_c')} className="px-3 py-2 rounded-xl border border-slate-200 bg-white/80" placeholder="Temp (°C)" />
         </div>
-        <div className="flex flex-col gap-1">
+        {/* <div className="flex flex-col gap-1">
           <label className="text-xs text-slate-600">heart_rate_bpm</label>
           <input type="number" value={form.heart_rate_bpm} onChange={onChange('heart_rate_bpm')} className="px-3 py-2 rounded-xl border border-slate-200 bg-white/80" placeholder="Heart rate (bpm)" />
-        </div>
-        <div className="flex flex-col gap-1">
+        </div> */}
+        {/* <div className="flex flex-col gap-1">
           <label className="text-xs text-slate-600">respiration_rate_bpm</label>
           <input type="number" value={form.respiration_rate_bpm} onChange={onChange('respiration_rate_bpm')} className="px-3 py-2 rounded-xl border border-slate-200 bg-white/80" placeholder="Resp rate (bpm)" />
-        </div>
+        </div> */}
         <div className="flex flex-col gap-1 md:col-span-3">
           <label className="text-xs text-slate-600">note</label>
           <input value={form.note} onChange={onChange('note')} className="px-3 py-2 rounded-xl border border-slate-200 bg-white/80" placeholder="Note" />
