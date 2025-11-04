@@ -19,6 +19,7 @@ import LandingPage from "./Pages/LandingPage";
 import { PetProvider } from "./context/PetContext";
 import VetDashboard from "./Pages/VetDashboard";
 import CheckDiagnostics from "./Pages/CheckDIagnostics";
+import VerifyVet from "./Pages/VerifyVet";
 
 
 
@@ -37,6 +38,7 @@ function App() {
               {/* <Route path="/" element={<Home />} /> */}
               <Route path="/check" element={<CheckDiagnostics/>} />
               <Route path="/vdashboard" element={<VetDashboard/>} />
+              <Route path="/verification" element={<VerifyVet/>} />
               <Route path="/" element={<LandingPage/>} />
               <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
               <Route path="/about" element={<About />} />

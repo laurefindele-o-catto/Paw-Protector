@@ -45,6 +45,12 @@ class ClinicVetModel {
         try {
             const user_id = id;
             const { name, clinic_id, license_number, license_issuer, license_valid_until, specialization, verified } = data;
+            const expiry = new Date(data.license_valid_until);
+            const today = new Date();
+            if (isNaN(expiry.getTime()) || expiry < today) {
+                data.verified = false;
+            }
+
             const query = `
                 UPDATE vets (user_id, name, clinic_id, license_number, license_issuer, license_valid_until, specialization, verified)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -58,6 +64,8 @@ class ClinicVetModel {
             return { success: false };
         }
     };
+
+    
 
     // Reviews
     createReview = async (data) => {
@@ -94,6 +102,22 @@ class ClinicVetModel {
             return { success: false };
         }
     };
+
+    autoVerifyVet = async (data) => {
+        const { license_number, license_issuer, license_valid_until, name } = data;
+
+        if (!name || !license_number || !license_issuer) return false;
+
+        const today = new Date();
+        const expiry = new Date(license_valid_until);
+        if (isNaN(expiry.getTime()) || expiry < today) return false;
+
+        const validIssuers = ["Bangladesh Veterinary Council", "RCVS", "State Vet Board"];
+        if (!validIssuers.includes(license_issuer)) return false;
+
+        return true;
+    }
+
 }
 
 module.exports = ClinicVetModel;
