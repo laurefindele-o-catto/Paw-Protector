@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import PetProfile from "./pages/PetProfile";
 
 import Home from "./Pages/Home";
 import About from "./Pages/About";
@@ -44,6 +45,7 @@ function App() {
               <Route path="/addPet" element={< AddPetPage/>} />
               <Route path="/login" element = {<LoginPage/>}/>
               <Route path="/signup" element={<SignupPage/>}/>
+              <Route path="/pet-profile" element={<PetProfile />} />
               
             </Routes>
           </PetProvider>

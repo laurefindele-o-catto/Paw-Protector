@@ -19,7 +19,8 @@ function Dashboard() {
   const { t, loading, error } = useAutoTranslate();
 
   const [user, setUser] = useState(null);
-  const current_pet_count = localStorage.getItem('pet_count');
+  const current_pet_count = parseInt(localStorage.getItem('pet_count'));
+  
 
   useEffect(() => {
     if (!isAuthenticated) {

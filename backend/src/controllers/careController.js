@@ -2,6 +2,15 @@ const CareModel = require('../models/careModel.js');
 const DB_Connection = require('../database/db.js');
 const db = new DB_Connection();
 
+async function assertPetOwner(userId, petId) {
+    const rs = await db.query_executor(`SELECT id FROM pets WHERE id = $1 AND owner_id = $2`, [petId, userId]);
+    if (!rs?.rows?.length) {
+        const err = new Error('Pet not found');
+        err.status = 404;
+        throw err;
+    }
+}
+
 class CareController {
     constructor() {
         this.careModel = new CareModel();
@@ -10,23 +19,32 @@ class CareController {
     // Vaccination
     addVaccination = async (req, res) => {
         try {
-            const { pet_id, vaccine_name, administered_on, notes } = req.body;
+            const { pet_id, vaccine_name, administered_on, notes, due_on: dueOnFromClient } = req.body;
             if (!pet_id || !vaccine_name || !administered_on) {
                 return res.status(400).json({ success: false, error: 'pet_id, vaccine_name, and administered_on required' });
             }
+            await assertPetOwner(req.user.id, pet_id); // guard
 
+            // Auto-increment dose_number for same vaccine
             const last = await db.query_executor(
                 'SELECT dose_number FROM vaccinations WHERE pet_id=$1 AND vaccine_name=$2 ORDER BY dose_number DESC LIMIT 1',
                 [pet_id, vaccine_name]
             );
             const nextDose = last.rows.length ? last.rows[0].dose_number + 1 : 1;
 
-            const date = new Date(administered_on);
-            const vn = String(vaccine_name).toLowerCase();
-            if (['rabies', 'flu'].includes(vn)) {
-                date.setFullYear(date.getFullYear() + 1);
-            }
-            const due_on = date.toISOString().split('T')[0];
+            const computeDueOn = (adminDate, name) => {
+                const d = new Date(adminDate);
+                const vn = String(name || '').toLowerCase();
+
+                if (['rabies', 'flu', 'fvrcp', 'dhpp', 'dapp'].includes(vn)) {
+                    d.setFullYear(d.getFullYear() + 1);
+                } else {
+                    d.setMonth(d.getMonth() + 12);
+                }
+                return d.toISOString().split('T')[0];
+            };
+
+            const due_on = dueOnFromClient ? String(dueOnFromClient) : computeDueOn(administered_on, vaccine_name);
 
             const result = await this.careModel.addVaccination({
                 pet_id,
@@ -42,8 +60,7 @@ class CareController {
 
             return res.status(201).json({ success: true, vaccination: result });
         } catch (error) {
-            console.error('Add vaccination failed:', error.message);
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(error.status || 500).json({ success: false, error: error.message || 'Internal server error' });
         }
     };
 
@@ -54,8 +71,8 @@ class CareController {
             if (!pet_id || !product_name || !administered_on) {
                 return res.status(400).json({ success: false, error: 'pet_id, product_name, and administered_on required' });
             }
+            await assertPetOwner(req.user.id, pet_id); // guard
 
-            // calc due date (+3 months)
             const date = new Date(administered_on);
             date.setMonth(date.getMonth() + 3);
             const due_on = date.toISOString().split('T')[0];
@@ -71,8 +88,7 @@ class CareController {
 
             return res.status(201).json({ success: true, deworming: result });
         } catch (error) {
-            console.error('Add deworming failed:', error.message);
-            return res.status(500).json({ success: false, error: 'Internal server error' });
+            return res.status(error.status || 500).json({ success: false, error: error.message || 'Internal server error' });
         }
     };
 

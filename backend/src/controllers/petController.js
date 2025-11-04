@@ -1,5 +1,20 @@
 const PetModel = require('../models/petModel.js');
-const { uploadPetAvatarBuffer } = require('../utils/cloudinary.js');
+const DB_Connection = require('../database/db');
+const multer = require('multer');
+// optional: if you already have this util, it will be used; else adjust accordingly
+const { uploadBuffer } = require('../utils/cloudinary');
+
+const db = new DB_Connection();
+const upload = multer({ storage: multer.memoryStorage() });
+
+async function assertPetOwner(userId, petId) {
+  const rs = await db.query_executor(`SELECT id FROM pets WHERE id = $1 AND owner_id = $2`, [petId, userId]);
+  if (!rs?.rows?.length) {
+    const err = new Error('Pet not found');
+    err.status = 404;
+    throw err;
+  }
+}
 
 class PetController {
     constructor() {
@@ -196,6 +211,90 @@ class PetController {
             console.error('GetPetSummary (joined) error:', e);
             return res.status(500).json({ success: false, error: 'Internal server error' });
         }
+    };
+
+    // Beshi kahini korte chaini tai r model call na kore eikhane kore dis
+    // TODO: Model update korte hobe
+    updatePet = async (req, res) => {
+        try {
+            const { petId } = req.params;
+            await assertPetOwner(req.user.id, petId);
+            const { name, species, breed, sex, birthdate, weight_kg, is_neutered, notes } = req.body;
+
+            const q = `
+              UPDATE pets SET
+                name = COALESCE($1, name),
+                species = COALESCE($2, species),
+                breed = COALESCE($3, breed),
+                sex = COALESCE($4, sex),
+                birthdate = $5,
+                weight_kg = $6,
+                is_neutered = COALESCE($7, is_neutered),
+                notes = $8,
+                updated_at = NOW()
+              WHERE id = $9
+              RETURNING *;
+            `;
+            const rs = await db.query_executor(q, [
+              name ?? null,
+              species ?? null,
+              breed ?? null,
+              sex ?? null,
+              birthdate ?? null,
+              weight_kg ?? null,
+              typeof is_neutered === 'boolean' ? is_neutered : null,
+              notes ?? null,
+              petId,
+            ]);
+            return res.json({ pet: rs.rows?.[0] || null });
+          } catch (e) {
+            return res.status(e.status || 500).json({ error: e.message });
+          }
+    };
+
+    addHealthMetric = async (req, res) => {
+        try {
+            const { petId } = req.params;
+            await assertPetOwner(req.user.id, petId);
+            const { measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note } = req.body;
+
+            const ins = await db.query_executor(
+              `INSERT INTO pet_health_metrics
+                 (pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note)
+               VALUES ($1, COALESCE($2, NOW()), $3, $4, $5, $6, $7) RETURNING *`,
+              [petId, measured_at ?? null, weight_kg ?? null, body_temp_c ?? null, heart_rate_bpm ?? null, respiration_rate_bpm ?? null, note ?? null]
+            );
+
+            if (typeof weight_kg === 'number') {
+              await db.query_executor(`UPDATE pets SET weight_kg = $1, updated_at = NOW() WHERE id = $2`, [weight_kg, petId]);
+            }
+
+            return res.status(201).json({ metric: ins.rows?.[0] || null });
+          } catch (e) {
+            return res.status(e.status || 500).json({ error: e.message });
+          }
+    };
+
+    uploadMiddleware = upload.single('avatar');
+
+    uploadPetAvatar = async (req, res) => {
+        try {
+            const { petId } = req.params;
+            await assertPetOwner(req.user.id, petId);
+            if (!req.file?.buffer) return res.status(400).json({ error: 'No file uploaded' });
+
+            const uploaded = await uploadBuffer(req.file.buffer, `pets/${petId}`);
+            const url = uploaded?.secure_url || uploaded?.url;
+            if (!url) throw new Error('Upload failed');
+
+            const rs = await db.query_executor(
+              `UPDATE pets SET avatar_url = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+              [url, petId]
+            );
+            return res.json({ pet: rs.rows?.[0] || null });
+          } catch (e) {
+            return res.status(e.status || 500).json({ error: e.message });
+          }
     };
 }
 

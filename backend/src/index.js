@@ -19,7 +19,7 @@ const {authRouter} = require('./routes/authRoutes.js');
 const {userRouter} = require('./routes/userRoutes.js');
 const tableRouter = require('./routes/tableCreation.js');
 const petRouter = require('./routes/petRoutes.js');
-const careRouter = require('./routes/careRoutes.js');
+const { careRouter } = require('./routes/careRoutes.js')
 const clinicVetRouter = require('./routes/clinicVetRoutes.js');
 const emergencyRouter = require('./routes/emergencyRoutes.js');
 const anomalyRouter = require('./routes/anomalyRoutes.js');
@@ -103,7 +103,7 @@ app.use('/api/auth', loginLimiter, authRouter);
 app.use('/api/user', apiLimiter, userRouter);
 app.use('/api', tableRouter);
 app.use('/api', petRouter);
-app.use('/api/care', careRouter);
+app.use('/api', careRouter);
 app.use('/api', clinicVetRouter);
 app.use('/api', emergencyRouter);
 app.use('/api', anomalyRouter);
