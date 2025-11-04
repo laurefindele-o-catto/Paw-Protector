@@ -7,11 +7,13 @@ const EmailUtils = require('../utils/emailUtils.js');
 const bus = require('../events/eventBus.js');
 const Events = require('../events/eventsNames.js');
 const { uploadAvatarBuffer } = require('../utils/cloudinary.js');
+const ClinicVetModel = require('../models/clinicVetModel.js')
 
 class UserController {
     constructor() {
         this.userModel = new UserModel();
-        this.tables = new TableCreation()
+        this.tables = new TableCreation();
+        this.vetModel = new ClinicVetModel();
         this.salt_round = parseInt(process.env.PASSWORD_SALT_ROUNDS);
         this.max_login_attempts = parseInt(process.env.LOGIN_MAX_ATTEMPTS);
         this.account_lock_minutes = parseInt(process.env.ACCOUNT_LOCK_MINUTES);
@@ -158,9 +160,10 @@ class UserController {
         }
     }
 
-    register = async (req, res) => {
+    register = async (req, res) => { 
         try {
             const { username, email, password, role } = req.body || {};
+            
             if (!username || !email || !password) {
                 return res.status(400).json({ success: false, error: 'username, email, password required' });
             }
@@ -196,6 +199,20 @@ class UserController {
             }
 
             const roleResult = await this.userModel.assignRoleToUser(newUser.id, roleName);
+            const vetPayload = {
+                user_id: newUser.id,
+                name: newUser.name || newUser.full_name || username,
+                clinic_id: newUser.clinic_id || null,
+                license_number: newUser.license_number || null,
+                license_issuer: newUser.license_issuer || null,
+                license_valid_until: newUser.license_valid_until || null,
+                specialization: newUser.specialization || null
+            };
+
+            if(roleName === 'vet'){
+                await this.vetModel.createVet(vetPayload);
+            }
+
             if (!roleResult.success) {
                 return res.status(400).json({
                     success: false,
