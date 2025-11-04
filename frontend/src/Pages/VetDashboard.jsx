@@ -44,7 +44,7 @@ function VetDashboard() {
           <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-8 flex flex-col items-center gap-8">
             <h1 className="text-2xl font-bold text-slate-800 mb-2">Vet Dashboard</h1>
             <button
-              onClick={() => navigate("/verify-credentials")}
+              onClick={() => navigate("/verification")}
               className="w-full py-4 px-6 bg-[#0f172a] text-[#edfdfd] rounded-xl font-semibold text-lg shadow hover:bg-[#22304a] transition"
             >
               Verify credentials
