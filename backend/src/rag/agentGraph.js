@@ -36,7 +36,7 @@ function getAgent() {
       - When listing, use bullet points with a leading "-" only.
       - Do NOT use asterisks (*) or numbered lists.
       - Use only tool results for facts; if unknown, say "Unknown".
-      - Reply in Bangla mainly but use English words when necessary. Keep the voice soothing. use 'তুমি'
+      - Reply in Bangla mainly but use English words when necessary and when names. Keep the voice soothing. use 'তুমি'. 
     `
   });
 
