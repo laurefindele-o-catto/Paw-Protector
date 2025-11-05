@@ -1,8 +1,11 @@
 const ClinicVetModel = require('../models/clinicVetModel.js');
+const VerificationMailer = require("../utils/verificationMailer.js");
+
 
 class ClinicVetController {
     constructor() {
         this.model = new ClinicVetModel();
+        this.mailer = new VerificationMailer();
     }
 
     addClinic = async (req, res) => {
@@ -23,22 +26,40 @@ class ClinicVetController {
             if (!data.user_id || !data.name) return res.status(400).json({ success: false, error: 'user_id and name required' });
             const result = await this.model.createVet(data);
             if (!result || result.success === false) return res.status(500).json({ success: false, error: 'Failed to add vet' });
+
+            try {
+                await this.mailer.sendVetVerificationRequest(result);
+            } catch (mailErr) {
+                console.error("Failed to send verification email:", mailErr.message);
+                // still return success for vet creation
+            }
+
+
             return res.status(201).json({ success: true, vet: result });
         } catch (error) {
             return res.status(500).json({ success: false, error: 'Internal server error' });
         }
     };
 
-    updateVet = async(req, res)=>{
+    updateVet = async (req, res) => {
         try {
             const data = req.body;
             const id = req.params.user_id;
             if (id || !data.name) return res.status(400).json({ success: false, error: 'user_id and name required' });
             const result = await this.model.updateVet(id, data);
             if (!result || result.success === false) return res.status(500).json({ success: false, error: 'Failed to update vet' });
+            // if vet is still unverified, send email again
+            if (!result.verified) {
+                try {
+                    await this.mailer.sendVetVerificationRequest(result);
+                } catch (mailErr) {
+                    console.error("Failed to send verification email:", mailErr.message);
+                }
+            }
+
             return res.status(201).json({ success: true, vet: result });
         } catch (error) {
-           return res.status(500).json({ success: false, error: 'Internal server error' });c 
+            return res.status(500).json({ success: false, error: 'Internal server error' }); c
         }
     }
 

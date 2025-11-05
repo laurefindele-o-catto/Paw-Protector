@@ -1,43 +1,28 @@
-// dashboard.jsx
-import { Link, useNavigate } from "react-router-dom";
-import ProfilePictureCard from "../Components/profilePictureCard";
-import FeaturesSection from "../Components/FeaturesSection";
-import { useAuth } from "../context/AuthContext";
-import { useEffect, useState } from "react";
-import apiConfig from "../config/apiConfig";
+import { useNavigate } from "react-router-dom";
 import { useAutoTranslate } from "react-autolocalise";
 import Header from "../components/Header";
-import { usePet } from "../context/PetContext";
-import PetSwitcher from "../Components/PetSwitcher";
 import Footer from "../Components/Footer";
-import ChatButton from "../components/ChatButton";
+import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
-const placeholder = "/placeholder.png";
-
-function Dashboard() {
+function VetDashboard() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t, loading, error } = useAutoTranslate();
 
-  const [user, setUser] = useState(null);
-  const current_pet_count = parseInt(localStorage.getItem('pet_count'));
-  
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/");
     }
-
     const user_local = JSON.parse(localStorage.getItem("user"));
-    setUser(user_local);
-    if(user_local?.roles[0] !== "owner"){
+    if (user_local?.roles[0] !== "vet") {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
@@ -54,23 +39,22 @@ function Dashboard() {
           </div>
         </div>
 
-        {current_pet_count !== 0 && (
-          <section className="mx-auto w-full px-2 sm:px-4">
-            <FeaturesSection />
-            <div className="w-full flex justify-center my-2">
-              <div className="h-[3px] w-2/3 bg-linear-to-r from-[#fdd142] via-[#0f172a]/30 to-[#fdd142] rounded-full shadow-md opacity-70" />
-            </div>
-          </section>
-        )}
-
-        <PetSwitcher />
-
-        {/* Random Cat Fact */}
-        <section className="mx-auto max-w-6xl w-full px-4 mt-6">
-          <div className="text-center backdrop-blur-md rounded-3xl p-6">
-            <h2 className="text-lg md:text-xl italic text-slate-700">
-              {t("Cats sleep for 70% of their lives.")}
-            </h2>
+        {/* Main vet actions */}
+        <section className="mx-auto max-w-xl w-full px-4 mt-10">
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-8 flex flex-col items-center gap-8">
+            <h1 className="text-2xl font-bold text-slate-800 mb-2">Vet Dashboard</h1>
+            <button
+              onClick={() => navigate("/verification")}
+              className="w-full py-4 px-6 bg-[#0f172a] text-[#edfdfd] rounded-xl font-semibold text-lg shadow hover:bg-[#22304a] transition"
+            >
+              Verify credentials
+            </button>
+            <button
+              onClick={() => navigate("/check")}
+              className="w-full py-4 px-6 bg-[#fdd142] text-[#0f172a] rounded-xl font-semibold text-lg shadow hover:bg-[#ffe066] transition"
+            >
+              Check Diagnostics
+            </button>
           </div>
         </section>
 
@@ -80,22 +64,7 @@ function Dashboard() {
 
       <Footer />
 
-      {/* Floating Chat Button */}
-      <ChatButton />
-
-       {/* Floating Call Button */}
-       <a
-         href="tel:+8801888548012"
-         className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
-         aria-label={t("Call emergency contact")}
-       >
-         <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />
-         <span className="text-[10px] font-semibold text-white leading-none">
-           {t("Emergency")}
-         </span>
-       </a>
-
-      {/* keyframes */}
+      {/* Keyframes */}
       <style>{`
         @keyframes slideup {
           from { opacity: 0; transform: translateY(16px); }
@@ -122,5 +91,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
-
+export default VetDashboard;

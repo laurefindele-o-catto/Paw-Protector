@@ -7,12 +7,20 @@ import { useAutoTranslate } from "react-autolocalise";
 export default function SkinDiseaseDetector() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t } = useAutoTranslate();
+  const { t: translate } = useAutoTranslate();
+
 
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef();
+
+  // toggle state
+  const [useTranslation, setUseTranslation] = useState(true);
+
+  // fallback translator
+  const t = useTranslation && translate ? translate : (s) => s;
+
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -98,6 +106,16 @@ export default function SkinDiseaseDetector() {
         Dashboard
       </button>
 
+      {/* Language Toggle Button (top right) */}
+      <button
+        onClick={() => setUseTranslation((prev) => !prev)}
+        className="absolute top-6 right-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+        aria-label="Toggle language"
+      >
+        {/* You can add an icon here if you want, but keeping it text-only for clarity */}
+        {useTranslation ? "BN" : "EN"}
+      </button>
+
       {/* Header */}
       <header className="w-full flex flex-col items-center p-6">
         <div className="flex items-center justify-center w-full mb-2">
@@ -128,6 +146,8 @@ export default function SkinDiseaseDetector() {
         </div>
         <div className="w-full border-b border-slate-200 mt-2" />
       </header>
+
+
 
       {/* Main content */}
       <main className="flex flex-col items-center justify-center flex-grow w-full px-6">
@@ -161,9 +181,8 @@ export default function SkinDiseaseDetector() {
           {/* File Picker Box */}
           <div
             onClick={handleBoxClick}
-            className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-white/70 hover:bg-white/90 transition w-full h-48 mb-6 ${
-              file ? "border-[#0f172a]" : "border-slate-300 hover:border-[#fdd142]"
-            }`}
+            className={`cursor-pointer flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-white/70 hover:bg-white/90 transition w-full h-48 mb-6 ${file ? "border-[#0f172a]" : "border-slate-300 hover:border-[#fdd142]"
+              }`}
             aria-label={t("Click to select an image")}
             role="button"
           >
@@ -214,25 +233,22 @@ export default function SkinDiseaseDetector() {
 
           {/* Results box */}
           <div
-            className={`mt-6 w-full p-6 border-2 rounded-2xl shadow-sm ${
-              result && typeof result === "string" && result.toLowerCase() !== "healthy"
-                ? "border-red-400 bg-red-50"
-                : "border-emerald-400 bg-emerald-50"
-            }`}
+            className={`mt-6 w-full p-6 border-2 rounded-2xl shadow-sm ${result && typeof result === "string" && result.toLowerCase() !== "healthy"
+              ? "border-red-400 bg-red-50"
+              : "border-emerald-400 bg-emerald-50"
+              }`}
           >
             <h2
-              className={`font-bold text-xl mb-2 ${
-                result && typeof result === "string" && result.toLowerCase() !== "healthy"
-                  ? "text-red-700"
-                  : "text-emerald-700"
-              }`}
+              className={`font-bold text-xl mb-2 ${result && typeof result === "string" && result.toLowerCase() !== "healthy"
+                ? "text-red-700"
+                : "text-emerald-700"
+                }`}
             >
               {t("Results")}
             </h2>
             <p
-              className={`text-lg font-medium ${
-                result === "Error processing image" ? "text-red-600" : "text-slate-800"
-              }`}
+              className={`text-lg font-medium ${result === "Error processing image" ? "text-red-600" : "text-slate-800"
+                }`}
               aria-live="polite"
             >
               {/* show translated messages for app-status strings; keep ML label raw */}
@@ -242,10 +258,56 @@ export default function SkinDiseaseDetector() {
                   : result
                 : t("No results yet")}
             </p>
-          </div>
 
-          {/* tiny floating accent inside card */}
-          <div className="pointer-events-none absolute -top-4 -right-4 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[float_6s_ease-in-out_infinite]" />
+            {/* Disease-specific professional notes */}
+            {result && ["ringworm", "scabies", "flea_allergy"].includes(result.toLowerCase()) && (
+              <div className="mt-4 text-sm text-slate-700 bg-white p-3 rounded-lg border">
+                {result.toLowerCase() === "ringworm" && (
+                  <div>
+                    <h3 className="font-semibold text-red-700 mb-1">Ringworm (Dermatophytosis)</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li><strong>Nature:</strong> Highly contagious fungal infection; transmissible to pets and humans.</li>
+                      <li><strong>Treatment:</strong> Topical antifungal (Miconazole/Clotrimazole) for 2–4 weeks; oral Itraconazole for 21–28 days if widespread.</li>
+                      <li><strong>Pet Care:</strong> Isolate the cat, wash bedding and grooming tools, vacuum environment. Wear gloves when handling.</li>
+                    </ul>
+                  </div>
+
+                )}
+
+
+                {result.toLowerCase() === "scabies" && (
+                  <div>
+                    <h3 className="font-semibold text-red-700 mb-1">Scabies (Feline Sarcoptic Mange)</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li><strong>Nature:</strong> Caused by mites; extremely contagious between animals, occasionally to humans.</li>
+                      <li><strong>Treatment:</strong> Selamectin (Revolution®) spot‑on, repeat in 2–4 weeks; alternative Ivermectin weekly for 2–3 weeks under vet supervision.</li>
+                      <li><strong>Pet Care:</strong> Wash bedding, disinfect living areas, treat all in‑contact animals. Use e‑collar if scratching is severe.</li>
+                    </ul>
+                  </div>
+
+                )}
+                {result === "Flea_Allergy" && (
+                  <div>
+                    <h3 className="font-semibold text-red-700 mb-1">Flea Allergy Dermatitis</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li><strong>Nature:</strong> Not directly contagious, but fleas spread easily between pets and environments.</li>
+                      <li><strong>Treatment:</strong> Monthly flea control (Fipronil/Frontline®, Selamectin); short course of Prednisolone 5–7 days for itching.</li>
+                      <li><strong>Pet Care:</strong> Treat all pets, wash bedding, vacuum carpets, use flea sprays. Maintain strict monthly prevention.</li>
+                    </ul>
+                  </div>
+                )}
+
+                <p className="text-xs text-red-600 mt-2">
+                  ⚠️ Always consult a licensed veterinarian before starting or adjusting any medication.
+                </p>
+
+              </div>
+            )}
+
+
+            {/* tiny floating accent inside card */}
+            <div className="pointer-events-none absolute -top-4 -right-4 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[float_6s_ease-in-out_infinite]" />
+          </div>
         </div>
       </main>
 

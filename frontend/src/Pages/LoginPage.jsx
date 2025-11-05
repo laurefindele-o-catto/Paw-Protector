@@ -17,7 +17,15 @@ const LoginPage = () => {
   // Wrap login with loader hook
   const { run: loginWithLoader, loading } = useLoader(async (id, pass) => {
     const { success, error: errMsg } = await login(id, pass);
-    if (success) navigate("/dashboard");
+    if (success){
+      const user = JSON.parse(localStorage.getItem("user"));
+      if(user.roles[0] == "owner"){
+        navigate("/dashboard");
+      }
+      else if(user.roles[0]=='vet'){
+        navigate("/vdashboard");
+      }
+    }
     else setError(errMsg || "Login Failed");
   });
 
