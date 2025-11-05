@@ -1,5 +1,6 @@
 const DB_Connection = require('../database/db');
 const DiseaseModel = require('../models/diseaseModel');
+const { upsertDocs } = require('../rag/service.js');
 const db = new DB_Connection();
 const diseaseModel = new DiseaseModel();
 
@@ -41,10 +42,18 @@ class DiseaseController {
                 return res.status(400).json({ success: false, error: 'pet_id and disease_name required' });
             }
             const result = await this.diseaseModel.addDisease(data);
-            if (!result || result.success === false) {
-                return res.status(500).json({ success: false, error: 'Failed to add disease' });
+
+            const row = result?.rows?.[0] || result; 
+            if (row) {
+              await upsertDocs([{
+                doc_id: `pet:${row.pet_id}:disease:${row.id}`,
+                user_id: req.user.id,
+                pet_id: Number(row.pet_id),
+                doc_type: 'disease',
+                content: `Disease: ${row.disease_name}. Severity=${row.severity || 'unknown'}, status=${row.status || 'active'}, diagnosed_on=${row.diagnosed_on || '—'}. Symptoms: ${row.symptoms || '—'}. Notes: ${row.notes || '—'}.`
+              }]);
             }
-            return res.status(201).json({ success: true, disease: result });
+            return res.status(201).json({ disease: row });
         } catch (e) {
             return res.status(e.status || 500).json({ success: false, error: e.message || 'Internal server error' });
         }
@@ -89,11 +98,18 @@ class DiseaseController {
         try {
             const { id } = req.params;
             await assertDiseaseOwner(req.user.id, parseInt(id, 10)); // guard
-            const updated = await this.diseaseModel.updateDisease(parseInt(id, 10), req.body || {});
-            if (!updated || updated.success === false) {
-                return res.status(400).json({ success: false, error: 'Update failed' });
+            const r = await this.diseaseModel.updateDisease(parseInt(id, 10), req.body || {});
+            const updated = r?.rows?.[0] || r; 
+            if (updated) {
+              await upsertDocs([{
+                doc_id: `pet:${updated.pet_id}:disease:${updated.id}`,
+                user_id: req.user.id,
+                pet_id: Number(updated.pet_id),
+                doc_type: 'disease',
+                content: `Disease: ${updated.disease_name}. Severity=${updated.severity || 'unknown'}, status=${updated.status || 'active'}, diagnosed_on=${updated.diagnosed_on || '—'}, resolved_on=${updated.resolved_on || '—'}. Symptoms: ${updated.symptoms || '—'}. Notes: ${updated.notes || '—'}.`
+              }]);
             }
-            return res.status(200).json({ success: true, disease: updated });
+            return res.json({ disease: updated });
         } catch (e) {
             return res.status(e.status || 500).json({ success: false, error: e.message || 'Internal server error' });
         }

@@ -10,6 +10,7 @@ import Header from "../components/Header";
 import { usePet } from "../context/PetContext";
 import PetSwitcher from "../Components/PetSwitcher";
 import Footer from "../Components/Footer";
+import ChatButton from "../components/ChatButton";
 
 const placeholder = "/placeholder.png";
 
@@ -76,17 +77,20 @@ function Dashboard() {
 
       <Footer />
 
-      {/* Floating Call Button */}
-      <a
-        href="tel:+8801888548012"
-        className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
-        aria-label={t("Call emergency contact")}
-      >
-        <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />
-        <span className="text-[10px] font-semibold text-white leading-none">
-          {t("Emergency")}
-        </span>
-      </a>
+      {/* Floating Chat Button */}
+      <ChatButton />
+
+       {/* Floating Call Button */}
+       <a
+         href="tel:+8801888548012"
+         className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
+         aria-label={t("Call emergency contact")}
+       >
+         <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />
+         <span className="text-[10px] font-semibold text-white leading-none">
+           {t("Emergency")}
+         </span>
+       </a>
 
       {/* keyframes */}
       <style>{`

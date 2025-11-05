@@ -1,5 +1,6 @@
 const CareModel = require('../models/careModel.js');
 const DB_Connection = require('../database/db.js');
+const { upsertDocs } = require('../rag/service.js');
 const db = new DB_Connection();
 
 async function assertPetOwner(userId, petId) {
@@ -58,7 +59,17 @@ class CareController {
                 notes
             });
 
-            return res.status(201).json({ success: true, vaccination: result });
+            const row = result; 
+            if (row) {
+              await upsertDocs([{
+                doc_id: `pet:${row.pet_id}:vax:${row.id}`,
+                user_id: req.user.id,
+                pet_id: Number(row.pet_id),
+                doc_type: 'vaccination',
+                content: `Vaccination ${row.vaccine_name} dose ${row.dose_number || '1'} on ${row.administered_on || '—'}. Next due ${row.due_on || '—'}. Notes: ${row.notes || '—'}.`
+              }]);
+            }
+            return res.status(201).json({ vaccination: row });
         } catch (error) {
             return res.status(error.status || 500).json({ success: false, error: error.message || 'Internal server error' });
         }
@@ -86,7 +97,17 @@ class CareController {
                 notes
             });
 
-            return res.status(201).json({ success: true, deworming: result });
+            const drow = result; 
+            if (drow) {
+              await upsertDocs([{
+                doc_id: `pet:${drow.pet_id}:deworm:${drow.id}`,
+                user_id: req.user.id,
+                pet_id: Number(drow.pet_id),
+                doc_type: 'deworming',
+                content: `Deworming ${drow.product_name} on ${drow.administered_on || '—'}. Next due ${drow.due_on || '—'}. Dose: ${drow.weight_based_dose || '—'}. Notes: ${drow.notes || '—'}.`
+              }]);
+            }
+            return res.status(201).json({ deworming: drow });
         } catch (error) {
             return res.status(error.status || 500).json({ success: false, error: error.message || 'Internal server error' });
         }

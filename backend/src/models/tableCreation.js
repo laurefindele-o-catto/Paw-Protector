@@ -5,6 +5,62 @@ class TableCreation {
         this.db_connection = new DB_Connection();
     }
 
+    enable_pgvector_extension = async () => {
+        try {
+            const query = `CREATE EXTENSION IF NOT EXISTS vector;`;
+            await this.db_connection.query_executor(query);
+            console.log("pgvector extension ensured");
+            return { success: true };
+        } catch (error) {
+            console.log(`Error enabling pgvector: ${error.message}`);
+            throw error;
+        }
+    };
+
+    create_rag_documents_table = async()=>{
+        const dim = Number(process.env.EMBEDDING_DIM || 1536);
+        const lists = Number(process.env.PGVECTOR_INDEX_LISTS || 100);
+
+        const ddl = `
+            CREATE TABLE IF NOT EXISTS rag_documents(
+                id BIGSERIAL PRIMARY KEY,
+                doc_id TEXT UNIQUE NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+                doc_type VARCHAR(50) NOT NULL,
+                content TEXT NOT NULL,
+                metadata JSONB,
+                embedding vector(${dim}),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+
+            -- Filter/lookup indexes
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_user_id ON rag_documents(user_id);
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_pet_id ON rag_documents(pet_id);
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_doc_type ON rag_documents(doc_type);
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_metadata_gin ON rag_documents USING GIN (metadata);
+
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_embedding_ivfflat
+            ON rag_documents USING ivfflat (embedding vector_cosine_ops)
+            WITH (lists = ${lists});
+        `;
+        try {
+            await this.db_connection.query_executor(ddl);
+            console.log(`RAG documents table created (dim=${dim}, lists=${lists})`);
+            return { success: true }
+        } catch (error) {
+            console.log(`Error creating rag_documents: ${error.message}`);
+            throw error;
+        }
+    }
+
+    ensure_pgvector_and_rag_documents = async () => {
+        await this.enable_pgvector_extension();
+        await this.create_rag_documents_table();
+        return { success: true };
+    };
+
     create_users_table = async()=>{
         try {
             const query = `

@@ -72,7 +72,9 @@ const apiConfig = {
     updateSessionTitle: (sessionId) => `/api/chat/session/${sessionId}/title`,
     addMessage: '/api/chat/message',
     listMessages: (sessionId) => `/api/chat/session/${sessionId}/messages`,
+    agent: '/api/chat/agent',
     addRagSource: '/api/chat/rag-source',
+    vision: '/api/chat/vision',
   },
 
   googleMapsApiKey: "AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds", 

@@ -14,6 +14,9 @@ router.get('/pets', authenticateToken.authenticateToken, petController.getMyPets
 // Pet summary
 router.get('/pets/:petId/summary', authenticateToken.authenticateToken, petController.getPetSummary);
 
+// Pet Add
+router.post('/pets', authenticateToken.authenticateToken, petController.addPet);
+
 // Update pet (basic info)
 router.patch('/pets/:petId', authenticateToken.authenticateToken, petController.updatePet);
 

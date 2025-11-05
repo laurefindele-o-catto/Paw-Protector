@@ -21,4 +21,13 @@ router.get('/chat/session/:session_id/messages', authenticateToken.authenticateT
 // Add RAG source
 router.post('/chat/rag-source', authenticateToken.authenticateToken, chatController.addRagSource);
 
+// Agentic chat (LangGraph ReAct)
+router.post('/chat/agent', authenticateToken.authenticateToken, chatController.chatAgentMessage);
+
+// Vision evidence 
+router.post('/chat/vision', authenticateToken.authenticateToken, chatController.addVisionEvidence);
+
+router.post('/rag/upsert', authenticateToken.authenticateToken, chatController.ragUpsert);
+router.post('/rag/search', authenticateToken.authenticateToken, chatController.ragSearch)
+
 module.exports = router;
