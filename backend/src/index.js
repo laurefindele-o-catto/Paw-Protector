@@ -1,9 +1,11 @@
-const express = require('express');
+const path = require('path');
 const dotenv = require('dotenv');
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
-const path = require('path');
 const {rateLimit} = require('express-rate-limit');
 const http = require('http');
 const createSocketServer = require('./realtime/socketServer.js');
@@ -11,8 +13,6 @@ const NotificationService = require('./notifications/notificationService.js');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { swaggerJsdocOptions } = require('./docs/swaggerConfig.js');
-
-dotenv.config({path: path.resolve(__dirname, '.env')});
 
 const app = express();
 const {authRouter} = require('./routes/authRoutes.js');

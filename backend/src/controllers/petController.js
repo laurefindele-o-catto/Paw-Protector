@@ -2,7 +2,8 @@ const PetModel = require('../models/petModel.js');
 const DB_Connection = require('../database/db');
 const multer = require('multer');
 // optional: if you already have this util, it will be used; else adjust accordingly
-const { uploadBuffer } = require('../utils/cloudinary');
+const { uploadPetAvatarBuffer } = require('../utils/cloudinary');
+const { upsertDocs } = require('../rag/service.js');
 
 const db = new DB_Connection();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -235,7 +236,7 @@ class PetController {
               WHERE id = $9
               RETURNING *;
             `;
-            const rs = await db.query_executor(q, [
+            const result = await db.query_executor(q, [
               name ?? null,
               species ?? null,
               breed ?? null,
@@ -246,7 +247,18 @@ class PetController {
               notes ?? null,
               petId,
             ]);
-            return res.json({ pet: rs.rows?.[0] || null });
+            const pet = result.rows?.[0] || null;
+            if (pet) {
+              await upsertDocs([{
+                doc_id: `pet:${pet.id}:summary`,
+                user_id: req.user.id,
+                pet_id: pet.id,
+                doc_type: 'pet_summary',
+                content: `Pet ${pet.name} (${pet.species}), sex=${pet.sex}, breed=${pet.breed || 'unknown'}, birthdate=${pet.birthdate || 'unknown'}, weight=${pet.weight_kg ?? '—'}kg, neutered=${!!pet.is_neutered}. Notes: ${pet.notes || '—'}.`,
+                metadata: { name: pet.name, species: pet.species }
+              }]);
+            }
+            return res.json({ pet });
           } catch (e) {
             return res.status(e.status || 500).json({ error: e.message });
           }
@@ -269,7 +281,18 @@ class PetController {
               await db.query_executor(`UPDATE pets SET weight_kg = $1, updated_at = NOW() WHERE id = $2`, [weight_kg, petId]);
             }
 
-            return res.status(201).json({ metric: ins.rows?.[0] || null });
+            const metric = ins.rows?.[0] || null;
+            if (metric) {
+              await upsertDocs([{
+                doc_id: `pet:${metric.pet_id}:metric:${metric.id}`,
+                user_id: req.user.id,
+                pet_id: Number(metric.pet_id),
+                doc_type: 'metric',
+                content: `Metric at ${metric.measured_at}: weight=${metric.weight_kg ?? '—'}kg, temp=${metric.body_temp_c ?? '—'}C, HR=${metric.heart_rate_bpm ?? '—'}bpm, RR=${metric.respiration_rate_bpm ?? '—'}bpm. Note: ${metric.note || '—'}.`,
+                metadata: { measured_at: metric.measured_at }
+              }]);
+            }
+            return res.status(201).json({ metric });
           } catch (e) {
             return res.status(e.status || 500).json({ error: e.message });
           }
@@ -283,7 +306,7 @@ class PetController {
             await assertPetOwner(req.user.id, petId);
             if (!req.file?.buffer) return res.status(400).json({ error: 'No file uploaded' });
 
-            const uploaded = await uploadBuffer(req.file.buffer, `pets/${petId}`);
+            const uploaded = await uploadPetAvatarBuffer(req.file.buffer, `pets/${petId}`);
             const url = uploaded?.secure_url || uploaded?.url;
             if (!url) throw new Error('Upload failed');
 
