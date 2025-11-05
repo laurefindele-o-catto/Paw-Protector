@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
+import { useAutoTranslate } from "react-autolocalise";
 // import Footer from "../Components/Footer";
 import apiConfig from "../config/apiConfig";
 import { useAuth } from "../context/AuthContext";
@@ -26,6 +27,15 @@ export default function AssistantChat() {
   const { isAuthenticated, token, user } = useAuth();
   const { selectedPet } = usePet?.() || {};
   const geo = useGeo();
+  const { t: translate } = useAutoTranslate();
+
+  // translation state
+  const [useTranslation, setUseTranslation] = useState(true);
+  const t = useTranslation && translate ? translate : (s) => s;
+
+  const handleTranslationToggle = (newState) => {
+    setUseTranslation(newState);
+  };
 
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]); // [{id,title,pet_id,updated_at}]
@@ -291,7 +301,10 @@ export default function AssistantChat() {
 
   return (
     <>
-      <Header />
+      <Header 
+        translationState={useTranslation} 
+        onTranslationToggle={handleTranslationToggle}
+      />
       <div className="min-h-screen bg-[#edfdfd] text-slate-900 pt-28 mt-24">
         <div className="mx-auto max-w-6xl px-4 flex h-[70vh]">
           {/* Collapsible Sidebar */}

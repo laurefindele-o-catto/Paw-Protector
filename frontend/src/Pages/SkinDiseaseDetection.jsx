@@ -103,7 +103,7 @@ export default function SkinDiseaseDetector() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Dashboard
+        {t('Dashboard')}
       </button>
 
       {/* Language Toggle Button (top right) */}
