@@ -38,9 +38,10 @@ export default function PawPal() {
       <section className="relative mx-auto max-w-6xl px-4 pt-10">
         <div className="grid md:grid-cols-2 gap-4">
           <div className="bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-lg p-8 flex flex-col justify-center">
-            <span className="inline-flex items-center gap-2 bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full text-xs font-semibold w-fit" aria-label={t("Brand")}>
-              🐾 PawPal
-            </span>
+            <div className="h-10 w-10 rounded-xl overflow-hidden animate-[popin_0.5s_ease]">
+            <img src="/logo.png" alt="PawPal logo" className="h-full w-full object-contain" />
+          </div>
+          <span className="text-1xl md:text-2xl lg:text-2xl font-bold leading-none">PawPal</span>
             <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">
               {t("Make pet care obvious, not overwhelming")}
             </h1>

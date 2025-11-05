@@ -5,7 +5,7 @@ import AssistantChat from "./pages/AssistantChat.jsx";
 
 import About from "./Pages/About";
 import Dashboard from "./Pages/dashboard";
-import VetFinder from "./Pages/VetFinder";
+import VetFinder from "./Pages/vetFinder";
 import VaccineAlert from "./Pages/vaccineAlert";
 import PetCare from "./Pages/petCare";
 import PawPal from "./Pages/PawPal";

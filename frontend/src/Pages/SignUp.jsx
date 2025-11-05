@@ -60,12 +60,10 @@ const SignupPage = () => {
       <div className="relative w-full max-w-md bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 md:p-8 animate-[slideup_0.6s_ease-out]">
         {/* small brand chip */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs">
-            PP
+          <div className="h-10 w-10 rounded-xl overflow-hidden animate-[popin_0.5s_ease]">
+            <img src="/logo.png" alt="PawPal logo" className="h-full w-full object-contain" />
           </div>
-          <span className="font-semibold tracking-tight text-slate-900">
-            PawPal
-          </span>
+          <span className="text-1xl md:text-2xl lg:text-2xl font-bold leading-none">PawPal</span>
         </div>
 
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
