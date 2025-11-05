@@ -6,6 +6,7 @@ import apiConfig from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import { useLoader } from "../hooks/useLoader";
 import { Loader } from "../Components/Loader";
+import { useAutoTranslate } from "react-autolocalise";
 
 // Simple loader for Google Places script
 function useGooglePlaces(apiKey) {
@@ -28,6 +29,14 @@ function useGooglePlaces(apiKey) {
 const placeholder = "/placeholder.png";
 
 function ProfilePage() {
+  const { t: translate } = useAutoTranslate();
+  
+  // toggle state
+  const [useTranslation, setUseTranslation] = useState(true);
+
+  // fallback translator
+  const t = useTranslation && translate ? translate : (s) => s;
+
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -360,7 +369,16 @@ function ProfilePage() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Dashboard
+        {t('Dashboard')}
+      </button>
+
+      {/* Translation toggle button */}
+      <button
+        onClick={() => setUseTranslation((prev) => !prev)}
+        className="absolute top-20 left-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
+        aria-label="Toggle language"
+      >
+        {useTranslation ? "BN" : "EN"}
       </button>
 
       {/* Profile avatar button */}
@@ -397,35 +415,35 @@ function ProfilePage() {
         {/* Full name */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Full Name
+            {t('Full Name')}
           </label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-            placeholder="Enter Full Name"
+            placeholder={t('Enter Full Name')}
           />
         </div>
 
         {/* Email */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Email
+            {t('Email')}
           </label>
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-            placeholder="Enter Email"
+            placeholder={t('Enter Email')}
           />
         </div>
 
         {/* Phone with region picker */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Contact (Phone)
+            {t('Contact (Phone)')}
           </label>
           <div className="flex gap-2">
             <select
@@ -452,7 +470,7 @@ function ProfilePage() {
         {/* Address with Google Places */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Address (Search)
+            {t('Address (Search)')}
           </label>
           <input
             ref={addressInputRef}
@@ -460,7 +478,7 @@ function ProfilePage() {
             value={addressLine}
             onChange={(e)=>setAddressLine(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-            placeholder="Start typing your address"
+            placeholder={t('Start typing your address')}
           />
           <div className="mt-3 flex items-center gap-3">
             <button
@@ -468,7 +486,7 @@ function ProfilePage() {
               onClick={useMyLocation}
               className="rounded-full bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-[#edfdfd] hover:bg-slate-900 transition"
             >
-              Use my location
+              {t('Use my location')}
             </button>
             {typeof latitude === "number" && typeof longitude === "number" && (
               <span className="text-xs text-slate-500">

@@ -1,10 +1,23 @@
 import Header from "../components/Header";
 import Footer from "../Components/Footer";
+import { useState } from "react";
+import { useAutoTranslate } from "react-autolocalise";
 
 function CheckDiagnostics() {
+  const { t: translate } = useAutoTranslate();
+  const [useTranslation, setUseTranslation] = useState(true);
+  const t = useTranslation && translate ? translate : (s) => s;
+
+  const handleTranslationToggle = (newState) => {
+    setUseTranslation(newState);
+  };
+
   return (
     <>
-      
+      <Header 
+        translationState={useTranslation} 
+        onTranslationToggle={handleTranslationToggle}
+      />
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
@@ -24,7 +37,7 @@ function CheckDiagnostics() {
         {/* Placeholder Content */}
         <div className="flex flex-1 items-center justify-center">
           <span className="text-5xl md:text-7xl font-bold text-gray-400 opacity-70 select-none">
-            This is a placeholder
+            {t('This is a placeholder')}
           </span>
         </div>
 

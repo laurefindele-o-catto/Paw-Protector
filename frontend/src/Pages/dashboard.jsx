@@ -17,7 +17,9 @@ const placeholder = "/placeholder.png";
 function Dashboard() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t, loading, error } = useAutoTranslate();
+  const { t: translate } = useAutoTranslate();
+  const [useTranslation, setUseTranslation] = useState(true);
+  const t = useTranslation && translate ? translate : (s) => s;
 
   const [user, setUser] = useState(null);
   const current_pet_count = parseInt(localStorage.getItem('pet_count'));
@@ -35,9 +37,16 @@ function Dashboard() {
     }
   }, [isAuthenticated, navigate]);
 
+  const handleTranslationToggle = (newState) => {
+    setUseTranslation(newState);
+  };
+
   return (
     <>
-      <Header />
+      <Header 
+        translationState={useTranslation} 
+        onTranslationToggle={handleTranslationToggle}
+      />
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />

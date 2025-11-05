@@ -12,7 +12,14 @@ const VaccineAlert = ({ userId }) => {
   const [vaccinations, setVaccinations] = useState([]);
   const [dewormings, setDewormings] = useState([]);
   const [dewormProduct, setDewormProduct] = useState("");
-  const { t } = useAutoTranslate();
+  const { t: translate } = useAutoTranslate();
+  
+  // toggle state
+  const [useTranslation, setUseTranslation] = useState(true);
+
+  // fallback translator
+  const t = useTranslation && translate ? translate : (s) => s;
+
   const [rabiesDate, setRabiesDate] = useState("");
   const [fluDate, setFluDate] = useState("");
   const [dewormingDate, setDewormingDate] = useState("");
@@ -225,7 +232,16 @@ const VaccineAlert = ({ userId }) => {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Dashboard
+        {t('Dashboard')}
+      </button>
+
+      {/* Translation toggle button */}
+      <button
+        onClick={() => setUseTranslation((prev) => !prev)}
+        className="absolute top-6 right-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
+        aria-label="Toggle language"
+      >
+        {useTranslation ? "BN" : "EN"}
       </button>
 
       {/* Pet Selector */}
