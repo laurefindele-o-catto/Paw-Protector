@@ -1,9 +1,15 @@
 // PawPal.jsx — alt style: split hero, marquee motto, striped goals, KPI tickers
-import React from "react";
+import React, { useState } from "react";
 import { useAutoTranslate } from "react-autolocalise";
 
 export default function PawPal() {
-  const { t } = useAutoTranslate();
+  const { t: translate } = useAutoTranslate();
+
+  // toggle state
+  const [useTranslation, setUseTranslation] = useState(true);
+
+  // fallback translator
+  const t = useTranslation && translate ? translate : (s) => s;
 
   const goals = [
     { n: "01", title: "Clarity", desc: "Short flows. Fewer taps. No jargon." },
@@ -34,13 +40,32 @@ export default function PawPal() {
       <div className="pointer-events-none absolute top-24 right-10 h-14 w-14 bg-[#fdd142]/60 rounded-full blur-xl" />
       <div className="pointer-events-none absolute -bottom-28 right-20 h-72 w-72 border-[14px] border-[#fdd142]/20 rounded-full animate-[spin_30s_linear_infinite]" />
 
+      {/* Header with translation toggle */}
+      <header className="w-full mx-auto flex items-center justify-between px-6 md:px-16 py-4 z-20 relative">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-sm animate-[popin_0.5s_ease]">
+            PP
+          </div>
+          <span className="font-semibold tracking-tight text-slate-900">PawPal</span>
+        </div>
+        
+        <button
+          onClick={() => setUseTranslation((prev) => !prev)}
+          className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition"
+          aria-label="Toggle language"
+        >
+          {useTranslation ? "BN" : "EN"}
+        </button>
+      </header>
+
       {/* Split hero */}
       <section className="relative mx-auto max-w-6xl px-4 pt-10">
         <div className="grid md:grid-cols-2 gap-4">
           <div className="bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-lg p-8 flex flex-col justify-center">
-            <span className="inline-flex items-center gap-2 bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full text-xs font-semibold w-fit" aria-label={t("Brand")}>
-              🐾 PawPal
-            </span>
+            <div className="h-10 w-10 rounded-xl overflow-hidden animate-[popin_0.5s_ease]">
+            <img src="/logo.png" alt="PawPal logo" className="h-full w-full object-contain" />
+          </div>
+          <span className="text-1xl md:text-2xl lg:text-2xl font-bold leading-none">PawPal</span>
             <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">
               {t("Make pet care obvious, not overwhelming")}
             </h1>
@@ -153,6 +178,10 @@ export default function PawPal() {
       <style>{`
         @keyframes marq { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
         @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+        @keyframes popin {
+          0% { transform: scale(0.8); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
       `}</style>
     </div>
   );

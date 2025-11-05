@@ -1,4 +1,5 @@
-import React, {useEffect, useState} from "react";
+// petCare.jsx — engaging flashcard UI for cat care (with auto-translate)
+import React, { useState } from "react";
 import { useAutoTranslate } from "react-autolocalise";
 import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
@@ -13,10 +14,37 @@ import apiConfig from "../config/apiConfig";
  * Keep/extend styles from your LandingPage palette (#edfdfd, #0f172a, #fdd142)
  */
 export default function PetCare() {
-  const { t } = useAutoTranslate();
+  const { t: translate } = useAutoTranslate();
   const navigate = useNavigate();
 
-  const [petSummary, setPetSummary] = useState('');
+  // toggle state
+  const [useTranslation, setUseTranslation] = useState(true);
+
+  // fallback translator
+  const t = useTranslation && translate ? translate : (s) => s;
+
+  const daily = [
+    {
+      title: "Morning",
+      emoji: "🌅",
+      points: [
+        "Fresh water & bowls",
+        "Breakfast portion",
+        "Scoop litter",
+        "5–10 min play (wand)",
+      ],
+    },
+    {
+      title: "Mid-day",
+      emoji: "🧩",
+      points: ["Puzzle feeder / foraging", "Window perch & toy rotation"],
+    },
+    {
+      title: "Evening",
+      emoji: "🌙",
+      points: ["Dinner portion", "Brush coat & teeth", "Interactive play, wind-down"],
+    },
+  ];
 
   const lifeStages = [
     {
@@ -298,7 +326,16 @@ export default function PetCare() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Dashboard
+        {t('Dashboard')}
+      </button>
+
+      {/* Translation toggle button */}
+      <button
+        onClick={() => setUseTranslation((prev) => !prev)}
+        className="absolute top-6 right-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
+        aria-label="Toggle language"
+      >
+        {useTranslation ? "BN" : "EN"}
       </button>
 
       {/* Daily flashcards */}

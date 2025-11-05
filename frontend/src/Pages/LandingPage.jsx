@@ -63,10 +63,11 @@ const LandingPage = () => {
       {/* NAV */}
       <header className="w-full mx-auto flex items-center justify-between px-6 md:px-16 py-4 z-20 relative">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-sm animate-[popin_0.5s_ease]">
-            PP
-          </div>
-          <span className="font-semibold tracking-tight text-slate-900">PawPal</span>
+          <div className="h-20 w-20 rounded-xl overflow-hidden animate-[popin_0.5s_ease]">
+    <img src="/logo.png" alt="PawPal logo" className="h-full w-full object-contain" />
+        </div>
+          <span className="text-2xl md:text-3xl lg:text-4xl font-bold leading-none">PawPal</span>
+
         </div>
         <button
           onClick={goLogin}
