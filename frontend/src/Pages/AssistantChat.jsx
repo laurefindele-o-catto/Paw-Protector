@@ -212,55 +212,56 @@ export default function AssistantChat() {
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
     try {
-      // If a photo is attached, analyze it now (deferred) and store evidence
+      let res;
       if (pendingVision?.dataUrl) {
         setUploading(true);
         try {
           const file = await dataUrlToFile(pendingVision.dataUrl, pendingVision.name || 'photo.jpg');
           const form = new FormData();
-          form.append("image", file);
-          const uploadRes = await fetch(HF_ENDPOINT, { method: "POST", body: form });
-          const uploadData = await uploadRes.json().catch(() => ({}));
-          const label = uploadData?.label || "Unknown";
-          // Persist vision evidence so RAG can use it
-          await fetch(`${apiConfig.baseURL}${apiConfig.chat.vision}`, {
+          form.append("session_id", String(sessionId));
+          form.append("content", content);
+          if (petId != null) form.append("pet_id", String(petId));
+          form.append("doc_types", "pet_summary,metric,disease,vaccination,deworming,vision,chat");
+          form.append("topK", String(6));
+          if (geo?.lat != null) form.append("lat", String(geo.lat));
+          if (geo?.lng != null) form.append("lng", String(geo.lng));
+          form.append("file", file); // key must be 'file' to match multer
+          res = await fetch(`${apiConfig.baseURL}${apiConfig.chat.agent}`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ session_id: sessionId, pet_id: petId, label, source: pendingVision.name || 'photo.jpg' })
+            headers: { Authorization: `Bearer ${token}` }, // do NOT set Content-Type; browser will set boundary
+            body: form
           });
-        } catch {
-          // soft-fail; continue without vision context
         } finally {
           setUploading(false);
         }
+      } else {
+        const body = {
+          session_id: sessionId,
+          content,
+          pet_id: petId,
+          doc_types: "pet_summary,metric,disease,vaccination,deworming,vision,chat",
+          topK: 6,
+          lat: geo?.lat ?? null,
+          lng: geo?.lng ?? null
+        };
+        res = await fetch(`${apiConfig.baseURL}${apiConfig.chat.agent}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body)
+        });
       }
-
-      const body = {
-        session_id: sessionId,
-        content,
-        pet_id: petId,
-        doc_types: "pet_summary,metric,disease,vaccination,deworming,vision,chat",
-        topK: 6,
-        lat: geo?.lat ?? null,
-        lng: geo?.lng ?? null
-      };
-      const res = await fetch(`${apiConfig.baseURL}${apiConfig.chat.agent}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      const answer = data?.answer || "দুঃখিত, এখন উত্তর দিতে পারলাম না। একটু পরে আবার চেষ্টা করুন।";
-      const asst = { role: "assistant", content: answer, ts: new Date().toISOString() };
-      setMessages(prev => [...prev, asst]);
-      setPendingVision(null); // clear one-time attachment after using it
-      savePendingVisionLS(sessionId, null);
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "নেটওয়ার্ক সমস্যার কারণে এখন সম্ভব হচ্ছে না। একটু পরে চেষ্টা করুন।", ts: new Date().toISOString() }]);
-    } finally {
-      setLoading(false);
+        const data = await res.json();
+        const answer = data?.answer || "দুঃখিত, এখন উত্তর দিতে পারলাম না। একটু পরে আবার চেষ্টা করুন।";
+        const asst = { role: "assistant", content: answer, ts: new Date().toISOString() };
+        setMessages(prev => [...prev, asst]);
+        setPendingVision(null); // clear one-time attachment after using it
+        savePendingVisionLS(sessionId, null);
+      } catch {
+        setMessages(prev => [...prev, { role: "assistant", content: "নেটওয়ার্ক সমস্যার কারণে এখন সম্ভব হচ্ছে না। একটু পরে চেষ্টা করুন।", ts: new Date().toISOString() }]);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
   // Inline skin disease detection
   const onPickFile = () => fileRef.current?.click();

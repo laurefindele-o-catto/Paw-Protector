@@ -1,6 +1,8 @@
 const express = require('express');
 const ChatController = require('../controllers/chatController.js');
-const AuthenticateToken = require('../middlewares/authenticateToken.js'); // fixed
+const AuthenticateToken = require('../middlewares/authenticateToken.js');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 const chatController = new ChatController();
@@ -21,8 +23,13 @@ router.get('/chat/session/:session_id/messages', authenticateToken.authenticateT
 // Add RAG source
 router.post('/chat/rag-source', authenticateToken.authenticateToken, chatController.addRagSource);
 
-// Agentic chat (LangGraph ReAct)
-router.post('/chat/agent', authenticateToken.authenticateToken, chatController.chatAgentMessage);
+// Agentic chat (LangGraph ReAct) - supports text + optional image (field: "file")
+router.post(
+  '/chat/agent',
+  authenticateToken.authenticateToken,
+  upload.single('file'),
+  chatController.chatAgentMessage
+);
 
 // Vision evidence 
 router.post('/chat/vision', authenticateToken.authenticateToken, chatController.addVisionEvidence);

@@ -43,20 +43,26 @@ class ClinicVetModel {
 
     updateVet = async (id, data) => {
         try {
-            const user_id = id;
+            const user_id = Number(id);
             const { name, clinic_id, license_number, license_issuer, license_valid_until, specialization, verified } = data;
-            const expiry = new Date(data.license_valid_until);
+            const expiry = license_valid_until ? new Date(license_valid_until) : null;
             const today = new Date();
-            if (isNaN(expiry.getTime()) || expiry < today) {
-                data.verified = false;
-            }
+            const _verified = expiry && expiry instanceof Date && !isNaN(expiry.getTime()) && expiry >= today ? !!verified : false;
 
             const query = `
-                UPDATE vets (user_id, name, clinic_id, license_number, license_issuer, license_valid_until, specialization, verified)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                UPDATE vets
+                SET
+                  name = COALESCE($2, name),
+                  clinic_id = COALESCE($3, clinic_id),
+                  license_number = COALESCE($4, license_number),
+                  license_issuer = COALESCE($5, license_issuer),
+                  license_valid_until = COALESCE($6, license_valid_until),
+                  specialization = COALESCE($7, specialization),
+                  verified = $8
+                WHERE user_id = $1
                 RETURNING *;
             `;
-            const params = [user_id, name, clinic_id, license_number, license_issuer, license_valid_until, specialization, !!verified];
+            const params = [user_id, name || null, clinic_id || null, license_number || null, license_issuer || null, license_valid_until || null, specialization || null, _verified];
             const result = await this.db.query_executor(query, params);
             return result.rows[0];
         } catch (error) {
@@ -65,7 +71,7 @@ class ClinicVetModel {
         }
     };
 
-    
+
 
     // Reviews
     createReview = async (data) => {

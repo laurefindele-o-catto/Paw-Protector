@@ -504,16 +504,18 @@ class UserController {
             if (!userId) {
                 return res.status(400).json({ success: false, error: 'userId param required' });
             }
-            const updatedUser = await this.userModel.updateUser(userId, req.body || {});
+            const updatedUser = await this.userModel.upddateUser(userId, req.body || {});
             if (!updatedUser || updatedUser.success === false) {
                 return res.status(400).json({ success: false, error: 'Update failed' });
             }
+            const roles = await this.userModel.getUserRoles(userId);
             return res.status(200).json({
                 success: true,
                 user: {
                     ...updatedUser,
                     subscription_type: updatedUser.subscription_type,
-                    avatar_url: updatedUser.avatar_url
+                    avatar_url: updatedUser.avatar_url,
+                    roles
                 }
             });
         } catch (error) {

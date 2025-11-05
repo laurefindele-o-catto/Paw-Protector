@@ -45,8 +45,31 @@ class ClinicVetController {
         try {
             const data = req.body;
             const id = req.params.user_id;
-            if (id || !data.name) return res.status(400).json({ success: false, error: 'user_id and name required' });
-            const result = await this.model.updateVet(id, data);
+            if (!id) return res.status(400).json({ success: false, error: 'user_id required' });
+
+            // If no clinic_id is supplied, create/find a default "Home Practice" clinic using provided location.
+            let clinic_id = data.clinic_id;
+            if (!clinic_id) {
+                try {
+                    const defaultClinic = await this.model.createClinic({
+                        name: 'Home Practice',
+                        phone: data.phone || null,
+                        email: data.email || null,
+                        address: data.address || 'Home visit practice',
+                        latitude: data.latitude ?? null,
+                        longitude: data.longitude ?? null,
+                        hours: null,
+                        is_verified: false
+                    });
+                    if (defaultClinic && !defaultClinic.success) throw new Error('Failed to create default clinic');
+                    clinic_id = defaultClinic?.id || null;
+                } catch (e) {
+                    // If clinic creation fails, allow null clinic_id (DB must permit NULL)
+                    clinic_id = clinic_id ?? null;
+                }
+            }
+
+            const result = await this.model.updateVet(id, { ...data, clinic_id });
             if (!result || result.success === false) return res.status(500).json({ success: false, error: 'Failed to update vet' });
             // if vet is still unverified, send email again
             if (!result.verified) {
@@ -57,9 +80,9 @@ class ClinicVetController {
                 }
             }
 
-            return res.status(201).json({ success: true, vet: result });
+            return res.status(200).json({ success: true, vet: result });
         } catch (error) {
-            return res.status(500).json({ success: false, error: 'Internal server error' }); c
+            return res.status(500).json({ success: false, error: 'Internal server error' });
         }
     }
 
