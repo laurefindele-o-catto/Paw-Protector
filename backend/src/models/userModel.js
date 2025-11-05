@@ -160,7 +160,7 @@ d
 
             if(sets.length === 0){
                 throw new Error("No valid value was sent");
-            }
+            } 
 
             sets.push(`updated_at = NOW()`);
 

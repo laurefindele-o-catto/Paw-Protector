@@ -162,7 +162,31 @@ class ChatController {
     chatAgentMessage = async (req, res) => {
         try {
             const userId = req.user?.id;
+            const file = req?.file;
             const { session_id: sidRaw, content, pet_id, doc_types, topK, lat, lng } = req.body || {};
+
+            let imageFinding = null;
+            if (file && file.buffer && file.mimetype) {
+                try {
+                    const form = new FormData();
+                    const blob = new Blob([file.buffer], { type: file.mimetype });
+                    form.append('image', blob, file.originalname || 'image.jpg');
+                    const resp = await fetch("https://pritombiswas9999-disease-classifier.hf.space/predict", {
+                        method: "POST",
+                        body: form
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    imageFinding = {
+                        label: data?.label || 'Unknown',
+                        raw: data
+                    };
+                } catch (error) {
+                    imageFinding = { label: 'Unknown', raw: null, error: 'analysis_failed' };
+                    console.log("Error found while analyzing image: " + error);
+                    
+                }
+            }
+
             if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
             if (!content) return res.status(400).json({ success: false, error: 'content required' });
 
@@ -174,12 +198,12 @@ class ChatController {
                 pet_id: pet_id ? Number(pet_id) : null,
                 lat: lat != null ? Number(lat) : null,
                 lng: lng != null ? Number(lng) : null,
-                
-                doc_types: doc_types || 'pet_summary,metric,disease,vaccination,deworming,vision,chat',
+                doc_types: doc_types || 'pet_summary,metric,disease,vaccination,deworming,vision,chat,care_plan,care_summary',
                 topK: topK ? Number(topK) : 6
             };
 
-            const hint = `Context: pet_id=${configurable.pet_id ?? '—'}, doc_types=${configurable.doc_types}, topK=${configurable.topK}, lat=${configurable.lat ?? '—'}, lng=${configurable.lng ?? '—'}`;
+            const hint = `Context: pet_id=${configurable.pet_id ?? '—'}, doc_types=${configurable.doc_types}, topK=${configurable.topK}, lat=${configurable.lat ?? '—'}, lng=${configurable.lng ?? '—'}${imageFinding ? `, image_detection=${JSON.stringify(imageFinding)}` : ''}`;
+
             const result = await agent.invoke(
                 { messages: [{ role: 'user', content: `${hint}\n\n${content}` }] },
                 { configurable }
@@ -191,7 +215,7 @@ class ChatController {
             const canSave = Number.isInteger(session_id);
             if (canSave) {
                 try {
-                    savedUser = await this.model.addMessage({ session_id, sender: 'user', content, attachments: null });
+                    savedUser = await this.model.addMessage({ session_id, sender: 'user', content, attachments: file ? { filename: file.originalname, mimetype: file.mimetype, size: file.size } : null });
                     savedAssistant = await this.model.addMessage({ session_id, sender: 'assistant', content: answer, attachments: null });
                 } catch (_) {}
             }
@@ -218,6 +242,16 @@ class ChatController {
                         metadata: { session_id, sender: 'assistant' }
                     });
                 }
+               if (imageFinding?.label && canSave) {
+                 docs.push({
+                   doc_id: `vision:${session_id}:msg:${savedUser?.id || Date.now()}`,
+                   user_id: userId,
+                   pet_id: configurable.pet_id,
+                   doc_type: 'vision',
+                   content: `Vision finding: ${imageFinding.label}`,
+                   metadata: { session_id, source: file?.originalname || null }
+                 });
+               }
                 if (docs.length) await upsertDocs(docs);
             } catch (_) {}
 

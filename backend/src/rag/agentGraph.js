@@ -1,9 +1,10 @@
 const { ChatOpenAI } = require('@langchain/openai');
 const { MemorySaver } = require('@langchain/langgraph');
 const { createReactAgent } = require('@langchain/langgraph/prebuilt');
-const { ragSearchTool, petCardTool, nearbyVetsTool } = require('./tools.js');
+const { ragSearchTool, petCardTool, nearbyVetsTool, weeklyMetricsTool } = require('./tools.js');
 
 let _agent = null;
+let _careAgent = null;
 
 function getAgent() {
   if (_agent) return _agent;
@@ -109,4 +110,59 @@ function getAgent() {
   return _agent;
 }
 
-module.exports = { getAgent };
+function getCareAgent() {
+  if (_careAgent) return _careAgent;
+
+  const llm = new ChatOpenAI({
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    temperature: Number(process.env.OPENAI_TEMPERATURE ?? 0.2),
+    apiKey: process.env.OPENAI_API_KEY
+  });
+  const checkpointer = new MemorySaver();
+
+  _careAgent = createReactAgent({
+    llm,
+    tools: [petCardTool, weeklyMetricsTool, ragSearchTool],
+    checkpointer,
+    stateModifier: `
+      Role: You are Paw Protector, a friendly, dependable veterinary assistant. Be calm, supportive, and confidence‑building. Avoid alarming language.
+
+      Workflow:
+      - get_pet_card(pet_id)
+      - get_pet_metrics_weekly(pet_id, lookback_weeks=8)
+      - rag_search(query, doc_types=metric,disease,vaccination,deworming,vision,chat,care_plan,care_summary)
+
+      Style:
+      - Reply only in JSON, no extra text.
+      - Be brief and human. Use plain language and empathy.
+      - All summary and plan text must be in Bangla, soothing tone.
+      - Use dash ("-") for bullets, no asterisks or numbers.
+      - Use only tool results for facts; if unknown, say "অজানা".
+      - If health metrics are not updated in the last 7 days, set "allow": false and explain why in reason_bn.
+      - If metrics are fresh, set "allow": true and follow the output schema below.
+
+      Output schema:
+      {
+        "allow": boolean,
+        "reason_bn": "Short Bangla reason why allowed or not",
+        "summary": {
+          "week_start": "YYYY-MM-DD",
+          "current_status_bn": "Short Bangla summary of current situation",
+          "trend_bn": "Short Bangla trend description if more than one week, else empty string"
+        },
+        "plan": {
+          "week_start": "YYYY-MM-DD",
+          "days": [
+            { "date": "YYYY-MM-DD", "morning": ["..."], "midday": ["..."], "evening": ["..."], "reminders": ["..."] }
+            // 7 days total
+          ],
+          "global_reminders": ["...", "..."]
+        }
+      }
+    `
+  });
+
+  return _careAgent;
+}
+
+module.exports = { getAgent, getCareAgent };
