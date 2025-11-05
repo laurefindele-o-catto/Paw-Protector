@@ -359,13 +359,45 @@ export default function PetCare() {
         </div>
 
         {plan?.days?.length ? (
-          <div className="mt-4 overflow-x-auto snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex gap-4 min-w-max">
-              <FlashCard title="Morning" emoji="🌅" points={plan.days[dayIndex]?.morning || []} t={t} />
-              <FlashCard title="Mid-day" emoji="🧩" points={plan.days[dayIndex]?.midday || []} t={t} />
-              <FlashCard title="Evening" emoji="🌙" points={plan.days[dayIndex]?.evening || []} t={t} />
+          <>
+            <div className="mt-4 overflow-x-auto snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-4 min-w-max">
+                <FlashCard title="Morning" emoji="🌅" points={plan.days[dayIndex]?.morning || []} t={t} />
+                <FlashCard title="Mid-day" emoji="🧩" points={plan.days[dayIndex]?.midday || []} t={t} />
+                <FlashCard title="Evening" emoji="🌙" points={plan.days[dayIndex]?.evening || []} t={t} />
+              </div>
             </div>
-          </div>
+
+            {/* Day-specific reminders */}
+            {plan.days[dayIndex]?.reminders?.length ? (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  আজকের গুরুত্বপূর্ণ মনে করিয়ে দেওয়া
+                </h4>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
+                  {plan.days[dayIndex].reminders.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {/* Global reminders / warnings for the whole week */}
+            {plan.global_reminders?.length ? (
+              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50/70 p-4">
+                <h4 className="text-sm font-semibold text-red-700 flex items-center gap-2">
+                  <span className="text-lg">🛑</span>
+                  এই সপ্তাহের সতর্কতাসূচক নোট
+                </h4>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-red-800">
+                  {plan.global_reminders.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </>
         ) : (
           <div className="mt-4 overflow-x-auto snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex gap-4 min-w-max">
