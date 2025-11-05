@@ -39,8 +39,8 @@ function Header({ translationState, onTranslationToggle }) {
                 {/* Logo left */}
                 <Link to='/dashboard'>
                     <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs select-none">
-                            PP
+                        <div className="h-15 w-15 rounded-xl overflow-hidden animate-[popin_0.5s_ease]">
+                            <img src="/logo.png" alt="PawPal logo" className="h-full w-full object-contain" />
                         </div>
                         <div className="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
                             🐾 {t('PawPal')}
