@@ -163,4 +163,62 @@ const weeklyMetricsTool = tool(
   }
 );
 
-module.exports = { ragSearchTool, petCardTool, nearbyVetsTool, weeklyMetricsTool };
+const healthRecordsTool = tool(
+  async ({ pet_id, limit_diseases = 12, limit_vaccinations = 20, limit_dewormings = 20 }, { configurable }) => {
+    if (!pet_id) return 'pet_id required';
+    const userId = configurable?.user_id;
+    const db = new DB_Connection();
+    // Ownership guard
+    const own = await db.query_executor(
+      `SELECT 1 FROM pets WHERE id = $1 AND owner_id = $2 LIMIT 1`,
+      [Number(pet_id), Number(userId)]
+    );
+    if (!own.rows?.length) return 'Pet not found for this user.';
+
+    const diseasesQ = `
+      SELECT id, disease_name, symptoms, severity, status, diagnosed_on, resolved_on
+      FROM pet_diseases
+      WHERE pet_id = $1
+      ORDER BY diagnosed_on DESC NULLS LAST, id DESC
+      LIMIT $2;
+    `;
+    const vaccinationsQ = `
+      SELECT id, vaccine_name, dose_number, administered_on, due_on, notes
+      FROM vaccinations
+      WHERE pet_id = $1
+      ORDER BY administered_on DESC NULLS LAST, id DESC
+      LIMIT $2;
+    `;
+    const dewormingsQ = `
+      SELECT id, product_name, administered_on, due_on, weight_based_dose, notes
+      FROM dewormings
+      WHERE pet_id = $1
+      ORDER BY administered_on DESC NULLS LAST, id DESC
+      LIMIT $2;
+    `;
+
+    const [dRes, vRes, wRes] = await Promise.all([
+      db.query_executor(diseasesQ, [Number(pet_id), Number(limit_diseases)]),
+      db.query_executor(vaccinationsQ, [Number(pet_id), Number(limit_vaccinations)]),
+      db.query_executor(dewormingsQ, [Number(pet_id), Number(limit_dewormings)])
+    ]);
+
+    return JSON.stringify({
+      diseases: dRes.rows || [],
+      vaccinations: vRes.rows || [],
+      dewormings: wRes.rows || []
+    });
+  },
+  {
+    name: 'get_pet_health_records',
+    description: 'Retrieve recent diseases, vaccinations, and dewormings for a pet (owned by current user).',
+    schema: z.object({
+      pet_id: z.number().describe('Pet id'),
+      limit_diseases: z.number().optional(),
+      limit_vaccinations: z.number().optional(),
+      limit_dewormings: z.number().optional()
+    })
+  }
+);
+
+module.exports = { ragSearchTool, petCardTool, nearbyVetsTool, weeklyMetricsTool, healthRecordsTool };
