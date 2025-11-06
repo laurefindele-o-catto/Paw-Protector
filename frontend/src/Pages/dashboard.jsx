@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
-import Header from "../components/Header";
+import Header from "../Components/Header";
 import { usePet } from "../context/PetContext";
 import PetSwitcher from "../components/PetSwitcher";
 import Footer from "../components/Footer";

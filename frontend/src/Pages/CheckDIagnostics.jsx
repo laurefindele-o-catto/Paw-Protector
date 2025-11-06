@@ -1,4 +1,4 @@
-import Header from "../components/Header";
+import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import { useState } from "react";
 import { useAutoTranslate } from "react-autolocalise";
