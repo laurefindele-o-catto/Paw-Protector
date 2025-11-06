@@ -114,8 +114,8 @@ function getCareAgent() {
   if (_careAgent) return _careAgent;
 
   const llm = new ChatOpenAI({
-    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-    temperature: Number(process.env.OPENAI_TEMPERATURE ?? 0.2),
+    model: process.env.OPENAI_MODEL || 'gpt-5-nano',
+    // temperature: Number(0.4),
     apiKey: process.env.OPENAI_API_KEY
   });
   const checkpointer = new MemorySaver();
@@ -140,6 +140,9 @@ function getCareAgent() {
       - Use only tool results for facts; if unknown, say "অজানা".
       - If health metrics are not updated in the last 7 days, set "allow": false and explain why in reason_bn.
       - If metrics are fresh, set "allow": true and follow the output schema below.
+      - Keep variation in each day's flashcards, do not keep any continuous 3 days cards same.
+      - When taking pet's name, keep the English name '(pet_name)' in parenthesis, after Bangla name. Example: আল্লু (Allu)
+      - Do not use full Bangla, be smart and mix bangla and english smartly, like an expert in pets. But keep it understandable for normal people.
 
       Output schema:
       {
