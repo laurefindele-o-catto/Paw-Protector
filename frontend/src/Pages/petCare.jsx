@@ -1,5 +1,5 @@
 // petCare.jsx — engaging flashcard UI for cat care (with auto-translate)
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAutoTranslate } from "react-autolocalise";
 import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
@@ -210,7 +210,7 @@ export default function PetCare() {
       }
     }
     loadCare();
-    setPetSummary(localStorage.getItem(`care_summary_${localStorage.getItem('current_pet_id')}`))
+    setSummary(localStorage.getItem(`care_summary_${localStorage.getItem('current_pet_id')}`))
     return () => { ignore = true; };
 
   }, [token, petId]);
