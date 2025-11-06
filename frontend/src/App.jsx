@@ -5,7 +5,7 @@ import AssistantChat from "./pages/AssistantChat.jsx";
 
 import About from "./Pages/About";
 import Dashboard from "./Pages/dashboard";
-import VetFinder from "./Pages/VetFinder";
+import VetFinder from "./Pages/vetFinder";
 import VaccineAlert from "./Pages/vaccineAlert";
 import PetCare from "./Pages/petCare";
 import PawPal from "./Pages/PawPal";
@@ -21,6 +21,7 @@ import { PetProvider } from "./context/PetContext";
 import VetDashboard from "./Pages/VetDashboard";
 import CheckDiagnostics from "./Pages/CheckDIagnostics";
 import VerifyVet from "./Pages/VerifyVet";
+import VetProfile from "./pages/VetProfile.jsx";
 
 
 
@@ -40,11 +41,13 @@ function App() {
                <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
                <Route path="/about" element={<About />} />
                <Route path="/dashboard" element={<Dashboard />} />
+               <Route path="/vdashboard" element={<VetDashboard />} />
                <Route path="/find-a-vet" element={<VetFinder />} />
                <Route path="/vaccination-alerts" element={<VaccineAlert />} />
                <Route path="/petcare" element={<PetCare />} />
                <Route path="/paw-pal" element={<PawPal />} />
                <Route path="/profile" element={< ProfilePage/>} />
+               <Route path="/vetprofile" element={< VetProfile/>} />
                <Route path="/addPet" element={< AddPetPage/>} />
                <Route path="/login" element = {<LoginPage/>}/>
                <Route path="/signup" element={<SignupPage/>}/>

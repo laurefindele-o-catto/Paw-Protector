@@ -8,8 +8,8 @@ import apiConfig from "../config/apiConfig";
 import { useAutoTranslate } from "react-autolocalise";
 import Header from "../Components/Header";
 import { usePet } from "../context/PetContext";
-import PetSwitcher from "../Components/PetSwitcher";
-import Footer from "../Components/Footer";
+import PetSwitcher from "../components/PetSwitcher";
+import Footer from "../components/Footer";
 import ChatButton from "../components/ChatButton";
 
 const placeholder = "/placeholder.png";

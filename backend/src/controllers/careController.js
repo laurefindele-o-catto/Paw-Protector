@@ -1,7 +1,16 @@
 const CareModel = require('../models/careModel.js');
 const DB_Connection = require('../database/db.js');
 const { upsertDocs } = require('../rag/service.js');
+const { getCareAgent } = require('../rag/agentGraph.js');
 const db = new DB_Connection();
+
+function startOfWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay(); // 0=Sun
+  const diff = (day === 0 ? -6 : 1) - day; // Monday as start
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
 
 async function assertPetOwner(userId, petId) {
     const rs = await db.query_executor(`SELECT id FROM pets WHERE id = $1 AND owner_id = $2`, [petId, userId]);
@@ -16,6 +25,132 @@ class CareController {
     constructor() {
         this.careModel = new CareModel();
     }
+
+    generatePlan = async (req, res) => {
+        try {
+        const userId = req.user?.id;
+        const { pet_id, force } = req.body || {};
+        if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+        if (!pet_id) return res.status(400).json({ success: false, error: 'pet_id required' });
+        // Ensure the pet belongs to the user
+        await assertPetOwner(userId, Number(pet_id));
+
+        // Freshness guardrail (server-side)
+        const lastUpdated = await this.careModel.getLastMetricUpdatedAt(Number(pet_id));
+        const now = new Date();
+        const fresh = lastUpdated ? (now - new Date(lastUpdated)) <= (7 * 24 * 60 * 60 * 1000) : false;
+        if (!fresh && !force) {
+            return res.status(412).json({
+            success: false,
+            code: 'METRICS_OUTDATED',
+            message_bn: 'গত ৭ দিনের মধ্যে health metrics আপডেট নেই। আপডেট না করা পর্যন্ত কার্ড তৈরি করা যাবে না।'
+            });
+        }
+
+        const week_start = startOfWeek(now);
+        const agent = getCareAgent();
+        const configurable = {
+            thread_id: `care-${userId}-${pet_id}-${week_start}`,
+            user_id: userId,
+            pet_id: Number(pet_id),
+            doc_types: 'metric,disease,vaccination,deworming,vision,chat,care_plan,care_summary',
+            topK: 8
+        };
+
+        const ask = `
+            Create weekly care JSON for pet_id=${pet_id}.
+            Week start=${week_start}. Obey the output schema strictly.
+        `;
+        const result = await agent.invoke(
+            { messages: [{ role: 'user', content: ask }] },
+            { configurable }
+        );
+        const raw = String(result?.messages?.at?.(-1)?.content || '').trim();
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch { 
+            return res.status(500).json({ success: false, error: 'Agent did not return valid JSON' });
+        }
+        if (!parsed?.allow) {
+            return res.status(412).json({
+            success: false,
+            code: 'METRICS_OUTDATED_OR_BLOCKED',
+            message_bn: parsed?.reason_bn || 'এই সপ্তাহে কার্ড তৈরি অনুমোদিত নয়।'
+            });
+        }
+
+        const saved = await this.careModel.upsertCarePlan({
+            pet_id: Number(pet_id),
+            week_start,
+            summary_json: parsed.summary,
+            plan_json: parsed.plan,
+            sources: null
+        });
+
+        // Upsert to RAG (so chat can reference)
+        try {
+            await upsertDocs([
+            {
+                doc_id: `care_summary:${pet_id}:${week_start}`,
+                user_id: userId,
+                pet_id: Number(pet_id),
+                doc_type: 'care_summary',
+                content: `${parsed.summary?.current_status_bn || ''} ${parsed.summary?.trend_bn || ''}`.trim(),
+                metadata: { week_start }
+            },
+            {
+                doc_id: `care_plan:${pet_id}:${week_start}`,
+                user_id: userId,
+                pet_id: Number(pet_id),
+                doc_type: 'care_plan',
+                content: JSON.stringify(parsed.plan),
+                metadata: { week_start }
+            }
+            ]);
+        } catch {}
+
+        return res.status(201).json({
+            success: true,
+            week_start,
+            summary: parsed.summary,
+            plan: parsed.plan,
+            saved_id: saved?.id || null
+        });
+        } catch (e) {
+        return res.status(500).json({ success: false, error: e.message });
+        }
+    };
+
+    getPlan = async (req, res) => {
+        try {
+        const userId = req.user?.id;
+        const { pet_id, week } = req.query || {};
+        if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+        if (!pet_id) return res.status(400).json({ success: false, error: 'pet_id required' });
+        await assertPetOwner(userId, Number(pet_id));
+        const week_start = week || startOfWeek(new Date());
+        const row = await this.careModel.getCarePlan({ pet_id: Number(pet_id), week_start });
+        if (!row) return res.status(404).json({ success: false, error: 'No plan found' });
+        return res.json({ success: true, week_start, summary: row.summary_json, plan: row.plan_json });
+        } catch (e) {
+        return res.status(500).json({ success: false, error: e.message });
+        }
+    };
+
+    getSummary = async (req, res) => {
+        try {
+        const userId = req.user?.id;
+        // Support both /care/summary?pet_id= and /care/summary/:pet_id
+        const pet_id = req.params?.pet_id ?? req.query?.pet_id;
+         if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+        if (!pet_id) return res.status(400).json({ success: false, error: 'pet_id required' });
+        await assertPetOwner(userId, Number(pet_id));
+         const latest = await this.careModel.getLatestCarePlan(Number(pet_id));
+         if (!latest) return res.status(404).json({ success: false, error: 'No summary found' });
+         return res.json({ success: true, week_start: latest.week_start, summary: latest.summary_json });
+        } catch (e) {
+         return res.status(500).json({ success: false, error: e.message });
+        }
+    };
 
     // Vaccination
     addVaccination = async (req, res) => {
@@ -150,7 +285,7 @@ class CareController {
     getVaccinationsByPet = async (req, res) => {
         try {
             const { petId } = req.params;
-            const result = await this.careModel.db_connection.query_executor(
+            const result = await this.careModel.db.query_executor(
                 'SELECT * FROM vaccinations WHERE pet_id=$1 ORDER BY administered_on DESC',
                 [petId]
             );
@@ -163,7 +298,7 @@ class CareController {
     getDewormingsByPet = async (req, res) => {
         try {
             const { petId } = req.params;
-            const result = await this.careModel.db_connection.query_executor(
+            const result = await this.careModel.db.query_executor(
                 'SELECT * FROM dewormings WHERE pet_id=$1 ORDER BY administered_on DESC',
                 [petId]
             );

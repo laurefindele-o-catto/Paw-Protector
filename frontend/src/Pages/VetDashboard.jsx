@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useAutoTranslate } from "react-autolocalise";
-import Header from "../components/Header";
 import Footer from "../Components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
+import VetHeader from "../components/VetHeader";
 
 function VetDashboard() {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ function VetDashboard() {
   return (
     <>
       {/* <Header /> */}
+      <VetHeader/>
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />

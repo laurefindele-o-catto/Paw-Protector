@@ -67,31 +67,47 @@ const nearbyVetsTool = tool(
     if (!(lat != null && lng != null)) return 'Latitude/Longitude required.';
     const db = new DB_Connection();
     const sql = `
-      SELECT id, name, phone, email, address, latitude, longitude,
+      SELECT
+        v.user_id            AS vet_user_id,
+        v.name               AS vet_name,
+        v.specialization,
+        v.verified,
+        c.id                 AS clinic_id,
+        c.name               AS clinic_name,
+        c.phone,
+        c.email,
+        c.address,
+        c.latitude,
+        c.longitude,
         (6371 * acos(
-          cos(radians($1)) * cos(radians(latitude)) *
-          cos(radians(longitude) - radians($2)) +
-          sin(radians($1)) * sin(radians(latitude))
+          cos(radians($1)) * cos(radians(c.latitude)) *
+          cos(radians(c.longitude) - radians($2)) +
+          sin(radians($1)) * sin(radians(c.latitude))
         )) AS distance_km
-      FROM vet_clinics
-      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+      FROM vets v
+      JOIN vet_clinics c ON c.id = v.clinic_id
+      WHERE c.latitude IS NOT NULL AND c.longitude IS NOT NULL
       ORDER BY distance_km ASC
       LIMIT $3;
     `;
     const rs = await db.query_executor(sql, [Number(lat), Number(lng), Number(limit)]);
     return JSON.stringify(
-      (rs.rows || []).map(v => ({
-        id: v.id,
-        name: v.name,
-        phone: v.phone,
-        address: v.address,
-        distance_km: Number(v.distance_km?.toFixed?.(1) || 0)
+      (rs.rows || []).map(r => ({
+        vet_user_id: r.vet_user_id,
+        vet_name: r.vet_name,
+        specialization: r.specialization,
+        verified: !!r.verified,
+        clinic_id: r.clinic_id,
+        clinic_name: r.clinic_name,
+        phone: r.phone,
+        address: r.address,
+        distance_km: Number(r.distance_km?.toFixed?.(1) || 0)
       }))
     );
   },
   {
     name: 'find_nearby_vets',
-    description: 'Find nearby vet clinics from lat/lng.',
+    description: 'Find nearby vets (by joining vet profile with clinic/home location) from lat/lng.',
     schema: z.object({
       lat: z.number().describe('Latitude'),
       lng: z.number().describe('Longitude'),
@@ -100,4 +116,51 @@ const nearbyVetsTool = tool(
   }
 );
 
-module.exports = { ragSearchTool, petCardTool, nearbyVetsTool };
+// Weekly metrics (reads from pet_health_metrics)
+const weeklyMetricsTool = tool(
+  async ({ pet_id, lookback_weeks = 8 }) => {
+    if (!pet_id) return 'pet_id required';
+    const db = new DB_Connection();
+    const q = `
+      SELECT
+        date_trunc('week', h.measured_at)::date AS week_start,
+        json_agg(
+          json_build_object(
+            'at',                h.measured_at,
+            'weight_kg',         h.weight_kg,
+            'body_temp_c',       h.body_temp_c,
+            'heart_rate_bpm',    h.heart_rate_bpm,
+            'respiration_rate_bpm', h.respiration_rate_bpm,
+            'note',              h.note
+          )
+          ORDER BY h.measured_at ASC
+        ) AS points
+      FROM pet_health_metrics h
+      WHERE h.pet_id = $1
+        AND h.measured_at >= (NOW() - ($2 || ' weeks')::interval)
+      GROUP BY 1
+      ORDER BY 1 DESC;
+    `;
+    const rs = await db.query_executor(q, [Number(pet_id), Number(lookback_weeks)]);
+    const q2 = `
+      SELECT MAX(measured_at) AS last_updated
+      FROM pet_health_metrics
+      WHERE pet_id = $1
+    `;
+    const rs2 = await db.query_executor(q2, [Number(pet_id)]);
+    return JSON.stringify({
+      last_updated: rs2.rows?.[0]?.last_updated || null,
+      weeks: rs.rows || []
+    });
+  },
+  {
+    name: 'get_pet_metrics_weekly',
+    description: 'Get last N weeks of health metrics grouped by week from pet_health_metrics.',
+    schema: z.object({
+      pet_id: z.number().describe('Pet id'),
+      lookback_weeks: z.number().optional()
+    })
+  }
+);
+
+module.exports = { ragSearchTool, petCardTool, nearbyVetsTool, weeklyMetricsTool };
