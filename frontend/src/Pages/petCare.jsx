@@ -136,6 +136,11 @@ export default function PetCare() {
   const [stageSummary, setStageSummary] = useState(null);
   const [vaxNote, setVaxNote] = useState(null);
 
+  // Personalized Essentials/Toxic
+  const [essentialsP, setEssentialsP] = useState(null);
+  const [toxicP, setToxicP] = useState(null);
+  const [toxicTopNote, setToxicTopNote] = useState(null);
+
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const petId = typeof window !== "undefined"
     ? Number(localStorage.getItem("current_pet_id") || localStorage.getItem("selected_pet_id") || "")
@@ -296,6 +301,70 @@ export default function PetCare() {
     }
   };
 
+  // Helper: build age in months
+  const ageInMonths = (iso) => {
+    if (!iso) return null;
+    const b = new Date(iso);
+    if (Number.isNaN(b.getTime())) return null;
+    return Math.max(0, Math.floor((Date.now() - b.getTime()) / (1000 * 60 * 60 * 24 * 30.4)));
+  };
+
+  // Build personalized Essentials and Toxic lists
+  function personalizeEssentialsAndToxic(pSum) {
+    if (!pSum || !pSum.pet) return { e: null, tox: null, note: null };
+    const months = ageInMonths(pSum.pet.birthdate);
+    const active = (pSum.diseases?.active || []).map(d => String(d.disease_name || '').toLowerCase());
+    const hasFeverVomiting = active.some(n => /fever|flu|vomit|gastro|diarrh/.test(n));
+    const isKitten = months != null && months <= 12;
+    const isSenior = months != null && months >= 120;
+
+    // Essentials: start from base, tweak labels/tips and priority
+    const e = [
+      { title: "Hydration", tip: hasFeverVomiting ? "Fresh water in 2–3 spots + wet food; monitor intake" : "Fresh water / fountain", emoji: "💧" },
+      { title: "Feeding", tip: isKitten ? "Kittens 3×→2×; wet+dry balanced" : (isSenior ? "Adults/Seniors 2×; easy-to-chew; portion control" : "Adults 2×; portion control"), emoji: "🍽️" },
+      { title: "Litter", tip: "+1 box rule, scoop daily", emoji: "🧼" },
+      { title: "Play", tip: "2–3 short sessions/day", emoji: "🪶" },
+      { title: "Dental", tip: isSenior ? "Brush 3–4×/wk; soft chew; vet check if tartar" : "Brush daily or 3–4×/wk", emoji: "🪥" },
+      { title: "Parasites", tip: "Cat‑safe preventives only; deworm as scheduled", emoji: "🪲" }
+    ];
+    // Toxic: keep base + highlight high‑risk items first
+    const toxBase = [
+      "Lilies (very toxic)", "Chocolate", "Onion/Garlic", "Grapes/Raisins", "Xylitol", "Alcohol", "Caffeine", "Unbaked dough"
+    ];
+    const extras = [
+      "Human painkillers (paracetamol/ibuprofen)",
+      "Essential oils (tea tree, eucalyptus)",
+      "Permethrin (dog spot‑ons) — toxic to cats"
+    ];
+    const tox = Array.from(new Set([ ...extras.slice(0, 1), ...toxBase, ...extras.slice(1) ]));
+    const note = hasFeverVomiting ? "Hydration first this week — avoid new treats; no human meds." : null;
+
+    return { e, tox, note };
+  }
+
+  // Fetch pet summary once and personalize
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      if (!token || !petId) return;
+      try {
+        const res = await fetch(`${apiConfig.baseURL}${apiConfig.pets.summary(petId)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const pSum = data?.summary || null;
+        if (!ignore && pSum) {
+          const { e, tox, note } = personalizeEssentialsAndToxic(pSum);
+          setEssentialsP(e);
+          setToxicP(tox);
+          setToxicTopNote(note);
+        }
+      } catch {}
+    })();
+    return () => { ignore = true; };
+  }, [token, petId]);
+
   return (
     <>
       <Header/>
@@ -325,13 +394,6 @@ export default function PetCare() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <a
-                  href="#daily"
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0f172a] text-[#edfdfd] px-5 py-3 font-semibold shadow hover:bg-slate-900 transition"
-                  aria-label={("Start Daily Cards")}
-                >
-                  {("Start Daily Cards")}
-                </a>
                 <button
                   onClick={handleGenerate}
                   disabled={loading || !petId}
@@ -493,7 +555,7 @@ export default function PetCare() {
         <section className="mx-auto max-w-6xl px-4 mt-10">
           <TitleBar title="Essentials" subtitle="Small habits, big impact" t={t} />
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {essentials.map((e) => (
+            {(essentialsP || essentials).map((e) => (
               <article
                 key={e.title}
                 className="bg-white/90 border border-white rounded-2xl shadow p-5 hover:shadow-lg transition"
@@ -511,7 +573,7 @@ export default function PetCare() {
         <section className="mx-auto max-w-6xl px-4 mt-10 mb-24">
           <TitleBar title="Toxic to Cats" subtitle="Keep these away—seek help if exposed" t={t} />
           <div className="mt-3 flex flex-wrap gap-2" aria-label={("Toxic items list")}>
-            {toxic.map((tox) => (
+            {(toxicP || toxic).map((tox) => (
               <span
                 key={tox}
                 className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-sm shadow-sm"
@@ -522,6 +584,9 @@ export default function PetCare() {
               </span>
             ))}
           </div>
+          {toxicTopNote && (
+            <p className="mt-2 text-xs text-slate-600">{toxicTopNote}</p>
+          )}
           <a
             href="tel:+18884264435"
             className="inline-flex items-center gap-2 mt-4 rounded-full bg-[#0f172a] text-[#edfdfd] px-4 py-2 text-sm font-semibold shadow hover:bg-slate-900"

@@ -504,7 +504,7 @@ class UserController {
             if (!userId) {
                 return res.status(400).json({ success: false, error: 'userId param required' });
             }
-            const updatedUser = await this.userModel.upddateUser(userId, req.body || {});
+            const updatedUser = await this.userModel.updateUser(userId, req.body || {});
             if (!updatedUser || updatedUser.success === false) {
                 return res.status(400).json({ success: false, error: 'Update failed' });
             }

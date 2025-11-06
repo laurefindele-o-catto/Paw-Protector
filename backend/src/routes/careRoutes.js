@@ -22,4 +22,8 @@ careRouter.get('/care/vaccine-timeline', authenticateToken.authenticateToken, ca
 // Get personalized life stage plan
 careRouter.get('/care/life-stages', authenticateToken.authenticateToken, careController.getLifeStages);
 
+// Vaccination/deworming history for VaccineAlert page (UI already calls these)
+careRouter.get('/care/vaccinations/:petId', authenticateToken.authenticateToken, careController.getVaccinationsByPet);
+careRouter.get('/care/dewormings/:petId', authenticateToken.authenticateToken, careController.getDewormingsByPet);
+
 module.exports = { careRouter };

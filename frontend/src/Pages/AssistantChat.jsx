@@ -20,6 +20,23 @@ function useGeo() {
   return pos;
 }
 
+function sanitizeChat(md) {
+  return md
+    .replace(/[*_`>#]+/g, '') // Remove markdown symbols: *, _, `, >, #
+    // .replace(/^\s*-\s*/gm, '• ') // Replace markdown list dash with bullet
+    // .replace(/\n{2,}/g, '\n') // Collapse multiple blank lines
+    .replace(/ +/g, ' ') // Collapse multiple spaces
+    .replace(/^\s+|\s+$/g, '') // Trim leading/trailing spaces
+    // .replace(/^\s*\n/gm, '') // Remove leading blank lines
+    // .replace(/(\d+)\s*কিমি/g, '$1 কিমি') // Normalize km spacing
+    // .replace(/Vet Name:/g, 'ভেটের নাম:') // Optional: translate field labels
+    // .replace(/Clinic Name:/g, 'ক্লিনিক:') // Optional
+    // .replace(/Specialization:/g, 'বিশেষজ্ঞতা:') // Optional
+    // .replace(/Phone:/g, 'ফোন:') // Optional
+    // .replace(/Address:/g, 'ঠিকানা:') // Optional
+    // .replace(/Distance:/g, 'দূরত্ব:'); // Optional
+}
+
 const HF_ENDPOINT = "https://pritombiswas9999-disease-classifier.hf.space/predict";
 
 export default function AssistantChat() {
@@ -364,7 +381,7 @@ export default function AssistantChat() {
               {messages.map((m, idx) => (
                 <div key={idx} className={`w-full flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`${m.role === "user" ? "bg-[#fdd142] text-slate-900" : "bg-[#f9fafb] text-slate-800"} max-w-[80%] rounded-2xl px-3 py-2 shadow`}>
-                    <div className="text-sm whitespace-pre-wrap">{m.content}</div>
+                    <div className="text-sm whitespace-pre-wrap">{sanitizeChat(m.content)}</div>
                   </div>
                 </div>
               ))}
@@ -433,3 +450,4 @@ export default function AssistantChat() {
     </>
   );
 }
+
