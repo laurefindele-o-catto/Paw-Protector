@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useLoader } from "../hooks/useLoader";
 import { Loader } from "../Components/Loader";
 import { useAutoTranslate } from "react-autolocalise";
+import Header from '../components/Header'
 
 // Simple loader for Google Places script
 function useGooglePlaces(apiKey) {
@@ -339,277 +340,263 @@ function ProfilePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden flex flex-col items-center pt-20 px-4">
-      {/* animated background shapes (LandingPage palette) */}
-      <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
-      <div className="pointer-events-none fixed top-40 -right-10 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
-      <div className="pointer-events-none fixed bottom-10 left-10 h-16 w-16 bg-[#fdd142] rounded-full opacity-80 animate-[bouncey_4s_ease-in-out_infinite]" />
-      <div className="pointer-events-none fixed -bottom-24 right-20 h-72 w-72 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_20s_linear_infinite]" />
+    <>
+      <Header/>
+      <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden flex flex-col items-center pt-20 px-4 mt-28">
+        {/* animated background shapes (LandingPage palette) */}
+        <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
+        <div className="pointer-events-none fixed top-40 -right-10 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
+        <div className="pointer-events-none fixed bottom-10 left-10 h-16 w-16 bg-[#fdd142] rounded-full opacity-80 animate-[bouncey_4s_ease-in-out_infinite]" />
+        <div className="pointer-events-none fixed -bottom-24 right-20 h-72 w-72 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_20s_linear_infinite]" />
 
-      {/* diagonal dots accent */}
-      <div className="pointer-events-none absolute -top-6 right-8 h-32 w-32 opacity-30 animate-[slideDots_10s_linear_infinite]">
-        <div className="grid grid-cols-5 gap-3">
-          {Array.from({ length: 25 }).map((_, i) => (
-            <div key={i} className="h-1.5 w-1.5 rounded-full bg-[#0f172a]/40" />
-          ))}
-        </div>
-      </div>
-      <button
-        onClick={() => navigate("/dashboard")}
-        className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
-        aria-label="Back to dashboard"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.2}
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        {t('Dashboard')}
-      </button>
-
-      {/* Translation toggle button */}
-      <button
-        onClick={() => setUseTranslation((prev) => !prev)}
-        className="absolute top-20 left-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
-        aria-label="Toggle language"
-      >
-        {useTranslation ? "BN" : "EN"}
-      </button>
-
-      {/* Profile avatar button */}
-      <div
-        className="absolute top-6 right-6 cursor-pointer"
-        onClick={handlePhotoClick}
-        title="Click to change photo"
-      >
-        <PhotoCard
-          avatarUrl={selectedFile ? URL.createObjectURL(selectedFile) : (user?.avatar_url || placeholder)}
-        />
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={handleFileChange}
-        />
-      </div>
-
-      {/* Heading */}
-      <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 text-center mb-8 tracking-tight animate-[slideup_0.6s_ease-out]">
-        Personal Information
-      </h1>
-
-      {/* Form card */}
-      <form
-        className="relative w-full max-w-[720px] bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 md:p-10 animate-[slideup_0.6s_ease-out]"
-        onSubmit={handleSubmit}
-      >
-        {/* tiny floating accent inside card */}
-        <div className="pointer-events-none absolute -top-4 -right-4 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[float_6s_ease-in-out_infinite]" />
-
-        {/* Full name */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {t('Full Name')}
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-            placeholder={t('Enter Full Name')}
-          />
-        </div>
-
-        {/* Email */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {t('Email')}
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-            placeholder={t('Enter Email')}
-          />
-        </div>
-
-        {/* Phone with region picker */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {t('Contact (Phone)')}
-          </label>
-          <div className="flex gap-2">
-            <select
-              value={dialCode}
-              onChange={(e) => setDialCode(e.target.value)}
-              className="w-28 px-3 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-              title="Country code"
-            >
-              <option value="+880">+880 (BD)</option>
-              <option value="+91">+91 (IN)</option>
-              <option value="+1">+1 (US)</option>
-              <option value="+44">+44 (UK)</option>
-            </select>
-            <input
-              type="tel"
-              value={phoneLocal}
-              onChange={(e) => setPhoneLocal(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-              placeholder="1XXXXXXXXX"
-            />
-          </div>
-        </div>
-
-        {/* Address with Google Places */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {t('Address (Search)')}
-          </label>
-          <input
-            ref={addressInputRef}
-            type="text"
-            value={addressLine}
-            onChange={(e)=>setAddressLine(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
-            placeholder={t('Start typing your address')}
-          />
-          <div className="mt-3 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={useMyLocation}
-              className="rounded-full bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-[#edfdfd] hover:bg-slate-900 transition"
-            >
-              {t('Use my location')}
-            </button>
-            {typeof latitude === "number" && typeof longitude === "number" && (
-              <span className="text-xs text-slate-500">
-                Lat: {latitude.toFixed(5)}, Lng: {longitude.toFixed(5)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Map picker */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Pick on Map
-          </label>
-          <div
-            ref={mapContainerRef}
-            className="h-64 w-full rounded-2xl border border-slate-200"
-          />
-          <p className="mt-2 text-xs text-slate-500">
-            Click on the map or drag the marker to refine your location.
-          </p>
-        </div>
-
-        {/* Location details */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
-            <input value={city} onChange={e=>setCity(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">State</label>
-            <input value={state} onChange={e=>setState(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Postal Code</label>
-            <input value={postalCode} onChange={e=>setPostalCode(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
-            <input value={country} onChange={e=>setCountry(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="mt-8 self-end px-6 py-3 text-sm rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold shadow hover:bg-slate-900 transition transform hover:-translate-y-[1px]"
-          disabled={loading}
-          style={{
-            backgroundColor: loading ? "#9DB89B" : "#0f172a",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1
-          }}
-        >
-          {loading ? (
-            <>
-              <Loader />
-              <span className="ml-2">Processing...</span>
-            </>
-          ) : (
-            "Save"
-          )}
-        </button>
-      </form>
-
-      {/* Pets Section */}
-      <div className="w-full max-w-[720px] mt-14 border-t border-slate-200 pt-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs">
-            PP
-          </div>
-          <h2 className="text-2xl font-semibold text-slate-900">Your Pets</h2>
-        </div>
-
-        {pets.length === 0 ? (
-          <div className="text-slate-500 text-center py-8">Currently no pets added.</div>
-        ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
-            {pets.map((pet, idx) => (
-              <div key={pet.id || idx}>
-                <PhotoCard
-                  name={pet.name}
-                  avatarUrl={pet.avatar_url || "/placeholder.png"}
-                />
-              </div>
+        {/* diagonal dots accent */}
+        <div className="pointer-events-none absolute -top-6 right-8 h-32 w-32 opacity-30 animate-[slideDots_10s_linear_infinite]">
+          <div className="grid grid-cols-5 gap-3">
+            {Array.from({ length: 25 }).map((_, i) => (
+              <div key={i} className="h-1.5 w-1.5 rounded-full bg-[#0f172a]/40" />
             ))}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Floating Add Button */}
-      <Link to="/addPet" className="fixed bottom-8 right-8">
+        {/* Translation toggle button */}
         <button
-          className="w-16 h-16 rounded-full bg-[#0f172a] text-[#edfdfd] shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-2xl"
-          aria-label="Add Pet"
+          onClick={() => setUseTranslation((prev) => !prev)}
+          className="absolute top-20 left-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
+          aria-label="Toggle language"
         >
-          <span className="text-3xl font-bold">+</span>
+          {useTranslation ? "BN" : "EN"}
         </button>
-      </Link>
 
-      {/* keyframes (mirrors LandingPage) */}
-      <style>{`
-        @keyframes slideup {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes bouncey {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-12px) scale(1.03); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes slideDots {
-          0% { transform: translateY(0) translateX(0); }
-          100% { transform: translateY(-30px) translateX(30px); }
-        }
-      `}</style>
-    </div>
+        {/* Profile avatar button */}
+        <div
+          className="absolute top-6 right-6 cursor-pointer"
+          onClick={handlePhotoClick}
+          title="Click to change photo"
+        >
+          <PhotoCard
+            avatarUrl={selectedFile ? URL.createObjectURL(selectedFile) : (user?.avatar_url || placeholder)}
+          />
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+        </div>
+
+        {/* Heading */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 text-center mb-8 tracking-tight animate-[slideup_0.6s_ease-out]">
+          Personal Information
+        </h1>
+
+        {/* Form card */}
+        <form
+          className="relative w-full max-w-[720px] bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-xl p-6 md:p-10 animate-[slideup_0.6s_ease-out]"
+          onSubmit={handleSubmit}
+        >
+          {/* tiny floating accent inside card */}
+          <div className="pointer-events-none absolute -top-4 -right-4 h-12 w-12 bg-[#fdd142] rounded-full opacity-70 animate-[float_6s_ease-in-out_infinite]" />
+
+          {/* Full name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              {t('Full Name')}
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+              placeholder={t('Enter Full Name')}
+            />
+          </div>
+
+          {/* Email */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              {t('Email')}
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+              placeholder={t('Enter Email')}
+            />
+          </div>
+
+          {/* Phone with region picker */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              {t('Contact (Phone)')}
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={dialCode}
+                onChange={(e) => setDialCode(e.target.value)}
+                className="w-28 px-3 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                title="Country code"
+              >
+                <option value="+880">+880 (BD)</option>
+                <option value="+91">+91 (IN)</option>
+                <option value="+1">+1 (US)</option>
+                <option value="+44">+44 (UK)</option>
+              </select>
+              <input
+                type="tel"
+                value={phoneLocal}
+                onChange={(e) => setPhoneLocal(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+                placeholder="1XXXXXXXXX"
+              />
+            </div>
+          </div>
+
+          {/* Address with Google Places */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              {t('Address (Search)')}
+            </label>
+            <input
+              ref={addressInputRef}
+              type="text"
+              value={addressLine}
+              onChange={(e)=>setAddressLine(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
+              placeholder={t('Start typing your address')}
+            />
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={useMyLocation}
+                className="rounded-full bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-[#edfdfd] hover:bg-slate-900 transition"
+              >
+                {t('Use my location')}
+              </button>
+              {typeof latitude === "number" && typeof longitude === "number" && (
+                <span className="text-xs text-slate-500">
+                  Lat: {latitude.toFixed(5)}, Lng: {longitude.toFixed(5)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Map picker */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Pick on Map
+            </label>
+            <div
+              ref={mapContainerRef}
+              className="h-64 w-full rounded-2xl border border-slate-200"
+            />
+            <p className="mt-2 text-xs text-slate-500">
+              Click on the map or drag the marker to refine your location.
+            </p>
+          </div>
+
+          {/* Location details */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
+              <input value={city} onChange={e=>setCity(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">State</label>
+              <input value={state} onChange={e=>setState(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Postal Code</label>
+              <input value={postalCode} onChange={e=>setPostalCode(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
+              <input value={country} onChange={e=>setCountry(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="mt-8 self-end px-6 py-3 text-sm rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold shadow hover:bg-slate-900 transition transform hover:-translate-y-[1px]"
+            disabled={loading}
+            style={{
+              backgroundColor: loading ? "#9DB89B" : "#0f172a",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1
+            }}
+          >
+            {loading ? (
+              <>
+                <Loader />
+                <span className="ml-2">Processing...</span>
+              </>
+            ) : (
+              "Save"
+            )}
+          </button>
+        </form>
+
+        {/* Pets Section */}
+        <div className="w-full max-w-[720px] mt-14 border-t border-slate-200 pt-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs">
+              PP
+            </div>
+            <h2 className="text-2xl font-semibold text-slate-900">Your Pets</h2>
+          </div>
+
+          {pets.length === 0 ? (
+            <div className="text-slate-500 text-center py-8">Currently no pets added.</div>
+          ) : (
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
+              {pets.map((pet, idx) => (
+                <div key={pet.id || idx}>
+                  <PhotoCard
+                    name={pet.name}
+                    avatarUrl={pet.avatar_url || "/placeholder.png"}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Floating Add Button */}
+        <Link to="/addPet" className="fixed bottom-8 right-8">
+          <button
+            className="w-16 h-16 rounded-full bg-[#0f172a] text-[#edfdfd] shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-2xl"
+            aria-label="Add Pet"
+          >
+            <span className="text-3xl font-bold">+</span>
+          </button>
+        </Link>
+
+        {/* keyframes (mirrors LandingPage) */}
+        <style>{`
+          @keyframes slideup {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+          }
+          @keyframes bouncey {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-12px) scale(1.03); }
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes slideDots {
+            0% { transform: translateY(0) translateX(0); }
+            100% { transform: translateY(-30px) translateX(30px); }
+          }
+        `}</style>
+      </div>
+    </>
   );
 }
 

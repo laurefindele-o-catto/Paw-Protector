@@ -33,6 +33,14 @@ function Header({ translationState, onTranslationToggle }) {
         navigate("/");
     };
 
+    // Button config for nav
+    const navLinks = [
+        { to: '/dashboard', label: ('Dashboard') },
+        { to: '/petcare', label: ('Petcare') },
+        { to: '/assistant', label: ('Assistant') },
+        { to: '/find-a-vet', label: ('Vet Finder') }
+    ];
+
     return (
         <header className="fixed top-0 left-0 w-full bg-white/30 backdrop-blur-md border-b border-white shadow z-30">
             <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between">
@@ -47,16 +55,32 @@ function Header({ translationState, onTranslationToggle }) {
                         </div>
                     </div>
                 </Link>
+                {/* Left nav buttons styled as pills, left-aligned */}
+                <nav className="flex gap-2 ml-6 justify-start">
+                    {navLinks.map(link => (
+                        <Link
+                            key={link.to}
+                            to={link.to}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:bg-[#fdd142]/40 text-[#0f172a] font-semibold text-sm transition"
+                            aria-label={link.label}
+                        >
+                            {link.icon && (
+                                <img src={link.icon} alt="" className="w-5 h-5" />
+                            )}
+                            {link.label}
+                        </Link>
+                    ))}
+                </nav>
                 {/* Right side: translation toggle, logout then profile */}
                 <div className="flex items-center gap-4">
                     {/* Translation Toggle Button */}
-                    <button
+                    {/* <button
                         onClick={handleTranslationToggle}
                         className="px-3 py-1.5 rounded-full bg-black text-white text-xs font-medium hover:bg-gray-700 transition"
                         aria-label="Toggle language"
                     >
                         {useTranslation ? "BN" : "EN"}
-                    </button>
+                    </button> */}
                     
                     <button
                         onClick={handleLogout}
