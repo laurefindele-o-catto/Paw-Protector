@@ -17,5 +17,9 @@ careRouter.get('/care/plan', authenticateToken.authenticateToken, careController
 
 // Get latest summary for a pet
 careRouter.get('/care/summary', authenticateToken.authenticateToken, careController.getSummary);
+// Get personalized vaccine timeline
+careRouter.get('/care/vaccine-timeline', authenticateToken.authenticateToken, careController.getVaccineTimeline);
+// Get personalized life stage plan
+careRouter.get('/care/life-stages', authenticateToken.authenticateToken, careController.getLifeStages);
 
 module.exports = { careRouter };

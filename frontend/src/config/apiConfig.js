@@ -47,7 +47,9 @@ const apiConfig = {
   },
   care: {
     addVaccination: '/api/care/vaccinations',
-    addDeworming: '/api/care/dewormings'
+    addDeworming: '/api/care/dewormings',
+    vaccineTimeline: (petId) => `/api/care/vaccine-timeline?pet_id=${petId}`,
+    lifeStages: (petId) => `/api/care/life-stages?pet_id=${petId}`
   },
   vets:{
     update: (user_id) => `/api/vets/${user_id}`,
