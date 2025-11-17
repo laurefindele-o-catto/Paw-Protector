@@ -21,10 +21,16 @@ function useGooglePlaces(apiKey) {
   return loaded;
 }
 
+
+
 export default function VetProfile() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const token = localStorage.getItem('token');
+
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.replace(/"/g, "");
+  const showMaps = !!googleMapsApiKey;
+  const googleLoaded = useGooglePlaces(showMaps ? googleMapsApiKey : null);
 
   // Tabs
   const [tab, setTab] = useState('vet'); // 'vet' | 'clinic'
@@ -61,8 +67,6 @@ export default function VetProfile() {
   const clinicMapRef = useRef(null);
   const clinicMarkerRef = useRef(null);
   const clinicGeocoderRef = useRef(null);
-
-  const googleLoaded = useGooglePlaces('AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds'); // TODO: replace before shipping
 
   useEffect(() => {
     if (!isAuthenticated) navigate('/');
@@ -368,19 +372,33 @@ export default function VetProfile() {
                   value={vetAddress}
                   onChange={(e)=>setVetAddress(e.target.value)}
                   placeholder="Search address"
+                  disabled={!showMaps}
                 />
                 <div className="mt-3 flex items-center gap-3">
                   <button onClick={useMyVetLocation} type="button"
-                    className="rounded-full bg-[#0f172a] px-4 py-2 text-sm text-white">
+                    className="rounded-full bg-[#0f172a] px-4 py-2 text-sm text-white"
+                    disabled={!showMaps}
+                  >
                     Use my location
                   </button>
-                  {typeof vetLat === 'number' && typeof vetLng === 'number' && (
+                  {typeof vetLat === 'number' && typeof vetLng === 'number' && showMaps && (
                     <span className="text-xs text-slate-500">
                       Lat: {vetLat.toFixed(5)}, Lng: {vetLng.toFixed(5)}
                     </span>
                   )}
                 </div>
-                <div ref={vetMapContainerRef} className="mt-3 h-64 w-full rounded-2xl border" />
+                {showMaps ? (
+                  <div ref={vetMapContainerRef} className="mt-3 h-64 w-full rounded-2xl border" />
+                ) : (
+                  <div className="mt-3 h-64 w-full rounded-2xl border flex items-center justify-center bg-slate-50 text-slate-500">
+                    Map unavailable. Add your Google Maps API key to enable this feature.
+                  </div>
+                )}
+                {!showMaps && (
+                  <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                    Google Maps API key not found. Please set <code>VITE_GOOGLE_MAPS_API_KEY</code> in your .env file to enable address search and map features.
+                  </div>
+                )}
               </div>
 
               <div className="pt-2">
@@ -419,19 +437,33 @@ export default function VetProfile() {
                   value={clinicAddress}
                   onChange={(e)=>setClinicAddress(e.target.value)}
                   placeholder="Search address"
+                  disabled={!showMaps}
                 />
                 <div className="mt-3 flex items-center gap-3">
                   <button onClick={useMyClinicLocation} type="button"
-                    className="rounded-full bg-[#0f172a] px-4 py-2 text-sm text-white">
+                    className="rounded-full bg-[#0f172a] px-4 py-2 text-sm text-white"
+                    disabled={!showMaps}
+                  >
                     Use my location
                   </button>
-                  {typeof clinicLat === 'number' && typeof clinicLng === 'number' && (
+                  {typeof clinicLat === 'number' && typeof clinicLng === 'number' && showMaps && (
                     <span className="text-xs text-slate-500">
                       Lat: {clinicLat.toFixed(5)}, Lng: {clinicLng.toFixed(5)}
                     </span>
                   )}
                 </div>
-                <div ref={clinicMapContainerRef} className="mt-3 h-64 w-full rounded-2xl border" />
+                {showMaps ? (
+                  <div ref={clinicMapContainerRef} className="mt-3 h-64 w-full rounded-2xl border" />
+                ) : (
+                  <div className="mt-3 h-64 w-full rounded-2xl border flex items-center justify-center bg-slate-50 text-slate-500">
+                    Map unavailable. Add your Google Maps API key to enable this feature.
+                  </div>
+                )}
+                {!showMaps && (
+                  <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                    Google Maps API key not found. Please set <code>VITE_GOOGLE_MAPS_API_KEY</code> in your .env file to enable address search and map features.
+                  </div>
+                )}
               </div>
 
               <div className="pt-2">

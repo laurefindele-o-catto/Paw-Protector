@@ -76,7 +76,8 @@ export default function VetFinder() {
 
   // Config + Google loader
   const token = useMemo(() => localStorage.getItem("token"), []);
-  const { loaded: googleLoaded, missingKey } = useGooglePlaces(apiConfig.googleMapsApiKey);
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.replace(/"/g, "");
+  const { loaded: googleLoaded, missingKey } = useGooglePlaces(googleMapsApiKey);
 
   // Hydrate user's saved location
   useEffect(() => {
@@ -390,7 +391,7 @@ export default function VetFinder() {
         {/* MAIN */}
         {missingKey && (
           <div className="mx-4 md:mx-16 mt-2 mb-2 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm z-20">
-            Google Maps key not found. Set <code>apiConfig.googleMapsApiKey</code> or <code>VITE_GOOGLE_MAPS_API_KEY</code>. Also enable “Maps JavaScript API” and “Places API”.
+            Google Maps key not found. Set <code>VITE_GOOGLE_MAPS_API_KEY</code> in your .env file to enable address search and map features.
           </div>
         )}
         
@@ -411,6 +412,7 @@ export default function VetFinder() {
                   onChange={(e) => setAddressLine(e.target.value)}
                   placeholder="Start typing your address"
                   className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#0f172a]/20"
+                  disabled={!googleLoaded || missingKey}
                 />
                 <div className="mt-3 flex items-center gap-2">
                   <button
@@ -448,6 +450,13 @@ export default function VetFinder() {
                 <p className="mt-2 text-[11px] text-slate-500">
                   Click on the map or drag the marker to set your home location.
                 </p>
+                {missingKey && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-2xl">
+                    <p className="text-sm text-slate-500">
+                      Google Maps not available. Set <code>VITE_GOOGLE_MAPS_API_KEY</code> in your .env file.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </section>

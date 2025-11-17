@@ -4,7 +4,16 @@ const CreateTables = require('../controllers/tableCreation.js');
 const router = express.Router();
 const createTables = new CreateTables();
 
-// Route to initialize all tables
+/**
+ * @openapi
+ * /api/init-tables:
+ *   post:
+ *     tags: [System]
+ *     summary: Initialize all database tables (ADMIN/DEV only)
+ *     responses:
+ *       200:
+ *         description: Tables created or already exist
+ */
 router.post('/init-tables', createTables.createTables);
 
 module.exports = router;

@@ -27,7 +27,7 @@ import VetProfile from "./pages/VetProfile.jsx";
 
 function App() {
   const config = {
-    apiKey: "at_client_6sJVCGCBLTia",
+    apiKey: import.meta.env.VITE_AUTO_LOCALISE_KEY,
     sourceLocale: "en", // Your app's original language
     targetLocale: "bn", // Language to translate to
   }

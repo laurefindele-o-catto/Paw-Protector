@@ -59,8 +59,9 @@ function ProfilePage() {
   const token = localStorage.getItem('token');
   const fileInputRef = useRef();
   const addressInputRef = useRef();
-  const googleLoaded = useGooglePlaces('AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds');
-  //TODO: Hardcoded change it before submission
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.replace(/"/g, "");
+  const showMaps = !!googleMapsApiKey;
+  const googleLoaded = useGooglePlaces(showMaps ? googleMapsApiKey : null);
 
   // ADD: map + geocoder refs
   const mapContainerRef = useRef(null);
@@ -70,6 +71,7 @@ function ProfilePage() {
 
   // Attach Places Autocomplete (extend to sync map/marker)
   useEffect(() => {    
+    // console.log("api key: " , import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
     if (!googleLoaded || !addressInputRef.current) return;
 
     const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
@@ -465,21 +467,28 @@ function ProfilePage() {
               onChange={(e)=>setAddressLine(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition"
               placeholder={t('Start typing your address')}
+              disabled={!showMaps}
             />
             <div className="mt-3 flex items-center gap-3">
               <button
                 type="button"
                 onClick={useMyLocation}
                 className="rounded-full bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-[#edfdfd] hover:bg-slate-900 transition"
+                disabled={!showMaps}
               >
                 {t('Use my location')}
               </button>
-              {typeof latitude === "number" && typeof longitude === "number" && (
+              {typeof latitude === "number" && typeof longitude === "number" && showMaps && (
                 <span className="text-xs text-slate-500">
                   Lat: {latitude.toFixed(5)}, Lng: {longitude.toFixed(5)}
                 </span>
               )}
             </div>
+            {!showMaps && (
+              <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                Google Maps API key not found. Please set <code>VITE_GOOGLE_MAPS_API_KEY</code> in your .env file to enable address search and map features.
+              </div>
+            )}
           </div>
 
           {/* Map picker */}
@@ -487,12 +496,20 @@ function ProfilePage() {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Pick on Map
             </label>
-            <div
-              ref={mapContainerRef}
-              className="h-64 w-full rounded-2xl border border-slate-200"
-            />
+            {showMaps ? (
+              <div
+                ref={mapContainerRef}
+                className="h-64 w-full rounded-2xl border border-slate-200"
+              />
+            ) : (
+              <div className="h-64 w-full rounded-2xl border border-slate-200 flex items-center justify-center bg-slate-50 text-slate-500">
+                Map unavailable. Add your Google Maps API key to enable this feature.
+              </div>
+            )}
             <p className="mt-2 text-xs text-slate-500">
-              Click on the map or drag the marker to refine your location.
+              {showMaps
+                ? "Click on the map or drag the marker to refine your location."
+                : "Map features are disabled until you provide a Google Maps API key."}
             </p>
           </div>
 
