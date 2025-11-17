@@ -77,8 +77,6 @@ const apiConfig = {
     addRagSource: '/api/chat/rag-source',
     vision: '/api/chat/vision',
   },
-
-  googleMapsApiKey: "AIzaSyDs43IZ9rUBN_E6tPSU130RGQAul0Wj2ds", 
  
 }
 

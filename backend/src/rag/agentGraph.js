@@ -115,8 +115,9 @@ function getAgent() {
 function getCareAgent() {
   if (_careAgent) return _careAgent;
   const llm = new ChatOpenAI({
-    model: process.env.OPENAI_MODEL || 'gpt-5-nano',
-    apiKey: process.env.OPENAI_API_KEY
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    apiKey: process.env.OPENAI_API_KEY,
+    temperature: 0.5
   });
   const checkpointer = new MemorySaver();
   _careAgent = createReactAgent({
