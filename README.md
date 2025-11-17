@@ -36,8 +36,8 @@ Custom trained classification model deployed on Hugging Face.
 ## Database Diagram
 [DB Diagram](https://dbdiagram.io/d/Pawpal-Database-Model-690237e46735e11170551c76)
 
-## Architecture
-[High-Level Architecture](https://app.eraser.io/workspace/xFOf4KClN6YouQQEBcP1?origin=share)
+## Rough Architecture
+[Architecture Link](https://app.eraser.io/workspace/xFOf4KClN6YouQQEBcP1?origin=share)
 
 
 
