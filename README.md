@@ -3,6 +3,8 @@ Hi, welcome to you from the PawPal team. This is a repository for our entire app
 PawPal is a RAG (Retrieval Augmented Generation) based intensive pet-care application. Enjoy surfing...
 
 ## Some Glances
+### Demo
+[YouTube Demo](https://www.youtube.com/watch?v=NIW0YMCwIME)
 
 ### Dashboard
 ![dashboard](resources/dashboard.png) ![footer](resources/dashboard_2.png)
@@ -37,8 +39,7 @@ Custom trained classification model deployed on Hugging Face.
 ## Architecture
 [High-Level Architecture](https://app.eraser.io/workspace/xFOf4KClN6YouQQEBcP1?origin=share)
 
-## Demo
-[YouTube Demo](https://www.youtube.com/watch?v=NIW0YMCwIME)
+
 
 ## So, what's next:
 This is a project we built in 1-2 weeks. It's not polished, needs a lot of restructuring in here and we're gonna do that. That aside, it's open from now on. If you feel like Contributing or say, just viewing to learn something, read the CONTRIBUTING.md file, that has all the instructions on how to successfully setting up this whole project.
