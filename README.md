@@ -5,6 +5,7 @@ PawPal is a RAG (Retrieval Augmented Generation) based intensive pet-care applic
 ## Some Glances
 ### Demo
 [YouTube Demo](https://www.youtube.com/watch?v=NIW0YMCwIME)
+[Live Link](https://paw-protector-frontend.onrender.com)
 
 ### Dashboard
 ![dashboard](resources/dashboard.png) ![footer](resources/dashboard_2.png)
