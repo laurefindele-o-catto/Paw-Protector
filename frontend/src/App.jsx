@@ -1,11 +1,11 @@
 import { Routes, Route } from "react-router-dom";
-import PetProfile from "./pages/PetProfile";
+import PetProfile from "./pages/PetProfile.jsx";
 import AssistantChat from "./pages/AssistantChat.jsx";
 
 
-import About from "./pages/About";
-import Dashboard from "./pages/dashboard";
-import VetFinder from "./pages/vetFinder";
+import About from "./pages/About.jsx";
+import Dashboard from "./pages/dashboard.jsx";
+import VetFinder from "./pages/vetFinder.jsx";
 import VaccineAlert from "./pages/vaccineAlert";
 import PetCare from "./pages/petCare";
 import PawPal from "./pages/PawPal";
