@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAutoTranslate } from "react-autolocalise";
-import Footer from "../Components/Footer";
+import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
 import VetHeader from "../components/VetHeader";

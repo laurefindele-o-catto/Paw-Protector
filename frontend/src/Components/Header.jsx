@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import ProfilePictureCard from '../Components/profilePictureCard';
+import ProfilePictureCard from '../components/profilePictureCard';
 import { usePet } from '../context/PetContext';
 import { useAutoTranslate } from 'react-autolocalise';
 const placeholder = "/placeholder.png";

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
-import { Loader } from "../Components/Loader";
+import { Loader } from "../components/Loader";
 import { useLoader } from "../hooks/useLoader";
 import { usePet } from "../context/PetContext";
 

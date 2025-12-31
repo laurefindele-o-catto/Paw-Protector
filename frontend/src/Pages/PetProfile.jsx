@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAutoTranslate } from "react-autolocalise";
-import Header from "../Components/Header";
-import Footer from "../Components/Footer";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import { usePet } from "../context/PetContext";
 import PetProfileLayout from "../features/petProfile/PetProfileLayout";
 import OverviewTab from "../features/petProfile/tabs/OverviewTab";
