@@ -3,24 +3,24 @@ import PetProfile from "./pages/PetProfile";
 import AssistantChat from "./pages/AssistantChat.jsx";
 
 
-import About from "./Pages/About";
-import Dashboard from "./Pages/dashboard";
-import VetFinder from "./Pages/vetFinder";
-import VaccineAlert from "./Pages/vaccineAlert";
-import PetCare from "./Pages/petCare";
-import PawPal from "./Pages/PawPal";
+import About from "./pages/About";
+import Dashboard from "./pages/dashboard";
+import VetFinder from "./pages/vetFinder";
+import VaccineAlert from "./pages/vaccineAlert";
+import PetCare from "./pages/petCare";
+import PawPal from "./pages/PawPal";
 import ProfilePage from "./pages/profilePage";
-import AddPetPage from "./Pages/AddPetPage";
+import AddPetPage from "./pages/AddPetPage";
 import { AuthProvider } from "./context/AuthContext";
-import LoginPage from "./Pages/LoginPage";
-import SignupPage from "./Pages/SignUp";
-import SkinDiseaseDetector from "./Pages/SkinDiseaseDetection";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignUp";
+import SkinDiseaseDetector from "./pages/SkinDiseaseDetection";
 import { TranslationProvider } from "react-autolocalise";
-import LandingPage from "./Pages/LandingPage";
+import LandingPage from "./pages/LandingPage";
 import { PetProvider } from "./context/PetContext";
-import VetDashboard from "./Pages/VetDashboard";
-import CheckDiagnostics from "./Pages/CheckDIagnostics";
-import VerifyVet from "./Pages/VerifyVet";
+import VetDashboard from "./pages/VetDashboard";
+import CheckDiagnostics from "./pages/CheckDIagnostics";
+import VerifyVet from "./pages/VerifyVet";
 import VetProfile from "./pages/VetProfile.jsx";
 
 
