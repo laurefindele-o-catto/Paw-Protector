@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 import { useLoader } from '../hooks/useLoader';
-import { Loader } from '../Components/Loader';
+import { Loader } from '../components/Loader';
 
 //Ui
 const LoginPage = () => {

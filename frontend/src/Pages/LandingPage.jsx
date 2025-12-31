@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginPage from "./LoginPage";
 import { useAutoTranslate } from 'react-autolocalise'
-import Footer from "../Components/Footer";
+import Footer from "../components/Footer";
 
 const diseaseCards = [
   {

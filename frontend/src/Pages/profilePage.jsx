@@ -1,11 +1,11 @@
 // profilePage.jsx
-import PhotoCard from "../Components/profilePictureCard";
+import PhotoCard from "../components/profilePictureCard";
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import { useLoader } from "../hooks/useLoader";
-import { Loader } from "../Components/Loader";
+import { Loader } from "../components/Loader";
 import { useAutoTranslate } from "react-autolocalise";
 import Header from '../components/Header'
 

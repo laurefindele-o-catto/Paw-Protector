@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../Components/Header";
+import Header from "../components/Header";
 import { useAutoTranslate } from "react-autolocalise";
 // import Footer from "../Components/Footer";
 import apiConfig from "../config/apiConfig";
