@@ -16,4 +16,8 @@ const createTables = new CreateTables();
  */
 router.post('/init-tables', createTables.createTables);
 
+router.post('/req-tables_init',createTables.create_request_table);
+router.post('/approval-tables_init',createTables.create_vet_approve_table);
+
+
 module.exports = router;

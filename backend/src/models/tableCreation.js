@@ -650,6 +650,49 @@ class TableCreation {
             throw error;
         }
     }
+
+    create_request_table = async () => {
+        try {
+            const query = `
+                CREATE TABLE IF NOT EXISTS requests (
+                    id SERIAL PRIMARY KEY,
+                    issue_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    status BOOLEAN DEFAULT FALSE,
+                    content_url VARCHAR(200) NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Requests table created");
+            return { success: true };
+        } catch (error) {
+            console.error(error.message + " while creating requests table");
+            throw error;
+        }
+    }
+
+    create_vet_approve_table = async () => {
+        try {
+            const query = `
+                CREATE TABLE IF NOT EXISTS vet_approved (
+                    vet_id INTEGER REFERENCES vets(user_id) ON DELETE SET NULL,
+                    req_id INTEGER REFERENCES requests(id) ON DELETE SET NULL,
+                    note TEXT,
+                    approved_at TIMESTAMP DEFAULT NOW(),
+                    CONSTRAINT pk PRIMARY KEY (req_id)
+                    );
+                
+                CREATE INDEX IF NOT EXISTS idx_vet_approved_vet_id ON vet_approved(vet_id);
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Vet approved table created");
+            return { success: true };
+        } catch (error) {
+            console.error(error.message + " while creating vet approved table");
+            throw error;
+        }
+    }
 }
 
 module.exports = TableCreation;

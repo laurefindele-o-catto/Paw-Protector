@@ -1,0 +1,265 @@
+{
+  "info": {
+    "name": "PawPal - Vet Approval API",
+    "description": "Complete test collection for Vet Approval endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Login as Vet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    if (response.tokens && response.tokens.accessToken) {",
+              "        pm.collectionVariables.set('access_token', response.tokens.accessToken);",
+              "        pm.collectionVariables.set('vet_id', response.user.id);",
+              "        console.log('Vet access token saved');",
+              "        console.log('Vet ID:', response.user.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"vet_username\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "Login as vet user to get access token (user must have 'vet' role)"
+      }
+    },
+    {
+      "name": "2. Approve Request (with note)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    console.log('Request approved!');",
+              "    console.log('Approval:', response.approval);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Approved after review. Pet looks healthy.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "{{request_id}}"]
+        },
+        "description": "Vet approves a request with optional note"
+      }
+    },
+    {
+      "name": "3. Approve Request (no note)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "{{request_id}}"]
+        },
+        "description": "Vet approves a request without a note"
+      }
+    },
+    {
+      "name": "4. Get Approval by Request ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "{{request_id}}"]
+        },
+        "description": "Get approval details for a specific request"
+      }
+    },
+    {
+      "name": "5. Get My Approvals (Current Vet)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/my-approvals",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "my-approvals"]
+        },
+        "description": "Get all approvals made by the current vet"
+      }
+    },
+    {
+      "name": "6. Get All Approved Requests",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/all",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "all"]
+        },
+        "description": "Get all approved requests (admin/moderator access)"
+      }
+    },
+    {
+      "name": "7. Update Approval Note",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Updated note: Follow-up recommended in 2 weeks\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/{{request_id}}/note",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "{{request_id}}", "note"]
+        },
+        "description": "Update the note on an existing approval (only by approving vet)"
+      }
+    },
+    {
+      "name": "8. Revoke Approval",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/vet-approvals/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vet-approvals", "{{request_id}}"]
+        },
+        "description": "Revoke approval (only by approving vet) - sets request status back to pending"
+      }
+    },
+    {
+      "name": "HELPER: Get Pending Requests",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    if (response.requests && response.requests.length > 0) {",
+              "        const firstRequest = response.requests[0];",
+              "        pm.collectionVariables.set('request_id', firstRequest.id);",
+              "        console.log('First pending request ID saved:', firstRequest.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/requests/pending",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "pending"]
+        },
+        "description": "Helper: Get pending requests to find a request_id to approve"
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "request_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vet_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

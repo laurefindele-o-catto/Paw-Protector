@@ -124,6 +124,8 @@ class ClinicVetModel {
         return true;
     }
 
+    
+
 }
 
 module.exports = ClinicVetModel;

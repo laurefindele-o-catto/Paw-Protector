@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "PawPal - Request Management API",
+    "description": "Complete test collection for Request endpoints with examples",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Login (Get Access Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    if (response.tokens && response.tokens.accessToken) {",
+              "        pm.collectionVariables.set('access_token', response.tokens.accessToken);",
+              "        console.log('Access token saved:', response.tokens.accessToken);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"john_doe\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        },
+        "description": "Login to get access token - automatically saves to collection variables"
+      }
+    },
+    {
+      "name": "2. Create Request (with URL)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    if (response.request && response.request.id) {",
+              "        pm.collectionVariables.set('request_id', response.request.id);",
+              "        console.log('Request ID saved:', response.request.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content_url\": \"https://res.cloudinary.com/demo/image/upload/sample.jpg\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/requests",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests"]
+        },
+        "description": "Create a request with pre-generated URL (e.g., from frontend upload)"
+      }
+    },
+    {
+      "name": "3. Upload File & Create Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    if (response.request && response.request.id) {",
+              "        pm.collectionVariables.set('request_id_uploaded', response.request.id);",
+              "        console.log('Uploaded Request ID:', response.request.id);",
+              "        console.log('Content URL:', response.contentUrl);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Select an image (PNG/JPEG/WebP) or PDF file"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/requests/upload",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "upload"]
+        },
+        "description": "Upload file directly - backend handles Cloudinary upload and request creation"
+      }
+    },
+    {
+      "name": "4. Get Pending Requests",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/requests/pending",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "pending"]
+        },
+        "description": "Get all pending (not approved) requests for the current user"
+      }
+    },
+    {
+      "name": "5. Get Approved Requests",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/requests/approved",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "approved"]
+        },
+        "description": "Get all approved requests for the current user"
+      }
+    },
+    {
+      "name": "6. Get Request by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/requests/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "{{request_id}}"]
+        },
+        "description": "Get a specific request by ID (uses saved request_id from creation)"
+      }
+    },
+    {
+      "name": "7. Approve Request",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/requests/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "{{request_id}}"]
+        },
+        "description": "Approve a request (set status to true)"
+      }
+    },
+    {
+      "name": "8. Reject Request",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/requests/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "{{request_id}}"]
+        },
+        "description": "Reject a request (set status to false)"
+      }
+    },
+    {
+      "name": "9. Delete Request",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/requests/{{request_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "requests", "{{request_id}}"]
+        },
+        "description": "Delete a request permanently"
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "request_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "request_id_uploaded",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
