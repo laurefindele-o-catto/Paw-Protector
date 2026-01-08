@@ -29,3 +29,5 @@ TODO after hackathon :
 1) Fine tune the LLM 
 2) Train image detection model on a bigger dataset
 3) Add better prompt engineering and chain of thought 
+
+changechangechange
