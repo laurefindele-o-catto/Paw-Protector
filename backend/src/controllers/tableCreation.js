@@ -56,6 +56,24 @@ class CreateTables {
             res.status(500).json({ success:false, error: error.message });
         }
     }
+
+    create_request_table = async (req, res) => {
+        try {
+            const result = await this.tables.create_request_table();
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    create_vet_approve_table = async (req, res) => {
+        try {
+            const result = await this.tables.create_vet_approve_table();
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
 }
 
 module.exports = CreateTables;

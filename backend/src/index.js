@@ -25,6 +25,9 @@ const emergencyRouter = require('./routes/emergencyRoutes.js');
 const anomalyRouter = require('./routes/anomalyRoutes.js');
 const chatRouter = require('./routes/chatRoutes.js');
 const { diseaseRouter } = require('./routes/diseaseRoutes.js');
+const requestRouter = require('./routes/requestRoutes.js');
+const vetApprovedRouter = require('./routes/vetApprovedRoutes.js');
+
 
 
 const PORT = process.env.PORT || 3000;
@@ -109,6 +112,8 @@ app.use('/api', emergencyRouter);
 app.use('/api', anomalyRouter);
 app.use('/api', chatRouter);
 app.use('/api', diseaseRouter);
+app.use('/api', requestRouter);
+app.use('/api', vetApprovedRouter);
 
 
 if (process.env.ENABLE_SWAGGER !== 'false') {

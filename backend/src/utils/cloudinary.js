@@ -52,7 +52,31 @@ const uploadPetAvatarBuffer = (buffer, petId) => {
     });
 };
 
+const uploadRequestContentBuffer = (buffer, userId) => {
+    return new Promise((resolve, reject) => {
+        const folder = process.env.CLOUDINARY_REQUESTS_FOLDER || 'requests';
+        const upload = cloudinary.uploader.upload_stream(
+            {
+                folder,
+                public_id: `request_${userId}_${Date.now()}`,
+                resource_type: 'auto',
+                overwrite: true,
+                transformation: [
+                    { width: 1200, height: 1200, crop: 'limit' },
+                    { quality: 'auto:good' }
+                ]
+            },
+            (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            }
+        );
+        upload.end(buffer);
+    });
+};
+
 module.exports = {
     uploadAvatarBuffer,
-    uploadPetAvatarBuffer
+    uploadPetAvatarBuffer,
+    uploadRequestContentBuffer
 }
