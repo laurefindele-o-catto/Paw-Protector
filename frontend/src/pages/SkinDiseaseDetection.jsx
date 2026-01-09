@@ -1,4 +1,3 @@
-// SkinDiseaseDetection.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -14,6 +13,7 @@ export default function SkinDiseaseDetector() {
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const fileInputRef = useRef();
 
   // toggle state
@@ -30,6 +30,39 @@ export default function SkinDiseaseDetector() {
   }, [isAuthenticated, navigate]);
 
   const token = localStorage.getItem("token");
+
+  const handleSendToVet = async () => {
+  try {
+    if (!result) return alert("No diagnosis available to send.");
+    if (!file) return alert("No image to send.");
+
+    setSending(true);
+
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+    formData.append("notes", `AI diagnosis: ${result}`);
+
+    const res = await fetch("http://localhost:3000/api/requests/upload", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const resData = await res.json();
+    console.log(res.status, resData);
+
+    if (!res.ok) throw new Error(resData.error || "Failed to send to vet");
+
+    alert("Diagnosis sent to vet successfully 🐾");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to send diagnosis to vet: " + err.message);
+  } finally {
+    setSending(false);
+  }
+};
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -73,7 +106,7 @@ export default function SkinDiseaseDetector() {
 
   return (
     <>
-      <Header/>
+      <Header />
       <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden flex flex-col mt-28">
         {/* animated background shapes (LandingPage palette) */}
         <div className="pointer-events-none fixed -top-28 -left-20 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
@@ -299,6 +332,17 @@ export default function SkinDiseaseDetector() {
                       </ul>
                     </div>
                   )}
+
+                  {result && result !== "Error processing image" && (
+                    <button
+                      onClick={handleSendToVet}
+                      disabled={sending}
+                      className="mt-4 w-full px-6 py-3 rounded-full bg-[#fdd142] text-black font-semibold hover:bg-yellow-400 transition disabled:opacity-60"
+                    >
+                      {sending ? "Sending..." : "Send Diagnosis to Vet"}
+                    </button>
+                  )}
+
 
                   <p className="text-xs text-red-600 mt-2">
                     ⚠️ Always consult a licensed veterinarian before starting or adjusting any medication.
