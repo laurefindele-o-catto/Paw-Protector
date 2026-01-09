@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "../hooks/useLoader";
 import { Loader } from "../components/Loader";
+import { useLanguage } from "../context/LanguageContext";
 //UI update
 const SignupPage = () => {
   const { isAuthenticated, register } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -67,12 +69,12 @@ const SignupPage = () => {
         </div>
 
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-          Create Account
+          {t('Create Account')}
         </h2>
         <p className="text-sm text-slate-600 mb-5">
-          Join the community and{" "}
+          {t('Join the community and')}{" "}
           <span className="underline decoration-4 decoration-[#fdd14280]">
-            protect every paw
+            {t('protect every paw')}
           </span>
           .
         </p>
@@ -86,7 +88,7 @@ const SignupPage = () => {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Username"
+            placeholder={t('Username')}
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -95,7 +97,7 @@ const SignupPage = () => {
           />
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t('Email')}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -104,7 +106,7 @@ const SignupPage = () => {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t('Password')}
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -117,8 +119,8 @@ const SignupPage = () => {
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition disabled:opacity-60"
             disabled={loaderLoading}
           >
-            <option value="owner">Owner</option>
-            <option value="vet">Veterinarian</option>
+            <option value="owner">{t('Owner')}</option>
+            <option value="vet">{t('Veterinarian')}</option>
           </select>
 
           <button
@@ -126,7 +128,7 @@ const SignupPage = () => {
             className="w-full px-6 py-3 rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px] disabled:opacity-60"
             disabled={loaderLoading}
           >
-            Sign Up
+            {t('Sign Up')}
           </button>
         </form>
 
@@ -145,7 +147,7 @@ const SignupPage = () => {
           href="/login"
           className="block text-center text-sm text-slate-800 bg-white border border-slate-200 rounded-full py-2 mt-5 hover:shadow-sm hover:-translate-y-[1px] transition"
         >
-          Already have an account? Log in
+          {t('Already have an account? Log in')}
         </a>
 
         {/* tiny floating accent inside card */}

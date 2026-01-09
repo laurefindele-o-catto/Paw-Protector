@@ -1,14 +1,16 @@
 // components/Footer.js
 import React from "react";
-import { useNavigate } from "react-router-dom"; // Add this import
+import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 const Footer = () => {
-    const navigate = useNavigate(); // Initialize navigate
+    const navigate = useNavigate();
+    const { t } = useLanguage();
 
     return (
-        <div className="bg-black text-white px-6 py-12 border-t border-white">
+        <footer className="bg-black text-white px-6 py-12 border-t border-white" role="contentinfo">
             <h1 className="text-yellow-400 text-center mt-2 text-xl font-semibold">
-                An Application to ensure the best care for our furry friends!
+                {t("An Application to ensure the best care for our furry friends!")}
             </h1>
 
             <div className="max-w-6xl mx-auto mt-10">
@@ -16,33 +18,33 @@ const Footer = () => {
                 <div className="grid grid-cols-4 gap-8">
                     {/* About Us */}
                     <div>
-                        <h2 className="text-lg font-bold mb-6">About Us</h2>
+                        <h2 className="text-lg font-bold mb-6">{t("About Us")}</h2>
                         <ul className="space-y-3">
-                            <li>We Like Cats,We Like AI, So we are making an AI application for cats.</li>
+                            <li>{t("We Like Cats,We Like AI, So we are making an AI application for cats.")}</li>
                         </ul>
                         {/* Learn More Button */}
                         <button
                             onClick={() => navigate("/About")}
                             className="mt-4 px-4 py-2 bg-yellow-300 text-black font-semibold rounded hover:bg-green-600 transition"
                         >
-                            Learn More About Us
+                            {t("Learn More About Us")}
                         </button>
                     </div>
 
                     {/* Services */}
                     <div>
-                        <h2 className="text-lg font-bold mb-6">Services</h2>
+                        <h2 className="text-lg font-bold mb-6">{t("Services")}</h2>
                         <ul className="space-y-3">
-                            <li>AI assistant for petcare</li>
-                            <li>Easier Access to emergency services</li>
-                            <li>Cheaper and convinient consulting</li>
-                            <li>Skin Anomaly Detection</li>
+                            <li>{t("AI assistant for petcare")}</li>
+                            <li>{t("Easier Access to emergency services")}</li>
+                            <li>{t("Cheaper and convinient consulting")}</li>
+                            <li>{t("Skin Anomaly Detection")}</li>
                         </ul>
                     </div>
 
                     {/* Contact Us */}
                     <div>
-                        <h2 className="text-lg font-bold mb-6">Contact Us</h2>
+                        <h2 className="text-lg font-bold mb-6">{t("Contact Us")}</h2>
                         <ul className="space-y-3">
                             <li>pawmeowmanool@gmail.com</li>
                             <li>tanjinulislam16@gmail.com</li>
@@ -51,7 +53,7 @@ const Footer = () => {
 
                     {/* Social Media */}
                     <div>
-                        <h2 className="text-lg font-bold mb-6">Social Media</h2>
+                        <h2 className="text-lg font-bold mb-6">{t("Social Media")}</h2>
                         <ul className="space-y-3">
                             <li>
                                 <a href="#" className="flex items-center hover:text-green-500 transition">
@@ -113,7 +115,7 @@ const Footer = () => {
                     </p>
                 </div>
             </footer>
-        </div>
+        </footer>
 
 
     );

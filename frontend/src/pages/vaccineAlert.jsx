@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import apiConfig from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import Header from '../components/Header'
@@ -14,14 +14,12 @@ const VaccineAlert = () => {
   const [newDewormDate, setNewDewormDate] = useState("");
   const [vaccineName, setVaccineName] = useState("Rabies");
   const [dewormProduct, setDewormProduct] = useState("");
-  const [useTranslation, setUseTranslation] = useState(true);
   const [savingVaccine, setSavingVaccine] = useState(false);
   const [savingDeworm, setSavingDeworm] = useState(false);
   const [successVaccine, setSuccessVaccine] = useState(false);
   const [successDeworm, setSuccessDeworm] = useState(false);
 
-  const { t: translate } = useAutoTranslate();
-  const t = useTranslation && translate ? translate : (s) => s;
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -210,17 +208,11 @@ const VaccineAlert = () => {
   return (
     <>
       <Header/>
+      <main id="main-content" role="main" tabIndex="-1">
       <section className="min-h-screen bg-white text-slate-900 px-6 py-8 mt-32">
         <div className="max-w-5xl mx-auto flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">{t("Vaccine & Deworming Alerts")}</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setUseTranslation(p => !p)}
-              className="px-4 py-2 rounded-md bg-black text-white text-sm"
-            >
-              {useTranslation ? "BN" : "EN"}
-            </button>
-          </div>
+
         </div>
 
         <div className="max-w-5xl mx-auto mb-6">
@@ -237,7 +229,7 @@ const VaccineAlert = () => {
         </div>
 
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
-          <div className="border border-slate-200 rounded-md p-4">
+          <div className="border border-slate-200 rounded-md p-4" role="region" aria-live="assertive" aria-label="Overdue vaccinations">
             <h2 className="text-sm font-semibold mb-3">{t("Overdue")}</h2>
             {overdue.length ? (
               <ul className="space-y-2 text-sm">
@@ -250,7 +242,7 @@ const VaccineAlert = () => {
               </ul>
             ) : <p className="text-xs text-slate-500">{t("No overdue items.")}</p>}
           </div>
-          <div className="border border-slate-200 rounded-md p-4">
+          <div className="border border-slate-200 rounded-md p-4" role="region" aria-live="polite" aria-label="Upcoming vaccinations">
             <h2 className="text-sm font-semibold mb-3">{t("Due Soon (≤30d)")}</h2>
               {dueSoon.length ? (
                 <ul className="space-y-2 text-sm">
@@ -290,7 +282,7 @@ const VaccineAlert = () => {
             <button
               onClick={handleAddVaccination}
               disabled={!newVaccineDate || savingVaccine}
-              className="w-full px-4 py-2 rounded-md bg-[#0f172a] text-white text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 rounded-md bg-[#0f172a] text-white text-sm disabled:opacity-50 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
             >
               {savingVaccine ? (
                 <span className="flex items-center gap-2">
@@ -336,7 +328,7 @@ const VaccineAlert = () => {
             <button
               onClick={handleAddDeworming}
               disabled={!dewormProduct || !newDewormDate || savingDeworm}
-              className="w-full px-4 py-2 rounded-md bg-[#0f172a] text-white text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 rounded-md bg-[#0f172a] text-white text-sm disabled:opacity-50 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
             >
               {savingDeworm ? (
                 <span className="flex items-center gap-2">
@@ -370,6 +362,7 @@ const VaccineAlert = () => {
           </p>
         </div>
     </section>
+    </main>
     </>
   );
 };

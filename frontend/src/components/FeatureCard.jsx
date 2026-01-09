@@ -20,7 +20,7 @@ export default function FeatureCard({ to, children }) {
         hover:text-[#0f172a]
         hover:bg-[#fdd142]/10
         focus:outline-none
-        focus:ring-2 focus:ring-[#fdd142]/40
+        focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2
         shadow-none
       `}
       onMouseEnter={() => setIsHovered(true)}

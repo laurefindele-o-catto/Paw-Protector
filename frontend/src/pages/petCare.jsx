@@ -1,6 +1,6 @@
 // petCare.jsx — engaging flashcard UI for cat care (with auto-translate)
 import React, { useState, useEffect } from "react";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
 import Header from '../components/Header'
@@ -14,14 +14,8 @@ import Header from '../components/Header'
  * Keep/extend styles from your LandingPage palette (#edfdfd, #0f172a, #fdd142)
  */
 export default function PetCare() {
-  const { t: translate } = useAutoTranslate();
+  const { t } = useLanguage();
   const navigate = useNavigate();
-
-  // toggle state
-  const [useTranslation, setUseTranslation] = useState(true);
-
-  // fallback translator
-  const t = useTranslation && translate ? translate : (s) => s;
 
   const daily = [
     {
@@ -368,6 +362,7 @@ export default function PetCare() {
   return (
     <>
       <Header/>
+      <main id="main-content" role="main" tabIndex="-1">
       <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* Background accents */}
         <div className="pointer-events-none absolute -top-28 -left-24 h-72 w-72 bg-[#fdd142]/50 rounded-full blur-3xl animate-[float_8s_ease-in-out_infinite]" />
@@ -381,7 +376,7 @@ export default function PetCare() {
                 <span className="inline-flex items-center gap-2 bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full text-xs font-semibold">
                   <span>🐾 PawPal</span>
                   <span className="h-1 w-1 rounded-full bg-[#fdd142]" />
-                  <span>{("Cat Care")}</span>
+                  <span>{t("Cat Care")}</span>
                 </span>
                 <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">
                   {t("Summary: ")}
@@ -389,7 +384,7 @@ export default function PetCare() {
                 <p className="mt-2 text-slate-600 max-w-2xl">
                   {summary && typeof summary === 'object'
                     ? `${summary.current_status_bn || ''}${summary.trend_bn ? ` (${summary.trend_bn})` : ''}`
-                    : "Skim-friendly flashcards you can follow daily. Details are simplified—ask your veterinarian for personal advice."
+                    : t("Skim-friendly flashcards you can follow daily. Details are simplified—ask your veterinarian for personal advice.")
                   }
                 </p>
               </div>
@@ -398,17 +393,17 @@ export default function PetCare() {
                   onClick={handleGenerate}
                   disabled={loading || !petId}
                   className={`inline-flex items-center gap-2 rounded-full ${loading ? "bg-slate-400" : "bg-[#0f172a] hover:bg-slate-900"} text-[#edfdfd] px-5 py-3 font-semibold shadow transition`}
-                  aria-label="Generate Flashcards"
-                  title={!petId ? "Select a pet first" : "Generate this week’s plan"}
+                  aria-label={t("Generate Flashcards")}
+                  title={!petId ? t("Select a pet first") : t("Generate this week's plan")}
                 >
-                  {loading ? "Generating…" : "Generate Flashcards"}
+                  {loading ? t("Generating…") : t("Generate Flashcards")}
                 </button>
                 <button
                   onClick={() => window.print()}
                   className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:shadow-md transition"
-                  aria-label={("Print")}
+                  aria-label={t("Print")}
                 >
-                  {("Print")}
+                  {t("Print")}
                 </button>
               </div>
             </div>
@@ -417,18 +412,11 @@ export default function PetCare() {
         
         
 
-        {/* Translation toggle button */}
-        <button
-          onClick={() => setUseTranslation((prev) => !prev)}
-          className="absolute top-6 right-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
-          aria-label="Toggle language"
-        >
-          {useTranslation ? "BN" : "EN"}
-        </button>
+
 
         {/* Daily flashcards */}
         <section id="daily" className="mx-auto max-w-6xl px-4 mt-8">
-          <TitleBar title="Daily Care Flashcards" subtitle="This week’s plan (toggle days)" t={t} />
+          <TitleBar title={t("Daily Care Flashcards")} subtitle={t("This week's plan (toggle days)")} t={t} />
 
           {/* Day-specific reminders */}
           <div className="grid grid-cols-2 gap-4">
@@ -499,7 +487,7 @@ export default function PetCare() {
               </div>
               {!loading && !error && (
                 <p className="mt-3 text-xs text-slate-500">
-                  Showing default tips. Update weekly metrics and generate a plan to see personalized cards.
+                  {t("Showing default tips. Update weekly metrics and generate a plan to see personalized cards.")}
                 </p>
               )}
             </div>
@@ -553,17 +541,17 @@ export default function PetCare() {
 
         {/* Essentials grid */}
         <section className="mx-auto max-w-6xl px-4 mt-10">
-          <TitleBar title="Essentials" subtitle="Small habits, big impact" t={t} />
+          <TitleBar title={t("Essentials")} subtitle={t("Small habits, big impact")} t={t} />
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
             {(essentialsP || essentials).map((e) => (
               <article
                 key={e.title}
                 className="bg-white/90 border border-white rounded-2xl shadow p-5 hover:shadow-lg transition"
-                aria-label={("Essential card")}
+                aria-label={t("Essential card")}
               >
                 <div className="text-2xl">{e.emoji}</div>
-                <h3 className="mt-2 font-bold">{(e.title)}</h3>
-                <p className="text-sm text-slate-700 mt-1">{(e.tip)}</p>
+                <h3 className="mt-2 font-bold">{t(e.title)}</h3>
+                <p className="text-sm text-slate-700 mt-1">{t(e.tip)}</p>
               </article>
             ))}
           </div>
@@ -571,16 +559,16 @@ export default function PetCare() {
 
         {/* Toxic chips */}
         <section className="mx-auto max-w-6xl px-4 mt-10 mb-24">
-          <TitleBar title="Toxic to Cats" subtitle="Keep these away—seek help if exposed" t={t} />
-          <div className="mt-3 flex flex-wrap gap-2" aria-label={("Toxic items list")}>
+          <TitleBar title={t("Toxic to Cats")} subtitle={t("Keep these away—seek help if exposed")} t={t} />
+          <div className="mt-3 flex flex-wrap gap-2" aria-label={t("Toxic items list")}>
             {(toxicP || toxic).map((tox) => (
               <span
                 key={tox}
                 className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-sm shadow-sm"
-                aria-label={("Toxic item")}
+                aria-label={t("Toxic item")}
               >
                 <span className="h-2 w-2 rounded-full bg-red-500" />
-                {(tox)}
+                {t(tox)}
               </span>
             ))}
           </div>
@@ -589,22 +577,23 @@ export default function PetCare() {
           )}
           <a
             href="tel:+18884264435"
-            className="inline-flex items-center gap-2 mt-4 rounded-full bg-[#0f172a] text-[#edfdfd] px-4 py-2 text-sm font-semibold shadow hover:bg-slate-900"
-            aria-label={("Call ASPCA Poison Control")}
+            className="inline-flex items-center gap-2 mt-4 rounded-full bg-[#0f172a] text-[#edfdfd] px-4 py-2 text-sm font-semibold shadow hover:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
+            aria-label={t("Call ASPCA Poison Control")}
           >
-            {("ASPCA Poison Control")} 888-426-4435
+            {t("ASPCA Poison Control")} 888-426-4435
           </a>
           <p className="mt-3 text-xs text-slate-500">
-            {("This is a simplified guide. Your vet may tailor a different plan for your cat.")}
+            {t("This is a simplified guide. Your vet may tailor a different plan for your cat.")}
           </p>
         </section>
+      </div>
+      </main>
 
         {/* Local keyframes */}
         <style>{`
           @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
           @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
         `}</style>
-      </div>
     </>
   );
 }
@@ -613,8 +602,8 @@ function TitleBar({ title, subtitle, t }) {
   return (
     <div className="flex items-center justify-between gap-2 flex-wrap">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold">{(title)}</h2>
-        <p className="text-sm text-slate-600">{(subtitle)}</p>
+        <h2 className="text-xl md:text-2xl font-bold">{t(title)}</h2>
+        <p className="text-sm text-slate-600">{t(subtitle)}</p>
       </div>
       <div className="hidden md:block h-10 w-10 rounded-full bg-[#fdd142] opacity-70" />
     </div>
@@ -625,15 +614,15 @@ function FlashCard({ title, emoji, points, t }) {
   return (
     <article
       className="snap-center shrink-0 w-[280px] sm:w-[320px] bg-white/95 border border-white rounded-3xl shadow p-5 hover:shadow-lg transition"
-      aria-label={("Daily card")}
+      aria-label={t("Daily card")}
     >
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-lg">{(title)}</h3>
+        <h3 className="font-bold text-lg">{t(title)}</h3>
         <div className="text-2xl">{emoji}</div>
       </div>
       <ul className="mt-3 text-sm text-slate-700 space-y-2 list-disc pl-5">
         {points.map((p, i) => (
-          <li key={i}>{(p)}</li>
+          <li key={i}>{t(p)}</li>
         ))}
       </ul>
     </article>

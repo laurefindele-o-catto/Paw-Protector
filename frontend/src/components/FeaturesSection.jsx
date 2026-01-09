@@ -1,7 +1,9 @@
 // src/components/FeaturesSection.jsx
 import FeatureCard from "./FeatureCard";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function FeaturesSection() {
+  const { t } = useLanguage();
   return (
     <nav
       className="
@@ -21,11 +23,11 @@ export default function FeaturesSection() {
       "
       style={{ minHeight: "56px" }}
     >
-      <FeatureCard to="/paw-pal">🐾 PawPal</FeatureCard>
-      <FeatureCard to="/skinDiseaseDetection">Disease Detection</FeatureCard>
-      <FeatureCard to="/petcare">Pet Care</FeatureCard>
-      <FeatureCard to="/find-a-vet">Find a Vet</FeatureCard>
-      <FeatureCard to="/vaccination-alerts">Vaccination Alerts</FeatureCard>
+      <FeatureCard to="/paw-pal">🐾 {t("PawPal")}</FeatureCard>
+      <FeatureCard to="/skinDiseaseDetection">{t("Disease Detection")}</FeatureCard>
+      <FeatureCard to="/petcare">{t("Pet Care")}</FeatureCard>
+      <FeatureCard to="/find-a-vet">{t("Find a Vet")}</FeatureCard>
+      <FeatureCard to="/vaccination-alerts">{t("Vaccination Alerts")}</FeatureCard>
     </nav>
   );
 }

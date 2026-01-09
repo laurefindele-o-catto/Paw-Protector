@@ -5,7 +5,7 @@ import FeaturesSection from "../components/FeaturesSection";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import apiConfig from "../config/apiConfig";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import Header from "../components/Header";
 import { usePet } from "../context/PetContext";
 import PetSwitcher from "../components/PetSwitcher";
@@ -17,9 +17,7 @@ const placeholder = "/placeholder.png";
 function Dashboard() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t: translate } = useAutoTranslate();
-  const [useTranslation, setUseTranslation] = useState(true);
-  const t = useTranslation && translate ? translate : (s) => s;
+  const { t } = useLanguage();
 
   const [user, setUser] = useState(null);
   const current_pet_count = parseInt(localStorage.getItem('pet_count'));
@@ -37,16 +35,10 @@ function Dashboard() {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleTranslationToggle = (newState) => {
-    setUseTranslation(newState);
-  };
-
   return (
     <>
-      <Header 
-        translationState={useTranslation} 
-        onTranslationToggle={handleTranslationToggle}
-      />
+      <Header />
+      <main id="main-content" role="main" tabIndex="-1">
       <div className="relative min-h-screen flex flex-col bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* animated background shapes */}
         <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
@@ -86,6 +78,7 @@ function Dashboard() {
         {/* Bottom spacing */}
         <br /><br /><br /><br />
       </div>
+      </main>
 
       <Footer />
 
@@ -95,7 +88,7 @@ function Dashboard() {
        {/* Floating Call Button */}
        <a
          href="tel:+8801888548012"
-         className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center"
+         className="fixed bottom-8 left-8 bg-red-500 w-16 h-16 flex flex-col items-center justify-center rounded-full shadow-lg hover:bg-red-600 transition transform hover:scale-110 text-center focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
          aria-label={t("Call emergency contact")}
        >
          <img src="/icons/call-icon.png" alt={t("Call icon")} className="w-6 h-6 mb-1" />

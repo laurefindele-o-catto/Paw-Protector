@@ -1,16 +1,10 @@
 // PawPal.jsx — alt style: split hero, marquee motto, striped goals, KPI tickers
 import React, { useState } from "react";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import Header from "../components/Header";
 
 export default function PawPal() {
-  const { t: translate } = useAutoTranslate();
-
-  // toggle state
-  const [useTranslation, setUseTranslation] = useState(true);
-
-  // fallback translator
-  const t = useTranslation && translate ? translate : (s) => s;
+  const { t } = useLanguage();
 
   const goals = [
     { n: "01", title: "Clarity", desc: "Short flows. Fewer taps. No jargon." },
@@ -52,13 +46,7 @@ export default function PawPal() {
             <span className="font-semibold tracking-tight text-slate-900">PawPal</span>
           </div>
           
-          <button
-            onClick={() => setUseTranslation((prev) => !prev)}
-            className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition"
-            aria-label="Toggle language"
-          >
-            {useTranslation ? "BN" : "EN"}
-          </button>
+
         </header>
 
         {/* Split hero */}
