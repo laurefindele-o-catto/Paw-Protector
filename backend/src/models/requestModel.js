@@ -12,19 +12,19 @@ class RequestModel {
      */
     async createRequest(requestData) {
         try {
-            const { issue_user_id, content_url, status = false } = requestData;
+            const { issue_user_id, content_url, status = false, notes } = requestData;
             
             if (!issue_user_id || !content_url) {
                 throw new Error('issue_user_id and content_url are required');
             }
             
             const query = `
-                INSERT INTO requests (issue_user_id, content_url, status, created_at, updated_at)
-                VALUES ($1, $2, $3, NOW(), NOW())
+                INSERT INTO requests (issue_user_id, content_url, status, created_at, updated_at, notes)
+                VALUES ($1, $2, $3, NOW(), NOW(), $4)
                 RETURNING *
             `;
             
-            const result = await this.db.query_executor(query, [issue_user_id, content_url, status]);
+            const result = await this.db.query_executor(query, [issue_user_id, content_url, status, notes]);
             
             return result.rows[0];
         } catch (error) {
