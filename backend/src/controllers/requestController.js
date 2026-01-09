@@ -18,7 +18,7 @@ class RequestController {
     createRequest = async (req, res) => {
         try {
             const userId = req.user.id;
-            const { content_url } = req.body;
+            const { content_url, notes } = req.body;
 
             if (!content_url) {
                 return res.status(400).json({
@@ -30,7 +30,8 @@ class RequestController {
             const requestData = {
                 issue_user_id: userId,
                 content_url: content_url,
-                status: false
+                status: false,
+                notes: notes
             };
 
             const newRequest = await this.model.createRequest(requestData);
@@ -63,6 +64,7 @@ class RequestController {
     uploadAndCreateRequest = async (req, res) => {
         try {
             const userId = req.user.id;
+            const notes = req.body.notes;
             const file = req.file;
 
             if (!file) {
@@ -93,7 +95,8 @@ class RequestController {
             const requestData = {
                 issue_user_id: userId,
                 content_url: result.secure_url,
-                status: false
+                status: false,
+                notes : notes
             };
 
             const newRequest = await this.model.createRequest(requestData);

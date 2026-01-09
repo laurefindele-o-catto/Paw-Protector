@@ -6,7 +6,7 @@ import apiConfig from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import { useLoader } from "../hooks/useLoader";
 import { Loader } from "../components/Loader";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import Header from '../components/Header'
 
 // Simple loader for Google Places script
@@ -30,14 +30,8 @@ function useGooglePlaces(apiKey) {
 const placeholder = "/placeholder.png";
 
 function ProfilePage() {
-  const { t: translate } = useAutoTranslate();
+  const { t } = useLanguage();
   
-  // toggle state
-  const [useTranslation, setUseTranslation] = useState(true);
-
-  // fallback translator
-  const t = useTranslation && translate ? translate : (s) => s;
-
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -360,14 +354,7 @@ function ProfilePage() {
           </div>
         </div>
 
-        {/* Translation toggle button */}
-        <button
-          onClick={() => setUseTranslation((prev) => !prev)}
-          className="absolute top-20 left-6 px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-700 transition z-20"
-          aria-label="Toggle language"
-        >
-          {useTranslation ? "BN" : "EN"}
-        </button>
+
 
         {/* Profile avatar button */}
         <div
@@ -389,7 +376,7 @@ function ProfilePage() {
 
         {/* Heading */}
         <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 text-center mb-8 tracking-tight animate-[slideup_0.6s_ease-out]">
-          Personal Information
+          {t('Personal Information')}
         </h1>
 
         {/* Form card */}
@@ -494,7 +481,7 @@ function ProfilePage() {
           {/* Map picker */}
           <div className="mt-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Pick on Map
+              {t('Pick on Map')}
             </label>
             {showMaps ? (
               <div
@@ -503,32 +490,32 @@ function ProfilePage() {
               />
             ) : (
               <div className="h-64 w-full rounded-2xl border border-slate-200 flex items-center justify-center bg-slate-50 text-slate-500">
-                Map unavailable. Add your Google Maps API key to enable this feature.
+                {t('Map unavailable. Add your Google Maps API key to enable this feature.')}
               </div>
             )}
             <p className="mt-2 text-xs text-slate-500">
               {showMaps
-                ? "Click on the map or drag the marker to refine your location."
-                : "Map features are disabled until you provide a Google Maps API key."}
+                ? t("Click on the map or drag the marker to refine your location.")
+                : t("Map features are disabled until you provide a Google Maps API key.")}
             </p>
           </div>
 
           {/* Location details */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('City')}</label>
               <input value={city} onChange={e=>setCity(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">State</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('State')}</label>
               <input value={state} onChange={e=>setState(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Postal Code</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('Postal Code')}</label>
               <input value={postalCode} onChange={e=>setPostalCode(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{t('Country')}</label>
               <input value={country} onChange={e=>setCountry(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/20 focus:border-[#0f172a]" />
             </div>
           </div>
@@ -546,10 +533,10 @@ function ProfilePage() {
             {loading ? (
               <>
                 <Loader />
-                <span className="ml-2">Processing...</span>
+                <span className="ml-2">{t('Processing...')}</span>
               </>
             ) : (
-              "Save"
+              t('Save')
             )}
           </button>
         </form>
@@ -560,11 +547,11 @@ function ProfilePage() {
             <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs">
               PP
             </div>
-            <h2 className="text-2xl font-semibold text-slate-900">Your Pets</h2>
+            <h2 className="text-2xl font-semibold text-slate-900">{t('Your Pets')}</h2>
           </div>
 
           {pets.length === 0 ? (
-            <div className="text-slate-500 text-center py-8">Currently no pets added.</div>
+            <div className="text-slate-500 text-center py-8">{t('Currently no pets added.')}</div>
           ) : (
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-3">
               {pets.map((pet, idx) => (

@@ -3,28 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import ProfilePictureCard from '../components/profilePictureCard';
 import { usePet } from '../context/PetContext';
-import { useAutoTranslate } from 'react-autolocalise';
+import { useLanguage } from '../context/LanguageContext';
 const placeholder = "/placeholder.png";
 
-function Header({ translationState, onTranslationToggle }) {
+function Header() {
     const { loading, logout, user } = useAuth();
     const {currentPet} = usePet();
     const navigate = useNavigate();
-    const { t: translate } = useAutoTranslate();
-
-    // Use translation state from parent or default to true
-    const useTranslation = translationState ?? true;
-
-    // fallback translator
-    const t = useTranslation && translate ? translate : (s) => s;
-
-    // Handle translation toggle
-    const handleTranslationToggle = () => {
-        const newState = !useTranslation;
-        if (onTranslationToggle) {
-            onTranslationToggle(newState);
-        }
-    };
+    const { t, useTranslation, toggleLanguage } = useLanguage();
 
     // console.log(currentPet);
     
@@ -42,7 +28,7 @@ function Header({ translationState, onTranslationToggle }) {
     ];
 
     return (
-        <header className="fixed top-0 left-0 w-full bg-white/30 backdrop-blur-md border-b border-white shadow z-30">
+        <header className="fixed top-0 left-0 w-full bg-white/30 backdrop-blur-md border-b border-white shadow z-30" role="banner">
             <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between">
                 {/* Logo left */}
                 <Link to='/dashboard'>
@@ -56,12 +42,12 @@ function Header({ translationState, onTranslationToggle }) {
                     </div>
                 </Link>
                 {/* Left nav buttons styled as pills, left-aligned */}
-                <nav className="flex gap-2 ml-6 justify-start">
+                <nav className="flex gap-2 ml-6 justify-start" role="navigation" aria-label="Main navigation">
                     {navLinks.map(link => (
                         <Link
                             key={link.to}
                             to={link.to}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:bg-[#fdd142]/40 text-[#0f172a] font-semibold text-sm transition"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:bg-[#fdd142]/40 text-[#0f172a] font-semibold text-sm transition focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
                             aria-label={link.label}
                         >
                             {link.icon && (
@@ -74,13 +60,14 @@ function Header({ translationState, onTranslationToggle }) {
                 {/* Right side: translation toggle, logout then profile */}
                 <div className="flex items-center gap-4">
                     {/* Translation Toggle Button */}
-                    {/* <button
-                        onClick={handleTranslationToggle}
+                    <button
+                        onClick={toggleLanguage}
                         className="px-3 py-1.5 rounded-full bg-black text-white text-xs font-medium hover:bg-gray-700 transition"
                         aria-label="Toggle language"
+                        title={useTranslation ? "Switch to English" : "Switch to Bangla"}
                     >
-                        {useTranslation ? "BN" : "EN"}
-                    </button> */}
+                        {useTranslation ? "EN" : "বাং"}
+                    </button>
                     
                     <button
                         onClick={handleLogout}

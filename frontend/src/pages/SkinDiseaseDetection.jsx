@@ -1,27 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import Header from '../components/Header'
 
 export default function SkinDiseaseDetector() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t: translate } = useAutoTranslate();
-
+  const { t } = useLanguage();
 
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef();
-
-  // toggle state
-  const [useTranslation, setUseTranslation] = useState(true);
-
-  // fallback translator
-  const t = useTranslation && translate ? translate : (s) => s;
-
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -140,16 +132,6 @@ export default function SkinDiseaseDetector() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           {t('Dashboard')}
-        </button>
-
-        {/* Language Toggle Button (top right) */}
-        <button
-          onClick={() => setUseTranslation((prev) => !prev)}
-          className="absolute top-6 right-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
-          aria-label="Toggle language"
-        >
-          {/* You can add an icon here if you want, but keeping it text-only for clarity */}
-          {useTranslation ? "BN" : "EN"}
         </button>
 
         {/* Header */}
@@ -274,14 +256,44 @@ export default function SkinDiseaseDetector() {
                 : "border-emerald-400 bg-emerald-50"
                 }`}
             >
-              <h2
-                className={`font-bold text-xl mb-2 ${result && typeof result === "string" && result.toLowerCase() !== "healthy"
-                  ? "text-red-700"
-                  : "text-emerald-700"
-                  }`}
-              >
-                {t("Results")}
-              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2
+                  className={`font-bold text-xl ${result && typeof result === "string" && result.toLowerCase() !== "healthy"
+                    ? "text-red-700"
+                    : "text-emerald-700"
+                    }`}
+                >
+                  {t("Results")}
+                </h2>
+                
+                {/* Voice Narration Button */}
+                {result && (
+                  <button
+                    onClick={() => {
+                      if (isSpeaking) {
+                        cancelSpeech();
+                      } else {
+                        const resultMessage = result === "Error processing image"
+                          ? t("Error processing image")
+                          : result.toLowerCase() === "healthy"
+                          ? t("Good news! Your pet appears healthy.")
+                          : t(`Detection result: ${result}. Please consult a veterinarian for proper treatment.`);
+                        speak(resultMessage);
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                      isSpeaking 
+                        ? 'bg-red-500 text-white' 
+                        : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                    }`}
+                    title={isSpeaking ? t("Stop reading") : t("Read result aloud")}
+                    aria-label={isSpeaking ? t("Stop reading") : t("Read result aloud")}
+                  >
+                    {isSpeaking ? '🔇' : '🔊'} {isSpeaking ? t("Stop") : t("Read Aloud")}
+                  </button>
+                )}
+              </div>
+              
               <p
                 className={`text-lg font-medium ${result === "Error processing image" ? "text-red-600" : "text-slate-800"
                   }`}

@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import ProfilePictureCard from '../components/profilePictureCard';
 import { usePet } from '../context/PetContext';
+import { useLanguage } from '../context/LanguageContext';
 const placeholder = "/placeholder.png";
 
 function VetHeader() {
     const { loading, logout, user } = useAuth();
     const {currentPet} = usePet();
     const navigate = useNavigate();
+    const { t, useTranslation, toggleLanguage } = useLanguage();
 
     // console.log(currentPet);
     
@@ -33,10 +35,20 @@ function VetHeader() {
                 </Link>
                 {/* Right side: logout then profile */}
                 <div className="flex items-center gap-4">
+                    {/* Translation Toggle Button */}
+                    <button
+                        onClick={toggleLanguage}
+                        className="px-3 py-1.5 rounded-full bg-black text-white text-xs font-medium hover:bg-gray-700 transition"
+                        aria-label="Toggle language"
+                        title={useTranslation ? "Switch to English" : "Switch to Bangla"}
+                    >
+                        {useTranslation ? "EN" : "বাং"}
+                    </button>
+                    
                     <button
                         onClick={handleLogout}
                         className="flex items-center px-4 py-2 bg-red-700 text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition disabled:opacity-60"
-                        aria-label="Logout"
+                        aria-label={t("Logout")}
                     >
                         <svg
                             className="w-5 h-5 mr-2"

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { usePet } from "../context/PetContext";
@@ -13,27 +13,14 @@ import DewormingTab from "../features/petProfile/tabs/DewormingTab";
 
 export default function PetProfile() {
   const { pets, currentPet, currentPetId, selectPet, currentPetSummary, refreshSummary } = usePet();
-  const { t: translate } = useAutoTranslate();
+  const { t } = useLanguage();
 
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [tab, setTab] = React.useState("overview");
 
-  // toggle state
-  const [useTranslation, setUseTranslation] = useState(true);
-
-  // fallback translator
-  const t = useTranslation && translate ? translate : (s) => s;
-
-  const handleTranslationToggle = (newState) => {
-    setUseTranslation(newState);
-  };
-
   return (
     <>
-      <Header 
-        translationState={useTranslation} 
-        onTranslationToggle={handleTranslationToggle}
-      />
+      <Header />
       
       <div className="pt-12 my-24 min-h-screen bg-[#edfdfd]">
         <div className="max-w-7xl mx-auto p-4">

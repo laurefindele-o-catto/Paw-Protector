@@ -37,13 +37,13 @@ export default function PetSwitcher() {
       {/* Pet Switcher Controls */}
       <div className="flex items-center gap-2">
         {pets.length > 0 ? (
-          <div className="gap-x-6 flex flex-row">
+          <div className="gap-x-6 flex flex-row items-center">
             <div>
               <label className="text-xs text-slate-600 mr-4">Current Pet</label>
               <select
                 value={currentPetId || ""}
                 onChange={(e) => selectPet(parseInt(e.target.value, 10))}
-                className="border border-slate-300 rounded-full px-3 py-1 text-sm bg-white/80"
+                className="border border-slate-300 rounded-full px-3 py-1 text-sm bg-white/80 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
                 title="Switch pet"
               >
                 {pets.map((p) => (
@@ -55,7 +55,7 @@ export default function PetSwitcher() {
             </div>
             <Link
               to="/addPet"
-              className="text-sm font-medium bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full hover:bg-slate-900 transition"
+              className="text-sm font-medium bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full hover:bg-slate-900 transition focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
             >
               + Add another one
             </Link>
@@ -63,7 +63,7 @@ export default function PetSwitcher() {
         ) : (
           <Link
             to="/addPet"
-            className="text-sm font-medium bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full hover:bg-slate-900 transition"
+            className="text-sm font-medium bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full hover:bg-slate-900 transition focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
           >
             + Add your first pet
           </Link>

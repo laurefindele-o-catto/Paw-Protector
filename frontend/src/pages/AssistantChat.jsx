@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import { useAutoTranslate } from "react-autolocalise";
+import { useLanguage } from "../context/LanguageContext";
 // import Footer from "../Components/Footer";
 import apiConfig from "../config/apiConfig";
 import { useAuth } from "../context/AuthContext";
 import { usePet } from "../context/PetContext";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 
 function useGeo() {
   const [pos, setPos] = useState(null);
@@ -44,15 +46,7 @@ export default function AssistantChat() {
   const { isAuthenticated, token, user } = useAuth();
   const { selectedPet } = usePet?.() || {};
   const geo = useGeo();
-  const { t: translate } = useAutoTranslate();
-
-  // translation state
-  const [useTranslation, setUseTranslation] = useState(true);
-  const t = useTranslation && translate ? translate : (s) => s;
-
-  const handleTranslationToggle = (newState) => {
-    setUseTranslation(newState);
-  };
+  const { t, currentLanguage } = useLanguage();
 
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]); // [{id,title,pet_id,updated_at}]
@@ -64,6 +58,95 @@ export default function AssistantChat() {
   const fileRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [pendingVision, setPendingVision] = useState(null); // { name, dataUrl }
+  const [isVoiceMessage, setIsVoiceMessage] = useState(false); // Track if message was sent via voice
+
+  // Voice features - with auto-send on transcript completion
+  const speechLang = currentLanguage === 'bn' ? 'bn-BD' : 'en-US';
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useSpeechRecognition({
+    lang: speechLang,
+    continuous: false, // Single-shot mode for better control
+  });
+
+  const { speak } = useSpeechSynthesis({
+    lang: speechLang,
+  });
+
+  // Auto-send voice message when transcript is finalized
+  useEffect(() => {
+    if (transcript && transcript.trim()) {
+      setInput(transcript);
+      // Auto-send after a brief delay to allow user to see the transcript
+      const timer = setTimeout(() => {
+        if (transcript.trim() && sessionId && token) {
+          sendVoiceMessage(transcript.trim());
+          resetTranscript();
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [transcript]);
+
+  // Send voice message function
+  const sendVoiceMessage = async (voiceText) => {
+    if (!voiceText || !token || !sessionId) return;
+    
+    setIsVoiceMessage(true); // Mark as voice message
+    const userMsg = { role: "user", content: voiceText, ts: new Date().toISOString() };
+    setMessages(prev => [...prev, userMsg]);
+    setInput(""); // Clear input after sending
+    setLoading(true);
+    
+    try {
+      const body = {
+        session_id: sessionId,
+        content: voiceText,
+        pet_id: petId,
+        doc_types: "pet_summary,metric,disease,vaccination,deworming,vision,chat",
+        topK: 6,
+        lat: geo?.lat ?? null,
+        lng: geo?.lng ?? null
+      };
+      
+      const res = await fetch(`${apiConfig.baseURL}${apiConfig.chat.agent}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body)
+      });
+      
+      const data = await res.json();
+      const answer = data?.answer || "দুঃখিত, এখন উত্তর দিতে পারলাম না। একটু পরে আবার চেষ্টা করুন।";
+      const asst = { role: "assistant", content: answer, ts: new Date().toISOString() };
+      setMessages(prev => [...prev, asst]);
+      
+      // Read AI response aloud after voice input
+      setTimeout(() => {
+        const cleanAnswer = sanitizeChat(answer);
+        speak(cleanAnswer);
+        setIsVoiceMessage(false);
+      }, 500);
+    } catch {
+      const errorMsg = "নেটওয়ার্ক সমস্যার কারণে এখন সম্ভব হচ্ছে না। একটু পরে চেষ্টা করুন।";
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: errorMsg, 
+        ts: new Date().toISOString() 
+      }]);
+      
+      // Read error message aloud
+      setTimeout(() => {
+        speak(errorMsg);
+        setIsVoiceMessage(false);
+      }, 500);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Helpers: localStorage keys
   const userKey = user?.id || "me";
@@ -319,11 +402,8 @@ export default function AssistantChat() {
 
   return (
     <>
-      <Header 
-        translationState={useTranslation} 
-        onTranslationToggle={handleTranslationToggle}
-      />
-      <div className="min-h-screen bg-[#edfdfd] text-slate-900 pt-28 mt-24">
+      <Header />
+      <main id="main-content" className="min-h-screen bg-[#edfdfd] text-slate-900 pt-28 mt-24" role="main" tabIndex="-1">
         <div className="mx-auto max-w-6xl px-4 flex h-[70vh]">
           {/* Collapsible Sidebar */}
           <aside
@@ -371,8 +451,15 @@ export default function AssistantChat() {
           </button>
 
           {/* Chat panel */}
-          <section className="flex-1 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
-            <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+          <section className="flex-1 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col" aria-label="Chat conversation">
+            <div 
+              ref={listRef} 
+              className="flex-1 overflow-y-auto p-4 space-y-2"
+              role="log"
+              aria-live="polite"
+              aria-atomic="false"
+              aria-relevant="additions"
+            >
               {messages.length === 0 && (
                 <div className="text-center text-slate-500 text-sm py-8">
                   Ask about symptoms, vaccines, deworming, diseases, or find nearby vets. You can also analyze a photo.
@@ -423,9 +510,40 @@ export default function AssistantChat() {
                   placeholder="এখানে লিখুন…"
                 />
                 <input ref={fileRef} onChange={onFileChange} type="file" accept="image/*" className="hidden" />
+                
+                {/* Voice Input Button */}
+                <button
+                  onClick={() => {
+                    if (isListening) {
+                      stopListening();
+                    } else {
+                      resetTranscript();
+                      setInput(""); // Clear existing input
+                      startListening();
+                      speak(t('Listening... Speak your message'));
+                    }
+                  }}
+                  className={`border border-slate-300 hover:border-slate-400 px-3 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1 ${
+                    isListening 
+                      ? 'bg-red-500 text-white border-red-500' 
+                      : 'bg-white text-slate-700'
+                  }`}
+                  title={t("Voice message (auto-send)")}
+                  aria-label={isListening ? t("Recording... Click to stop") : t("Start voice message")}
+                >
+                  {isListening ? (
+                    <>
+                      <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      🎤
+                    </>
+                  ) : (
+                    '🎤'
+                  )}
+                </button>
+                
                 <button
                   onClick={onPickFile}
-                  className="bg-white border border-slate-300 hover:border-slate-400 text-slate-700 px-3 py-2 rounded-xl shadow-sm"
+                  className="bg-white border border-slate-300 hover:border-slate-400 text-slate-700 px-3 py-2 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
                   title="Analyze photo"
                 >
                   ছবি সংযুক্তি
@@ -433,7 +551,7 @@ export default function AssistantChat() {
                 <button
                   onClick={sendMessage}
                   disabled={loading || !input.trim()}
-                  className="bg-[#fdd142] hover:bg-[#f2c22f] disabled:opacity-60 text-slate-900 font-semibold px-4 py-2 rounded-xl shadow"
+                  className="bg-[#fdd142] hover:bg-[#f2c22f] disabled:opacity-60 text-slate-900 font-semibold px-4 py-2 rounded-xl shadow focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
                 >
                   পাঠান
                 </button>
@@ -445,7 +563,7 @@ export default function AssistantChat() {
           </section>
         </div>
         <br /><br />
-      </div>
+      </main>
       {/* <Footer /> */}
     </>
   );
