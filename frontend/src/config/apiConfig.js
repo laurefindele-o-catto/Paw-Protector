@@ -77,6 +77,23 @@ const apiConfig = {
     addRagSource: '/api/chat/rag-source',
     vision: '/api/chat/vision',
   },
+  request: {
+    create: '/api/requests',
+    upload: '/api/requests/upload',
+    pending: '/api/requests/pending',
+    approved: '/api/requests/approved',
+    getById: (requestId) => `/api/requests/${requestId}`,
+    updateStatus: (requestId) => `/api/requests/${requestId}`,
+    remove: (requestId) => `/api/requests/${requestId}`,
+  },
+  vetApproval: {
+    approve: (requestId) => `/api/vet-approvals/${requestId}`,
+    getByRequestId: (requestId) => `/api/vet-approvals/${requestId}`,
+    myApprovals: '/api/vet-approvals/my-approvals',
+    all: '/api/vet-approvals/all',
+    updateNote: (requestId) => `/api/vet-approvals/${requestId}/note`,
+    revoke: (requestId) => `/api/vet-approvals/${requestId}`,
+  }
  
 }
 
