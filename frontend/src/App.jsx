@@ -1,8 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import PetProfile from "./pages/PetProfile.jsx";
 import AssistantChat from "./pages/AssistantChat.jsx";
-
-
+import Vetcheckdiag from "./pages/Vetcheckdiag.jsx";
 import About from "./pages/About.jsx";
 import Dashboard from "./pages/dashboard.jsx";
 import VetFinder from "./pages/vetFinder.jsx";
@@ -70,6 +69,7 @@ function AppContent() {
         <Route path="/signup" element={<SignupPage/>}/>
         <Route path="/pet-profile" element={<PetProfile />} />
         <Route path="/assistant" element={<AssistantChat />} />
+        <Route path="/vetcheckdiag" element={<Vetcheckdiag />} />
       </Routes>
       
       {/* Global Voice Control - shows on authenticated pages */}
