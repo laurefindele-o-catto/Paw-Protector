@@ -168,9 +168,15 @@ class RequestController {
     getPendingRequests = async (req, res) => {
         try {
             const userId = req.user.id;
-            const { limit = null, offset = 0 } = req.query;
+            const roles = Array.isArray(req.user?.roles) ? req.user.roles : [];
+            const isVet = roles.includes('vet') || roles.includes('admin');
 
-            const requests = await this.model.getPendingRequestsGroupedByUser(userId);
+            const limit = req.query.limit != null ? Number(req.query.limit) : null;
+            const offset = req.query.offset != null ? Number(req.query.offset) : 0;
+
+            const requests = isVet
+                ? await this.model.getPendingRequests(limit, offset)
+                : await this.model.getPendingRequestsGroupedByUser(userId);
             if (!requests) {
                 return res.status(500).json({
                     success: false,
@@ -181,7 +187,8 @@ class RequestController {
             const result = requests;
             return res.status(200).json({
                 success: true,
-                result,
+                requests: result,
+                result, 
                 count: requests.length
             });
         } catch (error) {
@@ -202,8 +209,15 @@ class RequestController {
     getApprovedRequests = async (req, res) => {
         try {
             const userId = req.user.id;
+            const roles = Array.isArray(req.user?.roles) ? req.user.roles : [];
+            const isVet = roles.includes('vet') || roles.includes('admin');
 
-            const requests = await this.model.getApprovedRequestsGroupedByUser(userId);
+            const limit = req.query.limit != null ? Number(req.query.limit) : null;
+            const offset = req.query.offset != null ? Number(req.query.offset) : 0;
+
+            const requests = isVet
+                ? await this.model.getApprovedRequests(limit, offset)
+                : await this.model.getApprovedRequestsGroupedByUser(userId);
             if (!requests) {
                 return res.status(500).json({
                     success: false,
@@ -214,6 +228,7 @@ class RequestController {
             return res.status(200).json({
                 success: true,
                 requests,
+                result: requests, // legacy key
                 count: requests.length
             });
         } catch (error) {

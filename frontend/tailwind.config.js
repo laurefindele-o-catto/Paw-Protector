@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      borderWidth: {
+        18: '18px',
+      },
       colors: {
         pawcream: '#FFFDF6',
         lightSteelBlue : '#A7AAE1',

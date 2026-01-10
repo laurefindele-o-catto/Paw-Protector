@@ -19,7 +19,7 @@ import LandingPage from "./pages/LandingPage.jsx";
 import { PetProvider } from "./context/PetContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import VetDashboard from "./pages/VetDashboard.jsx";
-// import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
+import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
 import VerifyVet from "./pages/VerifyVet.jsx";
 import VetProfile from "./pages/VetProfile.jsx";
 import VoiceControl from "./components/VoiceControl.jsx";
@@ -27,6 +27,7 @@ import SkipToContent from "./components/SkipToContent.jsx";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts.jsx";
 import OfflineIndicator from "./components/OfflineIndicator.jsx";
 import Offline from "./pages/Offline.jsx";
+// import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
 
 function AppContent() {
   const location = useLocation();
@@ -69,7 +70,8 @@ function AppContent() {
         <Route path="/signup" element={<SignupPage/>}/>
         <Route path="/pet-profile" element={<PetProfile />} />
         <Route path="/assistant" element={<AssistantChat />} />
-        <Route path="/vetcheckdiag" element={<Vetcheckdiag />} />
+        <Route path="/checkDiagnostics" element={<CheckDiagnostics />} />
+        {/* <Route path="/vetcheckdiag" element={<Vetcheckdiag />} /> */}
       </Routes>
       
       {/* Global Voice Control - shows on authenticated pages */}

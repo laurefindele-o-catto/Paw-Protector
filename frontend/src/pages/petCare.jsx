@@ -366,7 +366,7 @@ export default function PetCare() {
       <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
         {/* Background accents */}
         <div className="pointer-events-none absolute -top-28 -left-24 h-72 w-72 bg-[#fdd142]/50 rounded-full blur-3xl animate-[float_8s_ease-in-out_infinite]" />
-        <div className="pointer-events-none absolute -bottom-32 right-12 h-64 w-64 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_28s_linear_infinite]" />
+        <div className="pointer-events-none absolute -bottom-32 right-12 h-64 w-64 border-18 border-[#fdd142]/20 rounded-full animate-[spin_28s_linear_infinite]" />
         
         {/* Hero */}
         <section className="relative mx-auto max-w-6xl px-4 pt-10">
