@@ -123,6 +123,8 @@ class TableCreation {
                     provider VARCHAR(50),
                     avatar_url TEXT,
                     phone_number VARCHAR(20),
+                    phone_verified BOOLEAN DEFAULT false,
+                    phone_verification_code VARCHAR(10),
                     subscription_type VARCHAR(20) NOT NULL DEFAULT 'free',
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
@@ -144,6 +146,23 @@ class TableCreation {
             throw error;            
         }
     };
+
+    migrate_users_table_whatsapp = async () => {
+        try {
+            const query = `
+                ALTER TABLE users 
+                ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20),
+                ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT false,
+                ADD COLUMN IF NOT EXISTS phone_verification_code VARCHAR(10);
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Users table migrated for WhatsApp integration");
+            return { success: true };
+        } catch (error) {
+            console.error("Migration failed:", error.message);
+            throw error;
+        }
+    }
 
     create_user_location_table = async()=>{
         try {

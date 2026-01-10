@@ -7,21 +7,55 @@ class UserModel {
 d
     createUser = async(userData)=>{
         try {
-            const {username, email, passwordHash} = userData;
+            const {username, email, passwordHash, phoneNumber} = userData;
             
             const query = `
-                INSERT INTO users (username, email, password_hash)
-                VALUES ($1, $2, $3)
-                RETURNING id, username, email, full_name, is_active, email_verified, subscription_type, verification_token, created_at, updated_at;
+                INSERT INTO users (username, email, password_hash, phone_number)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, username, email, phone_number, full_name, is_active, email_verified, subscription_type, verification_token, created_at, updated_at;
             `;
 
-            const params = [username, email, passwordHash];
+            const params = [username, email, passwordHash, phoneNumber || null];
             const result = await this.db_connection.query_executor(query, params);
 
             return result.rows[0];
         } catch (error) {
             console.log(`User insertion failed: ${error.message}`);
             return {success: false};
+        }
+    }
+
+    setPhoneVerificationCode = async(userId, code) => {
+        try {
+            const query = `
+                UPDATE users
+                SET phone_verification_code = $1,
+                    updated_at = NOW()
+                WHERE id = $2
+            `;
+            await this.db_connection.query_executor(query, [code, userId]);
+            return true;
+        } catch (error) {
+            console.error(`Set phone code failed: ${error.message}`);
+            return false;
+        }
+    }
+
+    verifyPhone = async(userId) => {
+        try {
+            const query = `
+                UPDATE users
+                SET phone_verified = true,
+                    phone_verification_code = NULL,
+                    updated_at = NOW()
+                WHERE id = $1
+                RETURNING id, phone_verified;
+            `;
+            const result = await this.db_connection.query_executor(query, [userId]);
+            return result.rows[0];
+        } catch (error) {
+            console.error(`Verify phone failed: ${error.message}`);
+            throw error;
         }
     }
 

@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import VetHeader from "../components/VetHeader";
 
 function VetDashboard() {
+
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -51,7 +52,7 @@ function VetDashboard() {
               Verify credentials
             </button>
             <button
-              onClick={() => navigate("/CheckDiagnostics")}
+              onClick={() => navigate("/checkDiagnostics")}
               className="w-full py-4 px-6 bg-[#fdd142] text-[#0f172a] rounded-xl font-semibold text-lg shadow hover:bg-[#ffe066] transition"
             >
               Check Diagnostics

@@ -9,6 +9,9 @@ class CreateTables {
         try {
             // Base auth tables
             await this.tables.create_users_table();
+            // Helper migration for existing tables (safe to run)
+            await this.tables.migrate_users_table_whatsapp();
+
             await this.tables.create_roles_table();
             await this.tables.create_user_roles_table();
             await this.tables.create_user_location_table(); 
