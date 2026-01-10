@@ -38,7 +38,7 @@ export default function About() {
     <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden">
       {/* Background accents */}
       <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 bg-[#fdd142]/50 rounded-full blur-3xl animate-[float_8s_ease-in-out_infinite]" />
-      <div className="pointer-events-none absolute -bottom-32 right-12 h-64 w-64 border-[18px] border-[#fdd142]/20 rounded-full animate-[spin_28s_linear_infinite]" />
+      <div className="pointer-events-none absolute -bottom-32 right-12 h-64 w-64 border-18 border-[#fdd142]/20 rounded-full animate-[spin_28s_linear_infinite]" />
       <div className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 h-72 w-72 bg-gradient-to-tr from-[#fdd142]/30 to-transparent rounded-[42%] blur-2xl animate-[morph_14s_ease-in-out_infinite]" />
 
       {/* Hero */}
