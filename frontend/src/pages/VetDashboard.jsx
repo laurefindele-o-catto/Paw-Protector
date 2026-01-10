@@ -4,7 +4,6 @@ import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { useEffect } from "react";
 import VetHeader from "../components/VetHeader";
-import Vetcheckdiag from "./Vetcheckdiag";
 
 function VetDashboard() {
 
