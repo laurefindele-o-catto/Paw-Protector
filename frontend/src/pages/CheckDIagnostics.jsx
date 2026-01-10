@@ -10,10 +10,20 @@ function CheckDiagnostics() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-
+  const [imgLoadingMap, setImgLoadingMap] = useState({});
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [rejectingRequest, setRejectingRequest] = useState(null);
+  const [selectedDisease, setSelectedDisease] = useState("");
+  const commonDiseases = [
+    { label: "Ringworm", value: "Ringworm" },
+    { label: "Scabies", value: "Scabies" },
+    { label: "Flea Allergy", value: "Flea Allergy" },
+    { label: "Others", value: "OTHER" },
+  ];
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [otherNotes, setOtherNotes] = useState("");
 
   const token = useMemo(() => localStorage.getItem("token"), []);
 
@@ -46,8 +56,8 @@ function CheckDiagnostics() {
       const list = Array.isArray(data?.requests)
         ? data.requests
         : Array.isArray(data?.result)
-        ? data.result
-        : [];
+          ? data.result
+          : [];
       setRequests(list);
     } catch (e) {
       setError(e?.message || "Failed to fetch pending requests");
@@ -63,28 +73,113 @@ function CheckDiagnostics() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const updateStatus = async (requestId, status) => {
+
+  const updateStatus = async (requestId, status, notes = null) => {
     try {
-      const res = await fetch(`${apiConfig.baseURL}${apiConfig.request.updateStatus(requestId)}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
+      // If notes is null, use the existing notes from the request object
+      const request = requests.find((r) => r.id === requestId);
+      const body = {
+        status,
+        notes: notes !== null ? notes : request?.notes || null,
+      };
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || data?.message || "Failed to update request status");
-      }
+      const res = await fetch(
+        `${apiConfig.baseURL}${apiConfig.request.updateStatus(requestId)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
 
-      // remove from pending list after action
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to update request status");
+
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (e) {
       setError(e?.message || "Failed to update request status");
     }
   };
+
+
+  const rejectRequest = async (requestId, notes) => {
+    try {
+      const res = await fetch(
+        `${apiConfig.baseURL}${apiConfig.request.updateStatus(requestId)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: false,
+            notes: notes,
+          }),
+        }
+      );
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || "Failed to reject request");
+      }
+
+      // remove rejected request from UI
+      setRequests((prev) =>
+        prev.filter((r) => r.id !== rejectingRequest.id)
+      );
+      setShowRejectModal(false);
+      setRejectingRequest(null);
+    } catch (e) {
+      setError(e?.message || "Failed to reject request");
+    }
+  };
+
+
+  const submitReject = async () => {
+    if (!selectedDisease) {
+      setError("Please select a disease");
+      return;
+    }
+
+    const notes =
+      selectedDisease === "OTHER"
+        ? otherNotes || "Other – please contact vet"
+        : selectedDisease;
+
+    try {
+      const res = await fetch(
+        `${apiConfig.baseURL}${apiConfig.request.updateStatus(rejectingRequest.id)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: true,
+            notes: notes,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Update failed");
+
+      setRequests((prev) =>
+        prev.filter((r) => r.id !== rejectingRequest.Id)
+      );
+
+      setShowRejectModal(false);
+      setRejectingRequest(null);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
 
   return (
     <>
@@ -146,10 +241,7 @@ function CheckDiagnostics() {
             {requests.length > 0 && (
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
                 {requests.map((r) => (
-                  <article
-                    key={r.id}
-                    className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4"
-                  >
+                  <article key={r.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h2 className="text-lg font-bold text-slate-900">
@@ -164,10 +256,7 @@ function CheckDiagnostics() {
                           </p>
                         )}
                       </div>
-                      <span
-                        className="px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800"
-                        aria-label={t("Pending")}
-                      >
+                      <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800">
                         {t("Pending")}
                       </span>
                     </div>
@@ -180,12 +269,20 @@ function CheckDiagnostics() {
                     )}
 
                     {r.content_url && (
-                      <div className="mt-4">
+                      <div className="mt-4 relative">
+                        {/* placeholder while loading */}
+                        {imgLoadingMap[r.id] !== false && (
+                          <div className="absolute inset-0 bg-slate-200 animate-pulse rounded-xl" />
+                        )}
                         <img
                           src={r.content_url}
-                          alt={`${t("Diagnostic attachment for request")} ${r.id}`}
-                          className="w-full h-56 object-cover rounded-xl border"
+                          alt={`Diagnostic attachment for request ${r.id}`}
+                          className={`w-full h-full object-cover rounded-xl border ${imgLoadingMap[r.id] !== false ? "opacity-0" : "opacity-100"
+                            } transition-opacity duration-500`}
                           loading="lazy"
+                          onLoad={() =>
+                            setImgLoadingMap((prev) => ({ ...prev, [r.id]: false }))
+                          }
                         />
                         <div className="mt-2 flex items-center justify-between gap-3">
                           <a
@@ -193,9 +290,8 @@ function CheckDiagnostics() {
                             target="_blank"
                             rel="noreferrer"
                             className="text-sm font-semibold text-slate-800 underline"
-                            aria-label={`${t("Open attachment for request")} ${r.id}`}
                           >
-                            {t("Open attachment")}
+                            Open attachment
                           </a>
                         </div>
                       </div>
@@ -205,16 +301,19 @@ function CheckDiagnostics() {
                       <button
                         onClick={() => updateStatus(r.id, true)}
                         className="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
-                        aria-label={`${t("Approve request")} ${r.id}`}
                       >
                         {t("Approve")}
                       </button>
                       <button
-                        onClick={() => updateStatus(r.id, false)}
+                        onClick={() => {
+                          setRejectingRequest(r);
+                          setSelectedDisease("");
+                          setOtherNotes("");
+                          setShowRejectModal(true);
+                        }}
                         className="flex-1 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
-                        aria-label={`${t("Reject request")} ${r.id}`}
                       >
-                        {t("Reject")}
+                        Reject
                       </button>
                     </div>
                   </article>
@@ -227,6 +326,105 @@ function CheckDiagnostics() {
         {/* Bottom spacing */}
         <br /><br /><br /><br />
       </div>
+      {showRejectModal && rejectingRequest && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+
+            {/* Header */}
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold">Reject / Correct Diagnosis</h2>
+                <p className="text-sm text-slate-500">
+                  Request #{rejectingRequest.id}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="text-slate-500 hover:text-slate-800 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Image */}
+            <div className="mt-5">
+              <img
+                src={rejectingRequest.content_url}
+                alt="Cat diagnostic"
+                className="w-full max-h-[420px] object-contain rounded-xl border"
+              />
+            </div>
+
+            {/* Request Info */}
+            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-semibold">Owner ID:</span>{" "}
+                {rejectingRequest.issue_user_id}
+              </div>
+              <div>
+                <span className="font-semibold">Created:</span>{" "}
+                {new Date(rejectingRequest.created_at).toLocaleString()}
+              </div>
+            </div>
+
+            {/* AI Diagnosis */}
+            {rejectingRequest.notes && (
+              <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <p className="text-sm">
+                  <span className="font-semibold">AI Diagnosis:</span>{" "}
+                  {rejectingRequest.notes}
+                </p>
+              </div>
+            )}
+
+            {/* Vet Input */}
+            <div className="mt-6">
+              <label className="block text-sm font-semibold mb-1">
+                Correct Diagnosis
+              </label>
+
+              <select
+                value={selectedDisease}
+                onChange={(e) => setSelectedDisease(e.target.value)}
+                className="w-full border rounded-lg p-2"
+              >
+                <option value="">-- Select Disease --</option>
+                {commonDiseases.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+
+              {selectedDisease === "OTHER" && (
+                <textarea
+                  className="w-full border rounded-lg p-2 mt-3"
+                  rows={3}
+                  placeholder="Enter vet notes for the owner..."
+                  value={otherNotes}
+                  onChange={(e) => setOtherNotes(e.target.value)}
+                />
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="px-5 py-2 rounded-lg border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitReject}
+                className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold"
+              >
+                Submit Diagnosis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Footer />
 
       {/* keyframes */}

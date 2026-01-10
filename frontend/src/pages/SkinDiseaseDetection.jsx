@@ -42,7 +42,7 @@ export default function SkinDiseaseDetector() {
 
     const formData = new FormData();
     formData.append("file", file, file.name);
-    formData.append("notes", `AI diagnosis: ${result}`);
+    formData.append("notes", `${result}`);
 
     const res = await fetch("http://localhost:3000/api/requests/upload", {
       method: "POST",

@@ -96,7 +96,7 @@ class RequestController {
                 issue_user_id: userId,
                 content_url: result.secure_url,
                 status: false,
-                notes : notes
+                notes: notes
             };
 
             const newRequest = await this.model.createRequest(requestData);
@@ -188,7 +188,7 @@ class RequestController {
             return res.status(200).json({
                 success: true,
                 requests: result,
-                result, 
+                result,
                 count: requests.length
             });
         } catch (error) {
@@ -249,7 +249,7 @@ class RequestController {
     updateRequestStatus = async (req, res) => {
         try {
             const { requestId } = req.params;
-            const { status } = req.body;
+            const { status, notes } = req.body;
 
             if (!requestId) {
                 return res.status(400).json({
@@ -265,7 +265,10 @@ class RequestController {
                 });
             }
 
-            const updatedRequest = await this.model.updateRequest(requestId, { status });
+            const updatedRequest = await this.model.updateRequest(requestId, {
+                status,
+                notes
+            });
             if (!updatedRequest) {
                 return res.status(404).json({
                     success: false,
