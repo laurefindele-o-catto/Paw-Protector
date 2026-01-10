@@ -55,9 +55,49 @@ class TableCreation {
         }
     }
 
+    // New Personalized Table for Interaction/Chat/Health Records
+    create_rag_personal_table = async()=>{
+        const dim = Number(process.env.EMBEDDING_DIM || 1536);
+        const lists = Number(process.env.PGVECTOR_INDEX_LISTS || 100);
+
+        const ddl = `
+            CREATE TABLE IF NOT EXISTS rag_documents_personal(
+                id BIGSERIAL PRIMARY KEY,
+                doc_id TEXT UNIQUE NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
+                doc_type VARCHAR(50) NOT NULL,
+                content TEXT NOT NULL,
+                metadata JSONB,
+                embedding vector(${dim}),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+
+            -- Filter/lookup indexes
+            CREATE INDEX IF NOT EXISTS idx_rag_personal_user_id ON rag_documents_personal(user_id);
+            CREATE INDEX IF NOT EXISTS idx_rag_personal_pet_id ON rag_documents_personal(pet_id);
+            CREATE INDEX IF NOT EXISTS idx_rag_personal_doc_type ON rag_documents_personal(doc_type);
+            CREATE INDEX IF NOT EXISTS idx_rag_personal_metadata_gin ON rag_documents_personal USING GIN (metadata);
+
+            CREATE INDEX IF NOT EXISTS idx_rag_personal_embedding_ivfflat
+            ON rag_documents_personal USING ivfflat (embedding vector_cosine_ops)
+            WITH (lists = ${lists});
+        `;
+        try {
+            await this.db_connection.query_executor(ddl);
+            console.log(`RAG personal table created (dim=${dim}, lists=${lists})`);
+            return { success: true }
+        } catch (error) {
+            console.log(`Error creating rag_documents_personal: ${error.message}`);
+            throw error;
+        }
+    }
+
     ensure_pgvector_and_rag_documents = async () => {
         await this.enable_pgvector_extension();
-        await this.create_rag_documents_table();
+        await this.create_rag_documents_table();   // Default text/KB
+        await this.create_rag_personal_table();    // Personalized info
         return { success: true };
     };
 

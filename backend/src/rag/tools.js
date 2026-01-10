@@ -6,35 +6,86 @@ const { search } = require('./service.js');
 const ragSearchTool = tool(
   async ({ query, pet_id, topK = 6, doc_types }, { configurable }) => {
     const userId = configurable?.user_id;
+    // Use fallback to passed pet_id if tool argument is missing
+    const effectivePetId = pet_id != null ? Number(pet_id) : (configurable?.pet_id ? Number(configurable.pet_id) : null);
+    
+    // 1. Fetch User & Pet Context
+    const db = new DB_Connection();
+    let context = { user: null, pet: null };
+    
+    try {
+      if (userId) {
+        const uRes = await db.query_executor(
+          'SELECT full_name, email, phone_number FROM users WHERE id = $1', 
+          [Number(userId)]
+        );
+        if (uRes.rows?.length) context.user = uRes.rows[0];
+
+        if (effectivePetId) {
+          const pRes = await db.query_executor(
+            `SELECT name, species, breed, sex, birthdate, weight_kg, is_neutered, notes 
+             FROM pets WHERE id = $1 AND owner_id = $2`,
+            [Number(effectivePetId), Number(userId)]
+          );
+          if (pRes.rows?.length) {
+            const p = pRes.rows[0];
+            // Calculate age approximate
+            let age = 'Unknown';
+            if (p.birthdate) {
+              const diffTime = Math.abs(new Date() - new Date(p.birthdate));
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+              if (diffDays < 365) age = `${Math.floor(diffDays/30)} months`;
+              else age = `${Math.floor(diffDays/365)} years`;
+            }
+            context.pet = { ...p, calculated_age: age };
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching context in rag_search:", err.message);
+      // Continue even if context fetch fails
+    }
+
     const out = await search({
       user_id: userId,
       query: query,
       topK: Number(topK) || 6,
-      pet_id: pet_id != null ? Number(pet_id) : null,
+      pet_id: effectivePetId,
       doc_types: Array.isArray(doc_types)
         ? doc_types
         : (typeof doc_types === 'string'
             ? doc_types.split(',').map(s => s.trim()).filter(Boolean)
             : [])
     });
+    
+    // Categorize results by source type for better agent context
+    const userDocs = out.results.filter(r => r.metadata?.user_id !== '0');
+    const knowledgeBaseDocs = out.results.filter(r => r.metadata?.user_id === '0');
+    
     return JSON.stringify({
-      count: out.results.length,
+      context_data: context,
+      total_count: out.results.length,
+      user_specific_count: userDocs.length,
+      knowledge_base_count: knowledgeBaseDocs.length,
       sources: out.results.map(r => ({
         id: r.id,
+        source_type: r.metadata?.user_id === '0' ? 'knowledge_base' : 'user_data',
         doc_type: r.metadata?.doc_type,
         pet_id: r.metadata?.pet_id,
+        category: r.metadata?.category,
+        severity: r.metadata?.severity,
         content: r.content?.slice(0, 800)
       }))
     });
   },
   {
     name: 'rag_search',
-    description: 'Retrieve the most relevant pet-specific documents via vector search.',
+    description: 'Retrieve the most relevant documents including veterinary knowledge base (first-aid, disease info) and user-specific pet data. Results include both global knowledge and pet history.',
     schema: z.object({
       query: z.string().describe('User question to embed and search for'),
       pet_id: z.number().nullable().optional(),
-      topK: z.number().optional(),
-      doc_types: z.union([z.string(), z.array(z.string())]).optional()
+      topK: z.number().optional().describe('Number of results to return (default 6)'),
+      doc_types: z.union([z.string(), z.array(z.string())]).optional().describe('Filter by doc types: first_aid, disease_guide, chat, care_plan, etc.')
     })
   }
 );
@@ -42,13 +93,14 @@ const ragSearchTool = tool(
 const petCardTool = tool(
   async ({ pet_id }, { configurable }) => {
     const userId = configurable?.user_id;
-    if (!pet_id) return 'No pet_id provided.';
+    const effectivePetId = pet_id != null ? Number(pet_id) : (configurable?.pet_id ? Number(configurable.pet_id) : null);
+    if (!effectivePetId) return 'No pet_id provided.';
     const db = new DB_Connection();
     const q = `
       SELECT id, owner_id, name, species, breed, sex, birthdate, weight_kg, notes, is_neutered
       FROM pets WHERE id = $1 AND owner_id = $2 LIMIT 1
     `;
-    const r = await db.query_executor(q, [Number(pet_id), Number(userId)]);
+    const r = await db.query_executor(q, [Number(effectivePetId), Number(userId)]);
     const p = r.rows?.[0];
     if (!p) return 'Pet not found for this user.';
     return `Pet ${p.name} (${p.species}), sex=${p.sex}, breed=${p.breed || '—'}, birthdate=${p.birthdate || '—'}, weight=${p.weight_kg ?? '—'}kg. Notes: ${p.notes || '—'}.`;
@@ -57,7 +109,7 @@ const petCardTool = tool(
     name: 'get_pet_card',
     description: 'Get a concise profile summary for a pet owned by the current user.',
     schema: z.object({
-      pet_id: z.number().describe('The pet id to fetch')
+      pet_id: z.number().optional().describe('The pet id to fetch (defaults to current session pet)')
     })
   }
 );
@@ -107,7 +159,7 @@ const nearbyVetsTool = tool(
   },
   {
     name: 'find_nearby_vets',
-    description: 'Find nearby vets (by joining vet profile with clinic/home location) from lat/lng.',
+    description: 'Find nearby vets (by joining vet profile with clinic/home location) from lat/lng or find the vet if the user wants the list of the vets.',
     schema: z.object({
       lat: z.number().describe('Latitude'),
       lng: z.number().describe('Longitude'),
@@ -118,8 +170,9 @@ const nearbyVetsTool = tool(
 
 // Weekly metrics (reads from pet_health_metrics)
 const weeklyMetricsTool = tool(
-  async ({ pet_id, lookback_weeks = 8 }) => {
-    if (!pet_id) return 'pet_id required';
+  async ({ pet_id, lookback_weeks = 8 }, { configurable }) => {
+    const effectivePetId = pet_id != null ? Number(pet_id) : (configurable?.pet_id ? Number(configurable.pet_id) : null);
+    if (!effectivePetId) return 'pet_id required';
     const db = new DB_Connection();
     const q = `
       SELECT
@@ -141,13 +194,13 @@ const weeklyMetricsTool = tool(
       GROUP BY 1
       ORDER BY 1 DESC;
     `;
-    const rs = await db.query_executor(q, [Number(pet_id), Number(lookback_weeks)]);
+    const rs = await db.query_executor(q, [Number(effectivePetId), Number(lookback_weeks)]);
     const q2 = `
       SELECT MAX(measured_at) AS last_updated
       FROM pet_health_metrics
       WHERE pet_id = $1
     `;
-    const rs2 = await db.query_executor(q2, [Number(pet_id)]);
+    const rs2 = await db.query_executor(q2, [Number(effectivePetId)]);
     return JSON.stringify({
       last_updated: rs2.rows?.[0]?.last_updated || null,
       weeks: rs.rows || []
@@ -157,7 +210,7 @@ const weeklyMetricsTool = tool(
     name: 'get_pet_metrics_weekly',
     description: 'Get last N weeks of health metrics grouped by week from pet_health_metrics.',
     schema: z.object({
-      pet_id: z.number().describe('Pet id'),
+      pet_id: z.number().optional().describe('Pet id'),
       lookback_weeks: z.number().optional()
     })
   }
@@ -165,13 +218,15 @@ const weeklyMetricsTool = tool(
 
 const healthRecordsTool = tool(
   async ({ pet_id, limit_diseases = 12, limit_vaccinations = 20, limit_dewormings = 20 }, { configurable }) => {
-    if (!pet_id) return 'pet_id required';
     const userId = configurable?.user_id;
+    const effectivePetId = pet_id != null ? Number(pet_id) : (configurable?.pet_id ? Number(configurable.pet_id) : null);
+    if (!effectivePetId) return 'pet_id required';
+
     const db = new DB_Connection();
     // Ownership guard
     const own = await db.query_executor(
       `SELECT 1 FROM pets WHERE id = $1 AND owner_id = $2 LIMIT 1`,
-      [Number(pet_id), Number(userId)]
+      [Number(effectivePetId), Number(userId)]
     );
     if (!own.rows?.length) return 'Pet not found for this user.';
 
@@ -198,9 +253,9 @@ const healthRecordsTool = tool(
     `;
 
     const [dRes, vRes, wRes] = await Promise.all([
-      db.query_executor(diseasesQ, [Number(pet_id), Number(limit_diseases)]),
-      db.query_executor(vaccinationsQ, [Number(pet_id), Number(limit_vaccinations)]),
-      db.query_executor(dewormingsQ, [Number(pet_id), Number(limit_dewormings)])
+      db.query_executor(diseasesQ, [Number(effectivePetId), Number(limit_diseases)]),
+      db.query_executor(vaccinationsQ, [Number(effectivePetId), Number(limit_vaccinations)]),
+      db.query_executor(dewormingsQ, [Number(effectivePetId), Number(limit_dewormings)])
     ]);
 
     return JSON.stringify({
@@ -213,7 +268,7 @@ const healthRecordsTool = tool(
     name: 'get_pet_health_records',
     description: 'Retrieve recent diseases, vaccinations, and dewormings for a pet (owned by current user).',
     schema: z.object({
-      pet_id: z.number().describe('Pet id'),
+      pet_id: z.number().optional().describe('Pet id'),
       limit_diseases: z.number().optional(),
       limit_vaccinations: z.number().optional(),
       limit_dewormings: z.number().optional()
