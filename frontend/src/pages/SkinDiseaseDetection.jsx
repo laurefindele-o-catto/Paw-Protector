@@ -2,12 +2,22 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import useSpeechSynthesis from "../hooks/useSpeechSynthesis";
 import Header from '../components/Header'
 
 export default function SkinDiseaseDetector() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
+
+  const {
+    isSpeaking,
+    isSupported: isSpeechSupported,
+    speak,
+    cancel: cancelSpeech,
+  } = useSpeechSynthesis({
+    lang: currentLanguage === "bn" ? "bn-BD" : "en-US",
+  });
 
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
@@ -86,10 +96,8 @@ export default function SkinDiseaseDetector() {
       }
 
       const uploadData = await uploadRes.json();
-      // keep raw label as-is (don't translate ML output)
       setResult(uploadData.label || "No label returned");
     } catch (err) {
-      // use a fixed English sentinel for logic; translate only when rendering
       setResult("Error processing image");
     } finally {
       setLoading(false);
@@ -267,7 +275,7 @@ export default function SkinDiseaseDetector() {
                 </h2>
                 
                 {/* Voice Narration Button */}
-                {result && (
+                {result && isSpeechSupported && (
                   <button
                     onClick={() => {
                       if (isSpeaking) {
