@@ -178,7 +178,7 @@ class RequestController {
                 });
             }
 
-            const result = requests.rows;
+            const result = requests;
             return res.status(200).json({
                 success: true,
                 result,

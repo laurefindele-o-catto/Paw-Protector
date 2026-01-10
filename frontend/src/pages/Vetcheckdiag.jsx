@@ -9,15 +9,19 @@ const Vetcheckdiag = () => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/requests/pending", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
-        console.log("Fetched requests:", data);
+        const res = await fetch(
+          "http://localhost:3000/api/requests/pending",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-        if (Array.isArray(data.requests)) {
+        const data = await res.json();
+        console.log("Fetched diagnostics:", data);
+
+        if (data.success && Array.isArray(data.requests)) {
           setRequests(data.requests);
         } else {
           setRequests([]);
@@ -35,7 +39,7 @@ const Vetcheckdiag = () => {
 
   return (
     <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden pt-28 px-4">
-      
+
       {/* background effects */}
       <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
       <div className="pointer-events-none fixed top-40 -right-10 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
@@ -67,43 +71,42 @@ const Vetcheckdiag = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {requests.map((req) => (
               <div
-                key={req._id}
-                className="rounded-2xl border bg-white shadow-md hover:shadow-xl transition overflow-hidden flex flex-col"
+                key={req.id}
+                className="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-6 flex flex-col gap-4"
               >
-                {/* image */}
-                <img
-                  src={`http://localhost:3000${req.imageUrl}`}
-                  alt="Diagnosis"
-                  className="h-48 w-full object-cover"
-                />
-
-                {/* content */}
-                <div className="p-5 flex flex-col gap-3 flex-grow">
-                  <p className="text-sm">
-                    <span className="font-semibold">AI Notes:</span>{" "}
-                    {req.notes}
-                  </p>
-
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full w-fit
-                      ${
-                        req.status === "approved"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }
-                    `}
+                {/* IMAGE OR PDF */}
+                {req.file_url.endsWith(".pdf") ? (
+                  <a
+                    href={req.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 underline"
                   >
-                    {req.status.toUpperCase()}
-                  </span>
+                    View PDF Report
+                  </a>
+                ) : (
+                  <img
+                    src={req.file_url}
+                    alt="Diagnosis"
+                    className="w-full h-56 object-cover rounded-xl"
+                  />
+                )}
 
-                  <button
-                    className="mt-auto w-full py-2 rounded-xl bg-[#0f172a] text-white font-semibold hover:bg-[#22304a] transition"
-                  >
-                    Review & Approve
-                  </button>
+                <div className="text-sm text-slate-700">
+                  <strong>AI Notes:</strong>{" "}
+                  {req.notes || "No notes provided"}
                 </div>
+
+                <div className="text-xs text-slate-500">
+                  Submitted on {new Date(req.created_at).toLocaleString()}
+                </div>
+
+                <button className="mt-2 px-6 py-3 rounded-full bg-[#fdd142] text-black font-semibold hover:bg-yellow-400 transition">
+                  Review & Approve
+                </button>
               </div>
             ))}
+
           </div>
         </div>
       </section>
