@@ -36,6 +36,33 @@ authRouter.post('/register', userController.register);
 
 /**
  * @openapi
+ * /api/auth/verify-phone:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify phone number with OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - code
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *               code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Phone verified
+ */
+authRouter.post('/verify-phone', userController.verifyPhoneCode);
+
+
+/**
+ * @openapi
  * /api/auth/login:
  *   post:
  *     tags: [Auth]

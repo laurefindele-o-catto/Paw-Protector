@@ -8,6 +8,7 @@ const bus = require('../events/eventBus.js');
 const Events = require('../events/eventsNames.js');
 const { uploadAvatarBuffer } = require('../utils/cloudinary.js');
 const ClinicVetModel = require('../models/clinicVetModel.js')
+const WhatsAppUtils = require('../utils/whatsappUtils.js');
 
 class UserController {
     constructor() {
@@ -162,7 +163,7 @@ class UserController {
 
     register = async (req, res) => { 
         try {
-            const { username, email, password, role } = req.body || {};
+            const { username, email, password, role, phoneNumber } = req.body || {};
             
             if (!username || !email || !password) {
                 return res.status(400).json({ success: false, error: 'username, email, password required' });
@@ -189,13 +190,22 @@ class UserController {
             }
 
             const passwordHash = await bcrypt.hash(password, this.salt_round);
-            const newUser = await this.userModel.createUser({ username, email, passwordHash });
+            const newUser = await this.userModel.createUser({ username, email, passwordHash, phoneNumber });
 
             if(!newUser){
                 return res.status(500).json({
                     success: false,
                     message: "failed to create new user"
                 })
+            }
+
+            // WhatsApp Verification Integration
+            if (phoneNumber) {
+                const code = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit code
+                await this.userModel.setPhoneVerificationCode(newUser.id, code);
+                WhatsAppUtils.sendVerificationCode(phoneNumber, code).catch(err => 
+                    console.error("Failed to send WhatsApp code:", err)
+                );
             }
 
             const roleResult = await this.userModel.assignRoleToUser(newUser.id, roleName);
@@ -373,6 +383,34 @@ class UserController {
                 success: false,
                 error: 'Internal server error'
             });
+        }
+    }
+
+    verifyPhoneCode = async (req, res) => {
+        try {
+            const { userId, code } = req.body || {};
+            if (!userId || !code) {
+                return res.status(400).json({ success: false, error: 'UserId and code required' });
+            }
+
+            const user = await this.userModel.getUserById(userId);
+            if (!user) {
+                return res.status(404).json({ success: false, error: 'User not found' });
+            }
+
+            if (user.phone_verification_code === code) {
+                await this.userModel.verifyPhone(userId);
+                
+                // Optional: Send welcome message
+                WhatsAppUtils.sendWelcomeMessage(user.phone_number, user.username).catch(()=>console.log("Welcome msg fail"));
+
+                return res.status(200).json({ success: true, message: 'Phone verified successfully' });
+            } else {
+                return res.status(400).json({ success: false, error: 'Invalid verification code' });
+            }
+        } catch (error) {
+            console.error("Phone verification error:", error);
+            return res.status(500).json({ success: false, error: 'Server error' });
         }
     }
 

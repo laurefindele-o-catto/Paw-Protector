@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePet } from "../context/PetContext";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
+import Footer from "../components/Footer";
 
 function useGeo() {
   const [pos, setPos] = useState(null);
@@ -317,16 +318,24 @@ export default function AssistantChat() {
   async function sendMessage() {
     const content = input.trim();
     if (!content || !token || !sessionId) return;
+    
+    // Capture the current pending vision image before clearing state
+    const currentVision = pendingVision;
+    
     setInput("");
+    setPendingVision(null); // Instant clear of preview for better UX
+    savePendingVisionLS(sessionId, null);
+
     const userMsg = { role: "user", content, ts: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
+    
     try {
       let res;
-      if (pendingVision?.dataUrl) {
+      if (currentVision?.dataUrl) {
         setUploading(true);
         try {
-          const file = await dataUrlToFile(pendingVision.dataUrl, pendingVision.name || 'photo.jpg');
+          const file = await dataUrlToFile(currentVision.dataUrl, currentVision.name || 'photo.jpg');
           const form = new FormData();
           form.append("session_id", String(sessionId));
           form.append("content", content);
@@ -364,8 +373,7 @@ export default function AssistantChat() {
         const answer = data?.answer || "দুঃখিত, এখন উত্তর দিতে পারলাম না। একটু পরে আবার চেষ্টা করুন।";
         const asst = { role: "assistant", content: answer, ts: new Date().toISOString() };
         setMessages(prev => [...prev, asst]);
-        setPendingVision(null); // clear one-time attachment after using it
-        savePendingVisionLS(sessionId, null);
+        // Pending vision already cleared
       } catch {
         setMessages(prev => [...prev, { role: "assistant", content: "নেটওয়ার্ক সমস্যার কারণে এখন সম্ভব হচ্ছে না। একটু পরে চেষ্টা করুন।", ts: new Date().toISOString() }]);
       } finally {
@@ -404,100 +412,137 @@ export default function AssistantChat() {
     <>
       <Header />
       <main id="main-content" className="min-h-screen bg-[#edfdfd] text-slate-900 pt-28 mt-24" role="main" tabIndex="-1">
-        <div className="mx-auto max-w-6xl px-4 flex h-[70vh]">
+        <div className="mx-auto w-[92%] px-4 flex h-[80vh] gap-3">
           {/* Collapsible Sidebar */}
           <aside
-            className={`transition-all duration-200 ease-in-out
-              ${sidebarOpen ? "w-64" : "w-0"}
-              bg-white border-r border-slate-200 shadow-sm rounded-l-2xl flex flex-col overflow-hidden`}
-            style={{ minWidth: sidebarOpen ? "16rem" : "0", maxWidth: "16rem" }}
+            className={`transition-all duration-300 ease-in-out
+              ${sidebarOpen ? "w-80 opacity-100" : "w-0 opacity-0 overflow-hidden"}
+              bg-white border border-slate-200 shadow-sm rounded-2xl flex flex-col`}
           >
-            <div className={`flex items-center justify-between p-3 border-b border-slate-200 ${sidebarOpen ? "" : "hidden"}`}>
-              <span className="font-semibold text-slate-800">Chats</span>
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <span className="font-bold text-slate-800">History</span>
               <button
                 onClick={createNewSession}
-                className="text-xs bg-[#0f172a] text-white px-2 py-1 rounded-lg hover:bg-slate-900"
+                className="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-full hover:bg-slate-700 transition"
               >
-                New
+                + New Chat
               </button>
             </div>
-            <div className={`flex-1 overflow-y-auto ${sidebarOpen ? "" : "hidden"}`}>
+            <div className="flex-1 overflow-y-auto p-2">
               {sessions.length === 0 && (
-                <div className="text-slate-500 text-sm p-3">No chats yet.</div>
+                <div className="text-slate-400 text-sm p-4 text-center italic">No chat history.</div>
               )}
               {sessions.map(s => (
                 <button
                   key={s.id}
                   onClick={() => switchSession(s.id)}
-                  className={`w-full text-left px-3 py-2 border-b border-slate-100 hover:bg-slate-50 ${sessionId === s.id ? 'bg-yellow-50' : ''}`}
+                  className={`w-full text-left px-3 py-3 mb-1 rounded-xl transition-colors border
+                    ${sessionId === s.id 
+                      ? 'bg-yellow-50 border-yellow-200 shadow-sm' 
+                      : 'border-transparent hover:bg-slate-50'}`}
                 >
-                  <div className="text-sm font-medium text-slate-800 truncate">{s.title || `Chat ${s.id}`}</div>
-                  <div className="text-[11px] text-slate-500">#{s.id} {s.pet_id ? `• Pet ${s.pet_id}` : ''}</div>
+                  <div className={`text-sm font-semibold truncate ${sessionId === s.id ? 'text-slate-900' : 'text-slate-700'}`}>
+                    {s.title || `Chat ${s.id}`}
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
+                    <span>{s.pet_id ? `Pet ${s.pet_id}` : 'General'}</span>
+                    <span className="opacity-60">#{s.id}</span>
+                  </div>
                 </button>
               ))}
             </div>
           </aside>
 
-          {/* Sidebar Toggle Button */}
-          <button
-            onClick={() => setSidebarOpen((v) => !v)}
-            className={`absolute left-2 top-32 z-10 bg-[#fdd142] text-[#0f172a] rounded-full shadow px-2 py-1 font-bold text-lg
-              ${sidebarOpen ? "" : "border border-slate-300"}
-              md:left-2`}
-            style={{ transition: "left 0.2s" }}
-            aria-label={sidebarOpen ? "Hide chat sessions" : "Show chat sessions"}
-          >
-            {sidebarOpen ? "⟨" : "⟩"}
-          </button>
+          {/* Sidebar Toggle Button (Integrated into Helper Strip) */}
+          <div className="flex items-center">
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="h-12 w-6 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center text-slate-400 hover:text-[#fdd142] hover:bg-slate-50 transition-all focus:outline-none"
+              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {sidebarOpen ? "‹" : "›"}
+            </button>
+          </div>
 
           {/* Chat panel */}
-          <section className="flex-1 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col" aria-label="Chat conversation">
+          <section className="flex-1 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col overflow-hidden" aria-label="Chat conversation">
             <div 
               ref={listRef} 
-              className="flex-1 overflow-y-auto p-4 space-y-2"
+              className="flex-1 overflow-y-scroll p-6 space-y-4 custom-scrollbar"
               role="log"
               aria-live="polite"
               aria-atomic="false"
               aria-relevant="additions"
             >
               {messages.length === 0 && (
-                <div className="text-center text-slate-500 text-sm py-8">
-                  Ask about symptoms, vaccines, deworming, diseases, or find nearby vets. You can also analyze a photo.
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400">
+                  <div className="text-4xl mb-4">🐾</div>
+                  <p className="text-lg font-medium text-slate-600 mb-2">How can I help your pet today?</p>
+                  <p className="text-sm max-w-md">Ask about health issues, vaccinations, find nearby vets, or upload a photo for analysis.</p>
                 </div>
               )}
-              {messages.map((m, idx) => (
-                <div key={idx} className={`w-full flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`${m.role === "user" ? "bg-[#fdd142] text-slate-900" : "bg-[#f9fafb] text-slate-800"} max-w-[80%] rounded-2xl px-3 py-2 shadow`}>
-                    <div className="text-sm whitespace-pre-wrap">{sanitizeChat(m.content)}</div>
+              {messages.map((m, idx) => {
+                const hasVetFinderAction = m.role === "assistant" && m.content.includes("[ACTION:SHOW_VET_FINDER]");
+                const displayContent = hasVetFinderAction 
+                  ? m.content.replace("[ACTION:SHOW_VET_FINDER]", "").trim()
+                  : m.content;
+                
+                return (
+                  <div key={idx} className={`w-full flex ${m.role === "user" ? "justify-end" : "justify-start animate-fade-in-up"}`}>
+                    <div className={`${
+                      m.role === "user" 
+                        ? "bg-[#fdd142] text-slate-900 rounded-tr-none" 
+                        : "bg-[#f8fafc] text-slate-800 border border-slate-100 rounded-tl-none"
+                      } max-w-[85%] rounded-2xl px-5 py-3 shadow-sm`}
+                    >
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap">{sanitizeChat(displayContent)}</div>
+                      {hasVetFinderAction && (
+                        <button
+                          onClick={() => navigate('/find-a-vet', { state: { lat: geo?.lat, lng: geo?.lng, fromChat: true } })}
+                          className="mt-4 w-full bg-[#0f172a] hover:bg-slate-800 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm"
+                          aria-label="Navigate to vet finder page"
+                        >
+                          <span>🏥</span>
+                          <span>Find Nearby Vets</span>
+                          <span>→</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="w-full flex justify-start">
-                  <div className="bg-[#f9fafb] text-slate-800 max-w-[80%] rounded-2xl px-3 py-2 shadow">
-                    <div className="text-sm">Thinking…</div>
-                  </div>
-                </div>
-              )}
-              {uploading && (
-                <div className="w-full flex justify-start">
-                  <div className="bg-[#f9fafb] text-slate-800 max-w-[80%] rounded-2xl px-3 py-2 shadow">
-                    <div className="text-sm">Analyzing photo…</div>
-                  </div>
+                );
+              })}
+              {(loading || uploading) && (
+                <div className="w-full flex justify-start animate-pulse">
+                   <div className="bg-[#f8fafc] border border-slate-100 rounded-2xl rounded-tl-none px-5 py-4 shadow-sm flex items-center gap-3">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                      <span className="text-sm font-medium text-slate-500">
+                        {uploading ? "Analyzing image & Thinking..." : "Thinking..."}
+                      </span>
+                   </div>
                 </div>
               )}
             </div>
 
-            <div className="p-3 border-t border-slate-200 bg-white">
+            <div className="p-4 border-t border-slate-100 bg-white">
               {pendingVision?.dataUrl && (
-                <div className="mb-2 flex items-center gap-3">
-                  <img src={pendingVision.dataUrl} alt="attached" className="h-8 w-8 rounded object-cover border border-slate-200" />
-                  <span className="text-xs text-slate-700">সংযুক্ত ছবি প্রস্তুত — বার্তা পাঠালে বিশ্লেষণ হবে</span>
+                <div className="mb-3 p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between w-fit animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <img src={pendingVision.dataUrl} alt="Preview" className="h-10 w-10 rounded-lg object-cover border border-slate-200" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-slate-700">Photo Attached</span>
+                      <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{pendingVision.name || 'image.jpg'}</span>
+                    </div>
+                  </div>
                   <button
                     onClick={() => { setPendingVision(null); savePendingVisionLS(sessionId, null); }}
-                    className="text-xs text-slate-500 hover:text-slate-800 underline"
+                    className="ml-4 p-1 hover:bg-slate-200 rounded-full text-slate-400 hover:text-red-500 transition-colors"
+                    title="Remove photo"
                   >
-                    মুছে দিন
+                    ✕
                   </button>
                 </div>
               )}
@@ -564,7 +609,7 @@ export default function AssistantChat() {
         </div>
         <br /><br />
       </main>
-      {/* <Footer /> */}
+      <Footer />
     </>
   );
 }

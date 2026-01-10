@@ -24,9 +24,6 @@ import VetProfile from "./pages/VetProfile.jsx";
 import VoiceControl from "./components/VoiceControl.jsx";
 import SkipToContent from "./components/SkipToContent.jsx";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts.jsx";
-import OfflineIndicator from "./components/OfflineIndicator.jsx";
-import Offline from "./pages/Offline.jsx";
-// import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
 
 function AppContent() {
   const location = useLocation();
@@ -44,16 +41,12 @@ function AppContent() {
 
   return (
     <>
-      {/* Offline connection indicator */}
-      <OfflineIndicator />
-      
       {/* Skip to content link for keyboard navigation */}
       <SkipToContent />
       
       <Routes>
         {/* <Route path="/" element={<Home />} /> */}
         <Route path="/" element={<LandingPage/>} />
-        <Route path="/offline" element={<Offline/>} />
         <Route path="/skinDiseaseDetection" element={<SkinDiseaseDetector/>} />
         <Route path="/about" element={<About />} />
         <Route path="/dashboard" element={<Dashboard />} />

@@ -1,13 +1,11 @@
 import React from "react";
 import { useAuth } from "../../../context/AuthContext";
 import apiConfig from "../../../config/apiConfig";
-import { queueAddVaccination } from "../../../services/syncService";
 
 export default function VaccinationsTab({ pet, summary, onChanged }) {
   const { token } = useAuth();
   const recent = summary?.vaccinations?.recent ?? [];
   const [saving, setSaving] = React.useState(false);
-  const [syncing, setSyncing] = React.useState(false);
   const [form, setForm] = React.useState({
     vaccine_name: "", dose_number: 1, administered_on: "", due_on: "", notes: ""
   });
@@ -20,15 +18,6 @@ export default function VaccinationsTab({ pet, summary, onChanged }) {
     const vaccinationData = { pet_id: pet.id, ...form };
     
     try {
-      if (!navigator.onLine) {
-        setSyncing(true);
-        await queueAddVaccination(vaccinationData);
-        setForm({ vaccine_name: "", dose_number: 1, administered_on: "", due_on: "", notes: "" });
-        onChanged?.();
-        alert('Vaccination saved locally and will sync when online');
-        return;
-      }
-      
       const res = await fetch(`${apiConfig.baseURL}${apiConfig.care.addVaccination}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -42,7 +31,6 @@ export default function VaccinationsTab({ pet, summary, onChanged }) {
       alert(e.message || "Failed to add vaccination");
     } finally {
       setSaving(false);
-      setSyncing(false);
     }
   };
 
@@ -87,21 +75,7 @@ export default function VaccinationsTab({ pet, summary, onChanged }) {
         <div className="md:col-span-3 flex gap-2 items-center">
           <button onClick={add} disabled={saving} className="px-4 py-2 rounded-full bg-[#0f172a] text-[#edfdfd] text-sm font-semibold disabled:opacity-60 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2">
             {saving ? "Saving..." : "Save"}
-            {syncing && (
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-            )}
           </button>
-          {syncing && (
-            <span className="text-xs text-amber-600 flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-              </svg>
-              Pending sync
-            </span>
-          )}
         </div>
       </div>
     </section>
