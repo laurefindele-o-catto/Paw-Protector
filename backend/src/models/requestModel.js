@@ -112,6 +112,32 @@ class RequestModel {
     }
 
     /**
+     * Get all requests with status = true (approved requests)
+     * @param {number} limit - Optional limit
+     * @param {number} offset - Optional offset for pagination
+     * @returns {Promise<Array>} Array of approved requests
+     */
+    async getApprovedRequests(limit = null, offset = 0) {
+        try {
+            let query = `
+                SELECT * FROM requests WHERE status = true ORDER BY updated_at DESC
+            `;
+
+            const params = [];
+
+            if (limit !== null) {
+                query += ` LIMIT $1 OFFSET $2`;
+                params.push(limit, offset);
+            }
+
+            const results = await this.db.query_executor(query, params);
+            return results.rows;
+        } catch (error) {
+            throw new Error(`Failed to get approved requests: ${error.message}`);
+        }
+    }
+
+    /**
      * Delete request by ID
      * @param {number} requestId - Request ID
      * @returns {Promise<boolean>} True if deleted, false if not found

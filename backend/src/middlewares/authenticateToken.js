@@ -31,6 +31,8 @@ class AuthenticateToken{
             const userId = decoded.sub || decoded.id;
             const user = await this.userModel.getUserById(userId);
 
+            const roles = await this.userModel.getUserRoles(userId);
+
             if(!user){
                 return res.status(401).json({
                     success: false,
@@ -38,7 +40,7 @@ class AuthenticateToken{
                 });
             }
 
-            req.user = user;
+            req.user = { ...user, roles };
             next();
         } catch (error) {
             console.error('Token verification error:', error.message);

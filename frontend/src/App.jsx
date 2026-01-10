@@ -70,6 +70,7 @@ function AppContent() {
         <Route path="/signup" element={<SignupPage/>}/>
         <Route path="/pet-profile" element={<PetProfile />} />
         <Route path="/assistant" element={<AssistantChat />} />
+        <Route path="/CheckDiagnostics" element={<CheckDiagnostics />} />
       </Routes>
       
       {/* Global Voice Control - shows on authenticated pages */}
