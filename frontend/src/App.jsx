@@ -19,7 +19,7 @@ import LandingPage from "./pages/LandingPage.jsx";
 import { PetProvider } from "./context/PetContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import VetDashboard from "./pages/VetDashboard.jsx";
-import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
+// import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
 import VerifyVet from "./pages/VerifyVet.jsx";
 import VetProfile from "./pages/VetProfile.jsx";
 import VoiceControl from "./components/VoiceControl.jsx";
