@@ -63,6 +63,8 @@ function ProfilePage() {
   const markerRef = useRef(null);
   const geocoderRef = useRef(null);
 
+  const locationStorageKey = user?.id ? `user_location_${user.id}` : 'user_location';
+
   // Attach Places Autocomplete (extend to sync map/marker)
   useEffect(() => {    
     // console.log("api key: " , import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
@@ -136,6 +138,25 @@ function ProfilePage() {
         setLatitude(first.latitude || null);
         setLongitude(first.longitude || null);
         setPlaceId(first.place_id || "");
+
+        try {
+          localStorage.setItem(locationStorageKey, JSON.stringify({
+            id: first.id,
+            address_line: first.address_line || '',
+            city: first.city || '',
+            state: first.state || '',
+            postal_code: first.postal_code || '',
+            country: first.country || '',
+            latitude: first.latitude ?? null,
+            longitude: first.longitude ?? null,
+            place_id: first.place_id || ''
+          }));
+        } catch {}
+
+        if (typeof first.latitude === 'number' && typeof first.longitude === 'number') {
+          if (markerRef.current) markerRef.current.setPosition({ lat: first.latitude, lng: first.longitude });
+          if (mapRef.current) mapRef.current.setCenter({ lat: first.latitude, lng: first.longitude });
+        }
       }
     } catch { }
   };
@@ -212,6 +233,11 @@ function ProfilePage() {
           body: JSON.stringify(locationBody)
         });
         if (!locRes.ok) throw new Error("Failed to save location");
+        try {
+          const locJson = await locRes.json();
+          const updated = locJson?.location;
+          if (updated?.id) setLocationId(updated.id);
+        } catch {}
       } else {
         const locRes = await fetch(`${apiConfig.baseURL}${apiConfig.users.locations.create}`, {
           method: 'POST',
@@ -222,7 +248,25 @@ function ProfilePage() {
           body: JSON.stringify(locationBody)
         });
         if (!locRes.ok) throw new Error("Failed to save location");
+        try {
+          const locJson = await locRes.json();
+          const created = locJson?.location;
+          if (created?.id) setLocationId(created.id);
+        } catch {}
       }
+
+      try {
+        localStorage.setItem(locationStorageKey, JSON.stringify({
+          address_line: addressLine || '',
+          city: city || '',
+          state: state || '',
+          postal_code: postalCode || '',
+          country: country || '',
+          latitude: typeof latitude === 'number' ? latitude : null,
+          longitude: typeof longitude === 'number' ? longitude : null,
+          place_id: placeId || ''
+        }));
+      } catch {}
 
       if (selectedFile) {
         const fd = new FormData();
@@ -255,17 +299,18 @@ function ProfilePage() {
   // ADD: init map + geocoder
   useEffect(() => {
     if (!googleLoaded || !mapContainerRef.current) return;
+    if (mapRef.current) return;
 
     if (!geocoderRef.current) geocoderRef.current = new window.google.maps.Geocoder();
 
     const center = {
-      lat: latitude ?? 23.7808875, // Dhaka default
-      lng: longitude ?? 90.2792371
+      lat: typeof latitude === 'number' ? latitude : 23.7808875, // Dhaka default
+      lng: typeof longitude === 'number' ? longitude : 90.2792371
     };
 
     mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
       center,
-      zoom: latitude && longitude ? 15 : 11,
+      zoom: typeof latitude === 'number' && typeof longitude === 'number' ? 15 : 11,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: true,
@@ -290,13 +335,23 @@ function ProfilePage() {
       const lng = e.latLng.lng();
       updateFromLatLng(lat, lng);
     });
-  }, [googleLoaded, latitude, longitude]);
+
+    // If we already have a location loaded, reflect it immediately.
+    if (typeof latitude === 'number' && typeof longitude === 'number') {
+      markerRef.current.setPosition({ lat: latitude, lng: longitude });
+      mapRef.current.setCenter({ lat: latitude, lng: longitude });
+    }
+  }, [googleLoaded]);
 
   // ADD: reverse geocode helper
   const updateFromLatLng = async (lat, lng) => {
     try {
       setLatitude(lat);
       setLongitude(lng);
+
+      // Update map/marker immediately (don't wait for geocoding)
+      if (markerRef.current) markerRef.current.setPosition({ lat, lng });
+      if (mapRef.current) mapRef.current.setCenter({ lat, lng });
 
       if (!geocoderRef.current) return;
       const { results } = await geocoderRef.current.geocode({ location: { lat, lng } });
@@ -314,8 +369,6 @@ function ProfilePage() {
         setPlaceId(best.place_id || "");
       }
 
-      if (markerRef.current) markerRef.current.setPosition({ lat, lng });
-      if (mapRef.current) mapRef.current.setCenter({ lat, lng });
     } catch { }
   };
 
@@ -522,7 +575,7 @@ function ProfilePage() {
 
           <button
             type="submit"
-            className="mt-8 self-end px-6 py-3 text-sm rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold shadow hover:bg-slate-900 transition transform hover:-translate-y-[1px]"
+            className="mt-8 self-end px-6 py-3 text-sm rounded-full bg-[#0f172a] text-[#edfdfd] font-semibold shadow hover:bg-slate-900 transition transform hover:-translate-y-px"
             disabled={loading}
             style={{
               backgroundColor: loading ? "#9DB89B" : "#0f172a",

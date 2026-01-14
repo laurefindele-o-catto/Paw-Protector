@@ -122,6 +122,17 @@ class PetController {
                         body_temp_c: r.health_body_temp_c,
                         heart_rate_bpm: r.health_heart_rate_bpm,
                         respiration_rate_bpm: r.health_respiration_rate_bpm,
+                        gum_color: r.health_gum_color,
+                        body_condition_score: r.health_body_condition_score,
+                        coat_skin: r.health_coat_skin,
+                        appetite_state: r.health_appetite_state,
+                        water_intake_state: r.health_water_intake_state,
+                        urine_frequency: r.health_urine_frequency,
+                        clump_size: r.health_clump_size,
+                        stool_consistency: r.health_stool_consistency,
+                        blood_in_stool: r.health_blood_in_stool,
+                        straining_to_pee: r.health_straining_to_pee,
+                        no_poop_48h: r.health_no_poop_48h,
                         note: r.health_note
                     });
                 }
@@ -135,7 +146,8 @@ class PetController {
                         diagnosed_on: r.disease_diagnosed_on,
                         resolved_on: r.disease_resolved_on,
                         vet_user_id: r.disease_vet_user_id,
-                        clinic_id: r.disease_clinic_id
+                        clinic_id: r.disease_clinic_id,
+                        notes: r.disease_notes
                     });
                 }
                 if (r.vaccine_id && !vaccineMap.has(r.vaccine_id)) {
@@ -203,8 +215,8 @@ class PetController {
                 summary: {
                     pet,
                     metrics: { latestWeightKg: latestWeight, latestTempC: latestTemp, trend },
-                    diseases: { active: activeDiseases },
-                    vaccinations: { recent: recentVaccines, nextDue: nextVac },
+                    diseases: { active: activeDiseases, all: diseases },
+                    vaccinations: { recent: recentVaccines, nextDue: nextVac, all: vaccinations },
                     dewormings: { recent: recentDeworm, nextDue: nextDew }
                 }
             });
@@ -268,14 +280,42 @@ class PetController {
         try {
             const { petId } = req.params;
             await assertPetOwner(req.user.id, petId);
-            const { measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note } = req.body;
+                        const {
+                            measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm,
+                            gum_color, body_condition_score, coat_skin, appetite_state, water_intake_state,
+                            urine_frequency, clump_size, stool_consistency, blood_in_stool, straining_to_pee, no_poop_48h, note
+                        } = req.body;
 
-            const ins = await db.query_executor(
-              `INSERT INTO pet_health_metrics
-                 (pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note)
-               VALUES ($1, COALESCE($2, NOW()), $3, $4, $5, $6, $7) RETURNING *`,
-              [petId, measured_at ?? null, weight_kg ?? null, body_temp_c ?? null, heart_rate_bpm ?? null, respiration_rate_bpm ?? null, note ?? null]
-            );
+                        const ins = await db.query_executor(
+                            `INSERT INTO pet_health_metrics
+                                 (pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm,
+                                    gum_color, body_condition_score, coat_skin, appetite_state, water_intake_state,
+                                    urine_frequency, clump_size, stool_consistency, blood_in_stool, straining_to_pee, no_poop_48h, note)
+                             VALUES ($1, COALESCE($2, NOW()), $3, $4, $5, $6,
+                                             $7, $8, $9, $10, $11,
+                                             $12, $13, $14, $15, $16, $17, $18)
+                             RETURNING *`,
+                            [
+                                petId,
+                                measured_at ?? null,
+                                weight_kg ?? null,
+                                body_temp_c ?? null,
+                                heart_rate_bpm ?? null,
+                                respiration_rate_bpm ?? null,
+                                gum_color ?? null,
+                                body_condition_score ?? null,
+                                coat_skin ?? null,
+                                appetite_state ?? null,
+                                water_intake_state ?? null,
+                                urine_frequency ?? null,
+                                clump_size ?? null,
+                                stool_consistency ?? null,
+                                typeof blood_in_stool === 'boolean' ? blood_in_stool : null,
+                                typeof straining_to_pee === 'boolean' ? straining_to_pee : null,
+                                typeof no_poop_48h === 'boolean' ? no_poop_48h : null,
+                                note ?? null
+                            ]
+                        );
 
             if (typeof weight_kg === 'number') {
               await db.query_executor(`UPDATE pets SET weight_kg = $1, updated_at = NOW() WHERE id = $2`, [weight_kg, petId]);
@@ -288,7 +328,7 @@ class PetController {
                 user_id: req.user.id,
                 pet_id: Number(metric.pet_id),
                 doc_type: 'metric',
-                content: `Metric at ${metric.measured_at}: weight=${metric.weight_kg ?? '—'}kg, temp=${metric.body_temp_c ?? '—'}C, HR=${metric.heart_rate_bpm ?? '—'}bpm, RR=${metric.respiration_rate_bpm ?? '—'}bpm. Note: ${metric.note || '—'}.`,
+                content: `Metric at ${metric.measured_at}: weight=${metric.weight_kg ?? '—'}kg, temp=${metric.body_temp_c ?? '—'}C, HR=${metric.heart_rate_bpm ?? '—'}bpm, RR=${metric.respiration_rate_bpm ?? '—'}bpm, gums=${metric.gum_color || '—'}, BCS=${metric.body_condition_score || '—'}, coat=${metric.coat_skin || '—'}, appetite=${metric.appetite_state || '—'}, water=${metric.water_intake_state || '—'}, urine_freq=${metric.urine_frequency || '—'}, clump=${metric.clump_size || '—'}, stool=${metric.stool_consistency || '—'}, blood_stool=${metric.blood_in_stool ?? '—'}, straining=${metric.straining_to_pee ?? '—'}, no_poop_48h=${metric.no_poop_48h ?? '—'}. Note: ${metric.note || '—'}.`,
                 metadata: { measured_at: metric.measured_at }
               }]);
             }

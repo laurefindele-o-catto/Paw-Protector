@@ -1,9 +1,12 @@
 // petCare.jsx — engaging flashcard UI for cat care (with auto-translate)
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
 import Header from '../components/Header'
+import { usePet } from "../context/PetContext";
+import { useAuth } from "../context/AuthContext";
+
 /**
  * This version focuses on *readability* and *delight*:
  * - Flashcards (horizontal scroll, no autoplay) for daily routine
@@ -16,6 +19,18 @@ import Header from '../components/Header'
 export default function PetCare() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { currentPet, currentPetSummary } = usePet();
+  const { user } = useAuth();
+  const [printMode, setPrintMode] = useState('none'); // 'none', 'owner', 'vet'
+
+  useEffect(() => {
+    if (printMode !== 'none') {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [printMode]);
 
   const daily = [
     {
@@ -370,7 +385,7 @@ export default function PetCare() {
         
         {/* Hero */}
         <section className="relative mx-auto max-w-6xl px-4 pt-10">
-          <div className="bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-lg p-6 md:p-10">
+          <div className="bg-white/50 backdrop-blur-md border border-white rounded-3xl shadow-lg p-6 md:p-10">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <span className="inline-flex items-center gap-2 bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full text-xs font-semibold">
@@ -398,21 +413,31 @@ export default function PetCare() {
                 >
                   {loading ? t("Generating…") : t("Generate Flashcards")}
                 </button>
-                <button
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:shadow-md transition"
-                  aria-label={t("Print")}
-                >
-                  {t("Print")}
-                </button>
+                <div className="relative group">
+                  <button
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:shadow-md transition"
+                    aria-label={t("Print Options")}
+                  >
+                    {t("Print / Export")}
+                  </button>
+                  <div className="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black/5 hidden group-hover:block z-50">
+                     <button onClick={() => setPrintMode('owner')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 rounded-t-md">
+                       {t("Daily Checklist (For Me)")}
+                     </button>
+                     <button onClick={() => setPrintMode('vet')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 rounded-b-md">
+                       {t("Health Report (For Vet)")}
+                     </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
         
-        
-
-
+        {/* Health Snapshot Section */}
+        {currentPetSummary && (
+           <HealthSnapshot summary={currentPetSummary} t={t} />
+        )}
 
         {/* Daily flashcards */}
         <section id="daily" className="mx-auto max-w-6xl px-4 mt-8">
@@ -589,6 +614,14 @@ export default function PetCare() {
       </div>
       </main>
 
+      {/* Print Overlays */}
+      {printMode === 'owner' && currentPetSummary && (
+        <OwnerPrintView summary={currentPetSummary} t={t} user={user} onClose={() => setPrintMode('none')} />
+      )}
+      {printMode === 'vet' && currentPetSummary && (
+        <VetPrintView summary={currentPetSummary} t={t} user={user} onClose={() => setPrintMode('none')} />
+      )}
+
         {/* Local keyframes */}
         <style>{`
           @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
@@ -626,6 +659,313 @@ function FlashCard({ title, emoji, points, t }) {
         ))}
       </ul>
     </article>
+  );
+}
+
+function HealthSnapshot({ summary, t }) {
+  if (!summary || !summary.pet) return null;
+  const { metrics, diseases, vaccinations } = summary;
+  
+  // Prefer 'all' lists if available (added in recent backend update), fallback to partials
+  const allDiseases = diseases?.all || diseases?.active || [];
+  const allVaccines = vaccinations?.all || vaccinations?.recent || [];
+
+  // Local state for expandable items
+  const [expandedDiseaseId, setExpandedDiseaseId] = useState(null);
+
+  return (
+    <section className="mx-auto max-w-6xl px-4 mt-8 mb-8 no-print">
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-10 -mt-10 opacity-50" />
+        
+        <div className="relative z-10">
+          <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+             <span className="text-2xl">🩺</span> {t("Health Snapshot")}
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* 1. Vitals */}
+            <div className="bg-slate-50 p-4 rounded-2xl h-full">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{t("Recent Vitals")}</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                   <span className="text-slate-600">{t("Weight")}</span>
+                   <span className="text-lg font-bold">{metrics?.latestWeightKg ? `${metrics.latestWeightKg} kg` : "—"}</span>
+                </div>
+                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                   <span className="text-slate-600">{t("Temp")}</span>
+                   <span className="text-lg font-bold">{metrics?.latestTempC ? `${metrics.latestTempC}°C` : "—"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Disease History (All) */}
+            <div className="bg-red-50 p-4 rounded-2xl h-full overflow-y-auto max-h-[300px]">
+              <h3 className="text-sm font-semibold text-red-800 uppercase tracking-wide mb-3">{t("Disease History")}</h3>
+              {allDiseases.length > 0 ? (
+                <ul className="space-y-2">
+                  {allDiseases.map((d) => (
+                    <li key={d.id} className="bg-white/60 rounded-lg p-2 border border-red-100">
+                      <button 
+                        onClick={() => setExpandedDiseaseId(expandedDiseaseId === d.id ? null : d.id)}
+                        className="w-full flex justify-between items-center text-left"
+                      >
+                        <span className={`font-bold text-sm ${d.status === 'active' ? 'text-red-700' : 'text-slate-700'}`}>
+                          {d.disease_name}
+                          {d.status === 'active' && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1 rounded">ACTIVE</span>}
+                        </span>
+                        <span className="text-xs text-slate-400">{expandedDiseaseId === d.id ? '▲' : '▼'}</span>
+                      </button>
+                      
+                      {expandedDiseaseId === d.id && (
+                        <div className="mt-2 text-xs text-slate-600 border-t border-red-100 pt-2 space-y-1">
+                          <p><strong>Date:</strong> {new Date(d.diagnosed_on).toLocaleDateString()}</p>
+                          <p><strong>Status:</strong> {d.status}</p>
+                          {d.severity && <p><strong>Severity:</strong> {d.severity}</p>}
+                          {d.notes && <p className="italic bg-white p-1 rounded border border-red-50">"{d.notes}"</p>}
+                          {d.symptoms && <p><strong>Symptoms:</strong> {d.symptoms}</p>}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                 <div className="text-sm text-slate-500 italic py-2">{t("No recorded diseases.")}</div>
+              )}
+            </div>
+
+            {/* 3. Vaccination Record (All) */}
+            <div className="bg-amber-50 p-4 rounded-2xl h-full overflow-y-auto max-h-[300px]">
+               <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-3">{t("Vaccination Record")}</h3>
+               {allVaccines.length > 0 ? (
+                 <ul className="space-y-2">
+                   {allVaccines.map((v) => {
+                     // Logic: If 'administered_on' is present, it's done. Else if 'due_on' is present, it's scheduled/due.
+                     const isDone = !!v.administered_on;
+                     const isDue = !isDone && v.due_on;
+                     
+                     return (
+                       <li key={v.id} className={`rounded-lg p-2 border ${isDue ? 'bg-amber-100 border-amber-200' : 'bg-white/60 border-amber-100'}`}>
+                         <div className="flex justify-between items-start">
+                           <span className="font-bold text-sm text-slate-800">{v.vaccine_name}</span>
+                           {isDue ? (
+                             <span className="text-[10px] bg-amber-200 text-amber-800 px-1 rounded font-bold">DUE</span>
+                           ) : (
+                             <span className="text-[10px] bg-green-100 text-green-800 px-1 rounded font-bold">DONE</span>
+                           )}
+                         </div>
+                         <div className="text-xs text-slate-500 mt-1">
+                           {isDone ? (
+                             <span>Given: {new Date(v.administered_on).toLocaleDateString()}</span>
+                           ) : (
+                             <span>Due: {new Date(v.due_on).toLocaleDateString()}</span>
+                           )}
+                         </div>
+                       </li>
+                     );
+                   })}
+                 </ul>
+               ) : (
+                 <div className="text-sm text-slate-500 italic py-2">{t("No vaccination records.")}</div>
+               )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* --- Print Overlays --- */
+
+function OwnerPrintView({ summary, t, user, onClose }) {
+  const { pet, diseases, vaccinations, dewormings } = summary;
+  
+  return (
+    <div className="fixed inset-0 bg-white z-50 overflow-auto p-8 print-overlay">
+      <div className="max-w-3xl mx-auto border-2 border-black p-8 min-h-screen relative">
+        {/* Header */}
+        <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-6">
+          <div>
+            <h1 className="text-4xl font-bold uppercase tracking-tighter mb-2">{pet.name}'s Care Sheet</h1>
+            <p className="text-lg">Prepared for: {user?.username || 'Owner'}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm font-bold bg-black text-white px-3 py-1 inline-block mb-1">{t("FOR FRIDGE")}</div>
+            <div className="text-sm">{new Date().toLocaleDateString()}</div>
+          </div>
+        </div>
+
+        {/* 3-Column Quick Info */}
+        <div className="grid grid-cols-3 gap-6 mb-8 text-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+           <div>
+             <div className="text-xs uppercase text-gray-500 font-bold">{t("Weight")}</div>
+             <div className="text-xl font-bold">{summary.metrics?.latestWeightKg || "—"} kg</div>
+           </div>
+           <div>
+             <div className="text-xs uppercase text-gray-500 font-bold">{t("Microchip/Tag")}</div>
+             <div className="text-xl font-bold">{pet.id}</div>
+           </div>
+           <div>
+             <div className="text-xs uppercase text-gray-500 font-bold">{t("Vet Contact")}</div>
+             <div className="text-sm font-bold truncate">See App</div>
+           </div>
+        </div>
+
+        {/* Routine Checklist (Interactive for paper) */}
+        <section className="mb-8">
+          <h2 className="text-2xl font-bold mb-4 uppercase border-b border-black pb-1">{t("Daily Routine Checklist")}</h2>
+          <div className="space-y-4">
+             {['Morning Feed', 'Fresh Water', 'Litter Scoop', 'Play Session 1', 'Evening Feed', 'Medications (if any)'].map(item => (
+               <div key={item} className="flex items-center gap-4 py-2 border-b border-gray-100">
+                 <div className="w-6 h-6 border-2 border-black rounded shadow-sm"></div>
+                 <span className="text-lg font-medium">{item}</span>
+               </div>
+             ))}
+          </div>
+        </section>
+
+        {/* Active Medications / Concerns */}
+        <section className="mb-8 p-4 bg-yellow-50 border-2 border-black rounded-xl">
+           <h2 className="text-xl font-bold mb-2 flex items-center gap-2">⚠️ {t("Active Health Watch")}</h2>
+           {diseases?.active?.length ? (
+             <ul className="list-disc pl-5">
+               {diseases.active.map(d => (
+                 <li key={d.id} className="text-lg">
+                   <strong>{d.disease_name}:</strong> {d.notes || d.symptoms}
+                 </li>
+               ))}
+             </ul>
+           ) : (
+             <p className="text-gray-500">{t("No active medical concerns recorded.")}</p>
+           )}
+        </section>
+
+        {/* Upcoming Dates */}
+        <section className="grid grid-cols-2 gap-8">
+           <div>
+              <h3 className="font-bold border-b border-black mb-2">{t("Upcoming Vaccines")}</h3>
+              {vaccinations?.nextDue ? (
+                <div className="py-2">
+                   <div className="font-bold text-lg">{vaccinations.nextDue.vaccine_name}</div>
+                   <div>Due: {new Date(vaccinations.nextDue.due_on).toLocaleDateString()}</div>
+                </div>
+              ) : <p className="text-gray-400 py-2">Up to date</p>}
+           </div>
+           <div>
+              <h3 className="font-bold border-b border-black mb-2">{t("Emergency Contacts")}</h3>
+              <div className="py-2 space-y-2 h-32 border border-gray-300 rounded p-2 bg-gray-50">
+                 <p className="text-sm text-gray-400 italic">Write contacts here...</p>
+              </div>
+           </div>
+        </section>
+
+        <div className="mt-12 text-center text-xs text-gray-400 print:hidden">
+          <button onClick={onClose} className="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-red-700">Close Preview</button>
+        </div>
+      </div>
+      <style>{`@media print { .print:hidden { display: none; } body > *:not(.print-overlay){ display: none; } .print-overlay { display: block; background: white; height: auto; overflow: visible; padding: 0; } }`}</style>
+    </div>
+  );
+}
+
+function VetPrintView({ summary, t, onClose }) {
+  const { pet, metrics, diseases, vaccinations, dewormings } = summary;
+  const trend = metrics.trend || [];
+  
+  return (
+    <div className="fixed inset-0 bg-white z-50 overflow-auto p-8 print-overlay">
+      <div className="max-w-4xl mx-auto border border-gray-300 p-8 min-h-screen">
+         {/* Professional Header */}
+         <div className="flex border-b-2 border-gray-800 pb-6 mb-8">
+            <div className="flex-1">
+              <h1 className="text-3xl font-serif font-bold text-gray-900 mb-1">Health Status Report</h1>
+              <p className="text-gray-500 text-sm uppercase tracking-widest">Generated via PawPal App</p>
+            </div>
+            <div className="text-right">
+               <div className="font-bold text-xl">{pet.name}</div>
+               <div className="text-sm text-gray-600">{pet.breed} • {pet.sex} • {new Date().getFullYear() - new Date(pet.birthdate).getFullYear()}y</div>
+               <div className="text-sm text-gray-600">ID: #{pet.id}</div>
+            </div>
+         </div>
+
+         {/* Vitals Table */}
+         <section className="mb-8">
+            <h2 className="text-sm font-bold uppercase bg-gray-100 p-2 mb-2">Recent Vitals Log</h2>
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-300">
+                  <th className="py-1">Date</th>
+                  <th className="py-1">Weight</th>
+                  <th className="py-1">Temp</th>
+                  <th className="py-1">HR / RR</th>
+                  <th className="py-1">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trend.slice(0, 5).map(m => (
+                  <tr key={m.id} className="border-b border-gray-100">
+                    <td className="py-2">{new Date(m.measured_at).toLocaleDateString()}</td>
+                    <td>{m.weight_kg ? `${m.weight_kg} kg` : '-'}</td>
+                    <td>{m.body_temp_c ? `${m.body_temp_c}°C` : '-'}</td>
+                    <td>{m.heart_rate_bpm || '-'}/{m.respiration_rate_bpm || '-'}</td>
+                    <td className="italic text-gray-500">{m.note || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+         </section>
+
+         <div className="grid grid-cols-2 gap-8 mb-8">
+            {/* Medical History */}
+            <section>
+              <h2 className="text-sm font-bold uppercase bg-gray-100 p-2 mb-2">Medical History</h2>
+              <div className="border border-gray-200 rounded">
+                 {(diseases?.active || []).map(d => (
+                   <div key={d.id} className="p-3 border-b border-gray-100 last:border-0 bg-red-50">
+                      <div className="flex justify-between font-bold text-red-900">
+                        <span>{d.disease_name} (Active)</span>
+                        <span className="text-xs">{new Date(d.diagnosed_on).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-sm mt-1">{d.notes || d.symptoms}</p>
+                   </div>
+                 ))}
+                 
+                 {/* Filter resolved or show message if logic allows, for now listing active */}
+                 {!(diseases?.active?.length) && <div className="p-4 text-gray-500 italic">No active conditions.</div>}
+              </div>
+            </section>
+
+            {/* Vaccine History */}
+            <section>
+              <h2 className="text-sm font-bold uppercase bg-gray-100 p-2 mb-2">Vaccination Record</h2>
+              <table className="w-full text-sm">
+                 <thead>
+                   <tr className="border-b"><th>Vaccine</th><th>Date</th><th>Due</th></tr>
+                 </thead>
+                 <tbody>
+                   {(vaccinations?.recent || []).map(v => (
+                     <tr key={v.id} className="border-b border-gray-50">
+                       <td className="py-2 font-medium">{v.vaccine_name}</td>
+                       <td>{new Date(v.administered_on).toLocaleDateString()}</td>
+                       <td className="text-gray-500">{v.due_on ? new Date(v.due_on).toLocaleDateString() : '-'}</td>
+                     </tr>
+                   ))}
+                 </tbody>
+              </table>
+            </section>
+         </div>
+
+         <div className="mt-12 pt-6 border-t border-gray-300 text-center">
+             <p className="text-xs text-gray-400">Validated by User Report • Not an official medical certificate</p> 
+         </div>
+
+         <div className="mt-6 text-center text-xs text-gray-400 print:hidden">
+            <button onClick={onClose} className="bg-slate-800 text-white px-6 py-2 rounded-full font-bold shadow hover:bg-slate-900">Close Report</button>
+         </div>
+      </div>
+      <style>{`@media print { .print:hidden { display: none; } body > *:not(.print-overlay){ display: none; } .print-overlay { display: block; background: white; height: auto; overflow: visible; padding: 0; } }`}</style>
+    </div>
   );
 }
 

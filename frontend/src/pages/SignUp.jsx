@@ -12,25 +12,15 @@ const SignupPage = () => {
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("owner");
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
   
-  // Verification states
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [userId, setUserId] = useState(null);
-
   const { run: runRegister, loading: loaderLoading } = useLoader(register);
-  const { verifyPhone } = useAuth(); // Destructure confirm function
-  const { run: runVerify, loading: verifyLoading } = useLoader(verifyPhone); // Use loader for verify
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setInfo("");
 
     try {
       const result = await runRegister(
@@ -38,45 +28,16 @@ const SignupPage = () => {
         email,
         password,
         role,
-        phoneNumber
+        "" // phoneNumber
       );
       
       if (result.success) {
-        if (phoneNumber) {
-             setUserId(result.userId);
-             setIsVerifying(true);
-             setInfo("Please enter the verification code sent to your WhatsApp.");
-        } else {
-             navigate("/login");
-        }
+        navigate("/login");
       } else {
         setError(result.error || "Registration failed");
       }
     } catch (err) {
       setError("Registration failed");
-    }
-  };
-
-  const handleVerification = async (e) => {
-    e.preventDefault();
-    setError("");
-    setInfo("");
-
-    if (!userId || !verificationCode) {
-        setError("Invalid verification state.");
-        return;
-    }
-
-    try {
-        const { success, error: errMsg } = await runVerify(userId, verificationCode);
-        if (success) {
-            navigate("/login"); // Or auto-login if you implement that
-        } else {
-            setError(errMsg || "Verification failed");
-        }
-    } catch (err) {
-        setError("Verification failed");
-        console.error(err);
     }
   };
 
@@ -108,66 +69,16 @@ const SignupPage = () => {
         </div>
 
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-          {isVerifying ? t('Verify Phone') : t('Create Account')}
+          {t('Create Account')}
         </h2>
-        <p className="text-sm text-slate-600 mb-5">
-          {isVerifying 
-            ? t('Enter the 4-digit code sent to your WhatsApp') 
-            : (
-            <>
-              {t('Join the community and')}{" "}
-              <span className="underline decoration-4 decoration-[#fdd14280]">
-                {t('protect every paw')}
-              </span>
-              .
-            </>
-          )}
-        </p>
 
-        {(loaderLoading || verifyLoading) && (
+        {(loaderLoading) && (
           <div className="mb-4">
             <Loader />
           </div>
         )}
 
-        {isVerifying ? (
-            <form className="space-y-4" onSubmit={handleVerification}>
-                <input
-                    type="text"
-                    placeholder="Enter 4-digit code"
-                    required
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition disabled:opacity-60 text-center text-2xl tracking-widest"
-                    disabled={verifyLoading}
-                    maxLength={4}
-                />
-                
-                 {error && (
-                  <div className="text-red-500 text-sm bg-red-50 p-2 rounded-lg border border-red-100">
-                    {error}
-                  </div>
-                )}
-                
-                {info && (
-                  <div className="text-blue-500 text-sm bg-blue-50 p-2 rounded-lg border border-blue-100">
-                    {info}
-                  </div>
-                )}
-
-                <button
-                    type="submit"
-                    className="w-full py-3 px-6 bg-[#0f172a] hover:bg-[#1e293b] text-white font-semibold rounded-xl transition duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
-                    disabled={verifyLoading}
-                >
-                    <span>{t('Verify Code')}</span>
-                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                </button>
-            </form>
-        ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>       
           <input
             type="text"
             placeholder={t('Username')}
@@ -183,15 +94,6 @@ const SignupPage = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition disabled:opacity-60"
-            disabled={loaderLoading}
-          />
-          <input
-            type="tel"
-            placeholder={t('Phone Number')}
-            required
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-[#fdd142]/30 focus:border-[#0f172a] transition disabled:opacity-60"
             disabled={loaderLoading}
           />
@@ -222,16 +124,10 @@ const SignupPage = () => {
             {t('Sign Up')}
           </button>
         </form>
-        )}
 
-        {!isVerifying && error && (
+        {error && (
           <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
             {error}
-          </p>
-        )}
-        {!isVerifying && info && (
-          <p className="mt-3 text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-            {info}
           </p>
         )}
 
