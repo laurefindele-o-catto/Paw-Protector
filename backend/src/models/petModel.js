@@ -84,7 +84,9 @@ class PetModel {
     getLatestHealthMetrics = async (petId, limit = 7) => {
         try {
             const q = `
-                SELECT measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm
+                  SELECT measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm,
+                      gum_color, body_condition_score, coat_skin, appetite_state, water_intake_state,
+                      urine_frequency, clump_size, stool_consistency, blood_in_stool, straining_to_pee, no_poop_48h, note
                 FROM pet_health_metrics
                 WHERE pet_id = $1
                 ORDER BY measured_at DESC
@@ -126,6 +128,17 @@ class PetModel {
                   phm.body_temp_c AS health_body_temp_c,
                   phm.heart_rate_bpm AS health_heart_rate_bpm,
                   phm.respiration_rate_bpm AS health_respiration_rate_bpm,
+                  phm.gum_color AS health_gum_color,
+                  phm.body_condition_score AS health_body_condition_score,
+                  phm.coat_skin AS health_coat_skin,
+                  phm.appetite_state AS health_appetite_state,
+                  phm.water_intake_state AS health_water_intake_state,
+                  phm.urine_frequency AS health_urine_frequency,
+                  phm.clump_size AS health_clump_size,
+                  phm.stool_consistency AS health_stool_consistency,
+                  phm.blood_in_stool AS health_blood_in_stool,
+                  phm.straining_to_pee AS health_straining_to_pee,
+                  phm.no_poop_48h AS health_no_poop_48h,
                   phm.note AS health_note,
 
                   -- Diseases
@@ -138,6 +151,7 @@ class PetModel {
                   pd.resolved_on AS disease_resolved_on,
                   pd.vet_user_id AS disease_vet_user_id,
                   pd.clinic_id AS disease_clinic_id,
+                  pd.notes AS disease_notes,
 
                   -- Vaccinations
                   v.id AS vaccine_id,
@@ -211,13 +225,19 @@ class PetModel {
     addHealthMetric = async (petId, data) => {
         try {
             const {
-                measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note
+                measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm,
+                gum_color, body_condition_score, coat_skin, appetite_state, water_intake_state,
+                urine_frequency, clump_size, stool_consistency, blood_in_stool, straining_to_pee, no_poop_48h, note
             } = data || {};
             const q = `
                 INSERT INTO pet_health_metrics
-                    (pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm, note)
+                    (pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm,
+                     gum_color, body_condition_score, coat_skin, appetite_state, water_intake_state,
+                     urine_frequency, clump_size, stool_consistency, blood_in_stool, straining_to_pee, no_poop_48h, note)
                 VALUES
-                    ($1, COALESCE($2, NOW()), $3, $4, $5, $6, $7)
+                    ($1, COALESCE($2, NOW()), $3, $4, $5, $6,
+                     $7, $8, $9, $10, $11,
+                     $12, $13, $14, $15, $16, $17, $18)
                 RETURNING *;
             `;
             const p = [
@@ -227,6 +247,17 @@ class PetModel {
                 typeof body_temp_c === 'number' ? body_temp_c : null,
                 typeof heart_rate_bpm === 'number' ? heart_rate_bpm : null,
                 typeof respiration_rate_bpm === 'number' ? respiration_rate_bpm : null,
+                gum_color || null,
+                typeof body_condition_score === 'number' ? body_condition_score : null,
+                coat_skin || null,
+                appetite_state || null,
+                water_intake_state || null,
+                urine_frequency || null,
+                clump_size || null,
+                stool_consistency || null,
+                typeof blood_in_stool === 'boolean' ? blood_in_stool : null,
+                typeof straining_to_pee === 'boolean' ? straining_to_pee : null,
+                typeof no_poop_48h === 'boolean' ? no_poop_48h : null,
                 note || null
             ];
             const r = await this.db_connection.query_executor(q, p);

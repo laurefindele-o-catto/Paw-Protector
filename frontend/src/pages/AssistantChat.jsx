@@ -411,7 +411,7 @@ export default function AssistantChat() {
   return (
     <>
       <Header />
-      <main id="main-content" className="min-h-screen bg-[#edfdfd] text-slate-900 pt-28 mt-24" role="main" tabIndex="-1">
+      <main id="main-content" className="min-h-screen bg-[#edfdfd] text-slate-900 pt-12 mt-24" role="main" tabIndex="-1">
         <div className="mx-auto w-[92%] px-4 flex h-[80vh] gap-3">
           {/* Collapsible Sidebar */}
           <aside

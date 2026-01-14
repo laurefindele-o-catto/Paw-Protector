@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
     "axios": "^1.13.1",
+    "node-cron": "^4.2.1",
     "react": "^19.1.1",
     "react-autolocalise": "^1.0.0",
     "react-dom": "^19.1.1",

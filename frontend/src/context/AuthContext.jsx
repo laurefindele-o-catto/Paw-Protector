@@ -139,33 +139,12 @@ export const AuthProvider = ({children})=>{
         }
     }
 
-    const verifyPhone = async (userId, code) => {
-        try {
-            const response = await fetch(`${apiConfig.baseURL}/api/auth/verify-phone`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, code })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                return { success: true, message: data.message };
-            } else {
-                return { success: false, error: data.error };
-            }
-        } catch (error) {
-            return { success: false, error: 'Verification failed' };
-        }
-    }
-
     const value = {
         user,
         token,
         loading,
         login,
         register,
-        verifyPhone,
         logout,
         isAuthenticated: !!token
     };

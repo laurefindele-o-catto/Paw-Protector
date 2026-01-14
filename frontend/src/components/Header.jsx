@@ -100,7 +100,7 @@ function Header() {
                     >
                         <ProfilePictureCard
                             avatarUrl={currentPet?.avatar_url ? currentPet.avatar_url : placeholder}
-                            name={currentPet?.name}
+                            name={currentPet?.name || "Pet Photo"}
                         />
                     </Link>
                 </div>

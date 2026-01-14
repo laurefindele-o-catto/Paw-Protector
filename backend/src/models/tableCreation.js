@@ -282,9 +282,31 @@ class TableCreation {
                     body_temp_c REAL,
                     heart_rate_bpm INTEGER,
                     respiration_rate_bpm INTEGER,
+                    gum_color VARCHAR(30),
+                    body_condition_score INTEGER,
+                    coat_skin VARCHAR(40),
+                    appetite_state VARCHAR(30),
+                    water_intake_state VARCHAR(30),
+                    urine_frequency VARCHAR(30),
+                    clump_size VARCHAR(30),
+                    stool_consistency VARCHAR(30),
+                    blood_in_stool BOOLEAN,
+                    straining_to_pee BOOLEAN,
+                    no_poop_48h BOOLEAN,
                     note TEXT
                 );
                 CREATE INDEX IF NOT EXISTS idx_metrics_pet_id ON pet_health_metrics(pet_id);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS gum_color VARCHAR(30);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS body_condition_score INTEGER;
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS coat_skin VARCHAR(40);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS appetite_state VARCHAR(30);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS water_intake_state VARCHAR(30);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS urine_frequency VARCHAR(30);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS clump_size VARCHAR(30);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS stool_consistency VARCHAR(30);
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS blood_in_stool BOOLEAN;
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS straining_to_pee BOOLEAN;
+                ALTER TABLE pet_health_metrics ADD COLUMN IF NOT EXISTS no_poop_48h BOOLEAN;
             `;
             await this.db_connection.query_executor(query);
             console.log("Pet Health Metrics table created successfully");
