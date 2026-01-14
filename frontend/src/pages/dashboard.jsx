@@ -11,7 +11,7 @@ import Footer from "../components/Footer";
 import ChatButton from "../components/ChatButton";
 import apiConfig from "../config/apiConfig";
 
-const placeholder = "/placeholder.png";
+const placeholder = "/placeholder.png"; 
 
 function Dashboard() {
   const navigate = useNavigate();
