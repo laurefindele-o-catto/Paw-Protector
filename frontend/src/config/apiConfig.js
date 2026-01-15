@@ -57,6 +57,7 @@ const apiConfig = {
   clinics: {
     createClinic: '/api/clinics',
     createVet: '/api/vets',
+    getVet: (userId) => `/api/vets/${userId}`,
     updateVet: (userId) => `/api/vets/${userId}`,
   },
   emergency: {

@@ -239,15 +239,16 @@ function CheckDiagnostics() {
             )}
 
             {requests.length > 0 && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {requests.map((r) => (
-                  <article key={r.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+                  <article key={r.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-3 flex flex-col h-full max-w-xs mx-auto"
+                  style={{ minHeight: 330 }}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900">
+                        <h2 className="text-base font-bold text-slate-900">
                           {t("Request")} #{r.id}
                         </h2>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-xs text-slate-600">
                           {t("Owner ID")}: {r.issue_user_id}
                         </p>
                         {r.created_at && (
@@ -262,34 +263,34 @@ function CheckDiagnostics() {
                     </div>
 
                     {r.notes && (
-                      <p className="mt-3 text-sm text-slate-700">
+                      <p className="mt-2 text-xs text-slate-700">
                         <span className="font-semibold">{t("Notes")}: </span>
                         {r.notes}
                       </p>
                     )}
 
                     {r.content_url && (
-                      <div className="mt-4 relative">
+                      <div className="mt-2 relative">
                         {/* placeholder while loading */}
                         {imgLoadingMap[r.id] !== false && (
-                          <div className="absolute inset-0 bg-slate-200 animate-pulse rounded-xl" />
+                          <div className="absolute inset-0 bg-slate-200 animate-pulse rounded-lg" />
                         )}
                         <img
                           src={r.content_url}
                           alt={`Diagnostic attachment for request ${r.id}`}
-                          className={`w-full h-full object-cover rounded-xl border ${imgLoadingMap[r.id] !== false ? "opacity-0" : "opacity-100"
+                          className={`w-full h-32 object-cover rounded-lg border ${imgLoadingMap[r.id] !== false ? "opacity-0" : "opacity-100"
                             } transition-opacity duration-500`}
                           loading="lazy"
                           onLoad={() =>
                             setImgLoadingMap((prev) => ({ ...prev, [r.id]: false }))
                           }
                         />
-                        <div className="mt-2 flex items-center justify-between gap-3">
+                        <div className="mt-1 flex items-center justify-between gap-2">
                           <a
                             href={r.content_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-sm font-semibold text-slate-800 underline"
+                            className="text-xs font-semibold text-slate-800 underline"
                           >
                             Open attachment
                           </a>
@@ -297,10 +298,10 @@ function CheckDiagnostics() {
                       </div>
                     )}
 
-                    <div className="mt-4 flex gap-3">
+                    <div className="mt-3 flex gap-2">
                       <button
                         onClick={() => updateStatus(r.id, true)}
-                        className="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+                        className="flex-1 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
                       >
                         {t("Approve")}
                       </button>
@@ -311,7 +312,7 @@ function CheckDiagnostics() {
                           setOtherNotes("");
                           setShowRejectModal(true);
                         }}
-                        className="flex-1 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+                        className="flex-1 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition"
                       >
                         Reject
                       </button>
