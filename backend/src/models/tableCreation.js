@@ -7,7 +7,10 @@ class TableCreation {
 
     enable_pgvector_extension = async () => {
         try {
-            const query = `CREATE EXTENSION IF NOT EXISTS vector;`;
+            const query = `
+                CREATE EXTENSION IF NOT EXISTS vector;
+                CREATE EXTENSION IF NOT EXISTS pgcrypto;
+            `;
             await this.db_connection.query_executor(query);
             console.log("pgvector extension ensured");
             return { success: true };
@@ -17,87 +20,82 @@ class TableCreation {
         }
     };
 
-    create_rag_documents_table = async()=>{
+    create_rag_table_named = async(tableName = 'rag_documents') => {
         const dim = Number(process.env.EMBEDDING_DIM || 1536);
         const lists = Number(process.env.PGVECTOR_INDEX_LISTS || 100);
 
         const ddl = `
-            CREATE TABLE IF NOT EXISTS rag_documents(
-                id BIGSERIAL PRIMARY KEY,
-                doc_id TEXT UNIQUE NOT NULL,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
-                doc_type VARCHAR(50) NOT NULL,
-                content TEXT NOT NULL,
+            CREATE TABLE IF NOT EXISTS ${tableName}(
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                doc_id TEXT UNIQUE,
+                user_id TEXT,
+                pet_id TEXT,
+                doc_type VARCHAR(50),
+                content TEXT,
                 metadata JSONB,
                 embedding vector(${dim}),
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             );
 
-            -- Filter/lookup indexes
-            CREATE INDEX IF NOT EXISTS idx_rag_docs_user_id ON rag_documents(user_id);
-            CREATE INDEX IF NOT EXISTS idx_rag_docs_pet_id ON rag_documents(pet_id);
-            CREATE INDEX IF NOT EXISTS idx_rag_docs_doc_type ON rag_documents(doc_type);
-            CREATE INDEX IF NOT EXISTS idx_rag_docs_metadata_gin ON rag_documents USING GIN (metadata);
+            -- Defensive migrations to align existing tables (do NOT force NOT NULL; existing data may have NULLs)
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS doc_id TEXT;
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS user_id TEXT;
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS pet_id TEXT;
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS doc_type VARCHAR(50);
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS content TEXT;
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS metadata JSONB;
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS embedding vector(${dim});
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+            ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
 
-            CREATE INDEX IF NOT EXISTS idx_rag_docs_embedding_ivfflat
-            ON rag_documents USING ivfflat (embedding vector_cosine_ops)
+            -- Backfill doc_id from metadata for older rows (common when table was created by a vectorstore)
+            UPDATE ${tableName}
+            SET doc_id = COALESCE(doc_id, metadata->>'doc_id')
+            WHERE doc_id IS NULL AND metadata ? 'doc_id';
+
+            -- Uniqueness for upserts (allows multiple NULLs)
+            CREATE UNIQUE INDEX IF NOT EXISTS ${tableName}_doc_id_key ON ${tableName}(doc_id);
+
+            -- Filter/lookup indexes
+            CREATE INDEX IF NOT EXISTS idx_${tableName}_user_id ON ${tableName}(user_id);
+            CREATE INDEX IF NOT EXISTS idx_${tableName}_pet_id ON ${tableName}(pet_id);
+            CREATE INDEX IF NOT EXISTS idx_${tableName}_doc_type ON ${tableName}(doc_type);
+            CREATE INDEX IF NOT EXISTS idx_${tableName}_metadata_gin ON ${tableName} USING GIN (metadata);
+
+            CREATE INDEX IF NOT EXISTS idx_${tableName}_embedding_ivfflat
+            ON ${tableName} USING ivfflat (embedding vector_cosine_ops)
             WITH (lists = ${lists});
         `;
         try {
             await this.db_connection.query_executor(ddl);
-            console.log(`RAG documents table created (dim=${dim}, lists=${lists})`);
+            console.log(`RAG table "${tableName}" created (dim=${dim}, lists=${lists})`);
             return { success: true }
         } catch (error) {
-            console.log(`Error creating rag_documents: ${error.message}`);
+            console.log(`Error creating ${tableName}: ${error.message}`);
             throw error;
         }
+    }
+
+    create_rag_documents_table = async()=>{
+        return this.create_rag_table_named('rag_documents');
+    }
+
+    create_rag_documents_lc_table = async()=>{
+        const tableName = process.env.RAG_TABLE_NAME || 'rag_documents_lc';
+        return this.create_rag_table_named(tableName);
     }
 
     // New Personalized Table for Interaction/Chat/Health Records
     create_rag_personal_table = async()=>{
-        const dim = Number(process.env.EMBEDDING_DIM || 1536);
-        const lists = Number(process.env.PGVECTOR_INDEX_LISTS || 100);
-
-        const ddl = `
-            CREATE TABLE IF NOT EXISTS rag_documents_personal(
-                id BIGSERIAL PRIMARY KEY,
-                doc_id TEXT UNIQUE NOT NULL,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                pet_id INTEGER REFERENCES pets(id) ON DELETE CASCADE,
-                doc_type VARCHAR(50) NOT NULL,
-                content TEXT NOT NULL,
-                metadata JSONB,
-                embedding vector(${dim}),
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
-            );
-
-            -- Filter/lookup indexes
-            CREATE INDEX IF NOT EXISTS idx_rag_personal_user_id ON rag_documents_personal(user_id);
-            CREATE INDEX IF NOT EXISTS idx_rag_personal_pet_id ON rag_documents_personal(pet_id);
-            CREATE INDEX IF NOT EXISTS idx_rag_personal_doc_type ON rag_documents_personal(doc_type);
-            CREATE INDEX IF NOT EXISTS idx_rag_personal_metadata_gin ON rag_documents_personal USING GIN (metadata);
-
-            CREATE INDEX IF NOT EXISTS idx_rag_personal_embedding_ivfflat
-            ON rag_documents_personal USING ivfflat (embedding vector_cosine_ops)
-            WITH (lists = ${lists});
-        `;
-        try {
-            await this.db_connection.query_executor(ddl);
-            console.log(`RAG personal table created (dim=${dim}, lists=${lists})`);
-            return { success: true }
-        } catch (error) {
-            console.log(`Error creating rag_documents_personal: ${error.message}`);
-            throw error;
-        }
+        return this.create_rag_table_named('rag_documents_personal');
     }
 
     ensure_pgvector_and_rag_documents = async () => {
         await this.enable_pgvector_extension();
-        await this.create_rag_documents_table();   // Default text/KB
-        await this.create_rag_personal_table();    // Personalized info
+        await this.create_rag_documents_table();    // Legacy/default KB table
+        await this.create_rag_documents_lc_table(); // Env-configured KB table (rag_documents_lc)
+        await this.create_rag_personal_table();     // Personalized info
         return { success: true };
     };
 

@@ -47,6 +47,23 @@ router.post('/import', knowledgeBaseController.importKnowledgeBase);
 
 /**
  * @openapi
+ * /api/knowledge-base/import-pet-care-guide:
+ *   post:
+ *     tags: [Knowledge Base]
+ *     summary: Import pet care guide PDF into vector database
+ *     description: Parses pet_care_guide.pdf, chunks it, embeds, and upserts into rag_documents_lc with doc_type "care_guide".
+ *     responses:
+ *       200:
+ *         description: Pet care guide imported successfully
+ *       400:
+ *         description: PDF had no readable content
+ *       500:
+ *         description: Import failed
+ */
+router.post('/import-pet-care-guide', knowledgeBaseController.importPetCareGuide);
+
+/**
+ * @openapi
  * /api/knowledge-base/stats:
  *   get:
  *     tags: [Knowledge Base]

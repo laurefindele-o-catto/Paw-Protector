@@ -497,7 +497,7 @@ This explains why veterinarians regularly take a stool sample for examination; i
 
 ---
 
-## DOCUMENT TYPE: disease_guide
+## DOCUMENT TYPE: disease_guide 
 ## CATEGORY: fecal_abnormalities
 ## TOPIC: The Four Cs of Fecal Assessment - Colour Content Consistency Coating
 

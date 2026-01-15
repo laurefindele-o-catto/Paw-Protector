@@ -1,11 +1,50 @@
 const path = require('path');
 const { prepareKnowledgeBaseForInsertion } = require('../utils/knowledgeBaseParser.js');
+const { parsePdfToDocs } = require('../utils/pdfIngest.js');
 const { upsertDocs } = require('../rag/service.js');
 
 class KnowledgeBaseController {
     constructor() {
         this.knowledgeBasePath = path.join(__dirname, '../vector_embedding_file_structured.md');
+        this.petCareGuidePath = path.join(__dirname, '../pet_care_guide.pdf');
     }
+
+    buildStats = (docs = []) => {
+        const stats = {
+            total_chunks: docs.length,
+            by_doc_type: {},
+            by_category: {},
+            by_severity: {},
+            by_species: {}
+        };
+
+        docs.forEach((doc, index) => {
+            stats.by_doc_type[doc.doc_type] = (stats.by_doc_type[doc.doc_type] || 0) + 1;
+
+            const category = doc.metadata?.category || 'unknown';
+            stats.by_category[category] = (stats.by_category[category] || 0) + 1;
+
+            const severity = doc.metadata?.severity || 'unknown';
+            stats.by_severity[severity] = (stats.by_severity[severity] || 0) + 1;
+
+            const species = doc.metadata?.species || 'unknown';
+            stats.by_species[species] = (stats.by_species[species] || 0) + 1;
+
+            if (index < 10) {
+                stats.sample_topics = stats.sample_topics || [];
+                stats.sample_topics.push({
+                    doc_type: doc.doc_type,
+                    category,
+                    topic: doc.metadata?.topic || 'unknown',
+                    species,
+                    severity,
+                    content_preview: doc.content.substring(0, 150) + '...'
+                });
+            }
+        });
+
+        return stats;
+    };
 
     /**
      * Import the entire veterinary knowledge base into the vector database
@@ -35,30 +74,7 @@ class KnowledgeBaseController {
             
             const result = await upsertDocs(docs);
             
-            const stats = {
-                total_chunks: docs.length,
-                by_doc_type: {},
-                by_category: {},
-                by_severity: {},
-                by_species: {}
-            };
-            
-            docs.forEach(doc => {
-                // Count by doc_type
-                stats.by_doc_type[doc.doc_type] = (stats.by_doc_type[doc.doc_type] || 0) + 1;
-                
-                // Count by category
-                const category = doc.metadata?.category || 'unknown';
-                stats.by_category[category] = (stats.by_category[category] || 0) + 1;
-                
-                // Count by severity
-                const severity = doc.metadata?.severity || 'unknown';
-                stats.by_severity[severity] = (stats.by_severity[severity] || 0) + 1;
-                
-                // Count by species
-                const species = doc.metadata?.species || 'unknown';
-                stats.by_species[species] = (stats.by_species[species] || 0) + 1;
-            });
+            const stats = this.buildStats(docs);
             
             return res.status(200).json({
                 success: true,
@@ -91,39 +107,7 @@ class KnowledgeBaseController {
                 0
             );
             
-            const stats = {
-                total_chunks: docs.length,
-                by_doc_type: {},
-                by_category: {},
-                by_severity: {},
-                by_species: {},
-                sample_topics: []
-            };
-            
-            docs.forEach((doc, index) => {
-                stats.by_doc_type[doc.doc_type] = (stats.by_doc_type[doc.doc_type] || 0) + 1;
-                
-                const category = doc.metadata?.category || 'unknown';
-                stats.by_category[category] = (stats.by_category[category] || 0) + 1;
-                
-                const severity = doc.metadata?.severity || 'unknown';
-                stats.by_severity[severity] = (stats.by_severity[severity] || 0) + 1;
-                
-                const species = doc.metadata?.species || 'unknown';
-                stats.by_species[species] = (stats.by_species[species] || 0) + 1;
-                
-                // Add sample topics (first 10)
-                if (index < 10) {
-                    stats.sample_topics.push({
-                        doc_type: doc.doc_type,
-                        category: category,
-                        topic: doc.metadata?.topic || 'unknown',
-                        species: species,
-                        severity: severity,
-                        content_preview: doc.content.substring(0, 150) + '...'
-                    });
-                }
-            });
+            const stats = this.buildStats(docs);
             
             return res.status(200).json({
                 success: true,
@@ -160,6 +144,57 @@ class KnowledgeBaseController {
             return res.status(500).json({
                 success: false,
                 error: 'Failed to re-import knowledge base',
+                details: error.message
+            });
+        }
+    };
+
+    /**
+     * Import pet care guide PDF into the vector database (global doc_type: care_guide)
+     */
+    importPetCareGuide = async (req, res) => {
+        try {
+            console.log('Starting pet care guide import...');
+            console.log('File path:', this.petCareGuidePath);
+
+            const docs = await parsePdfToDocs(this.petCareGuidePath, {
+                userId: 0,
+                petId: null,
+                docType: 'care_guide',
+                metadata: {
+                    category: 'pet_care',
+                    topic: 'general_pet_care',
+                    audience: 'pet_owner',
+                    source: 'pet_care_guide_pdf',
+                    source_path: 'pet_care_guide.pdf',
+                    is_global: true
+                },
+                chunkSize: 1200,
+                chunkOverlap: 150
+            });
+
+            if (!docs.length) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No content extracted from pet_care_guide.pdf'
+                });
+            }
+
+            const result = await upsertDocs(docs);
+            const stats = this.buildStats(docs);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Pet care guide embedded successfully',
+                inserted: result.inserted,
+                statistics: stats,
+                sample_doc_ids: docs.slice(0, 5).map(d => d.doc_id)
+            });
+        } catch (error) {
+            console.error('Pet care guide import error:', error);
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to import pet care guide',
                 details: error.message
             });
         }
