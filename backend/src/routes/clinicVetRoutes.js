@@ -8,6 +8,33 @@ const authenticateToken = new AuthenticateToken();
 
 /**
  * @openapi
+ * /api/clinics/nearby:
+ *   get:
+ *     tags: [Clinic/Vet]
+ *     summary: List nearby vet clinics (by lat/lng)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: lat
+ *         required: true
+ *         schema: { type: number }
+ *       - in: query
+ *         name: lng
+ *         required: true
+ *         schema: { type: number }
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema: { type: integer, default: 5 }
+ *     responses:
+ *       200:
+ *         description: Nearby clinics
+ */
+router.get('/clinics/nearby', authenticateToken.authenticateToken, controller.listNearbyClinics);
+
+/**
+ * @openapi
  * /api/clinics:
  *   post:
  *     tags: [Clinic/Vet]

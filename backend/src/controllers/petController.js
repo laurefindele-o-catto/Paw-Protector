@@ -22,6 +22,92 @@ class PetController {
         this.petModel = new PetModel();
     }
 
+        // Returns an all-time medical record for a pet (print/share with vet)
+        getPetMedicalRecord = async (req, res) => {
+                try {
+                        const petId = parseInt(req.params.petId, 10);
+                        if (!petId) return res.status(400).json({ success: false, error: 'petId required' });
+
+                        await assertPetOwner(req.user.id, petId);
+
+                        const petRs = await db.query_executor(
+                            `SELECT id, owner_id, name, species, breed, sex, birthdate, weight_kg, avatar_url, is_neutered, notes, created_at, updated_at
+                             FROM pets WHERE id = $1 LIMIT 1`,
+                            [petId]
+                        );
+                        const pet = petRs?.rows?.[0] || null;
+                        if (!pet) return res.status(404).json({ success: false, error: 'Pet not found' });
+
+                        const metricsRs = await db.query_executor(
+                            `SELECT id, pet_id, measured_at, weight_kg, body_temp_c, heart_rate_bpm, respiration_rate_bpm,
+                                            gum_color, body_condition_score, coat_skin, appetite_state, water_intake_state,
+                                            urine_frequency, clump_size, stool_consistency, blood_in_stool, straining_to_pee, no_poop_48h, note
+                             FROM pet_health_metrics
+                             WHERE pet_id = $1
+                             ORDER BY measured_at ASC`,
+                            [petId]
+                        );
+
+                        const diseasesRs = await db.query_executor(
+                            `SELECT pd.*, vc.name AS clinic_name, vc.phone AS clinic_phone, vc.address AS clinic_address
+                             FROM pet_diseases pd
+                             LEFT JOIN vet_clinics vc ON vc.id = pd.clinic_id
+                             WHERE pd.pet_id = $1
+                             ORDER BY COALESCE(pd.diagnosed_on, pd.created_at) ASC`,
+                            [petId]
+                        );
+
+                        const vaccinationsRs = await db.query_executor(
+                            `SELECT v.*, vc.name AS clinic_name, vc.phone AS clinic_phone, vc.address AS clinic_address,
+                                            vt.name AS vet_name
+                             FROM vaccinations v
+                             LEFT JOIN vet_clinics vc ON vc.id = v.clinic_id
+                             LEFT JOIN vets vt ON vt.user_id = v.vet_user_id
+                             WHERE v.pet_id = $1
+                             ORDER BY COALESCE(v.administered_on, v.due_on, v.created_at) ASC`,
+                            [petId]
+                        );
+
+                        const dewormingsRs = await db.query_executor(
+                            `SELECT *
+                             FROM dewormings
+                             WHERE pet_id = $1
+                             ORDER BY COALESCE(administered_on, due_on, created_at) ASC`,
+                            [petId]
+                        );
+
+                        const apptRs = await db.query_executor(
+                            `SELECT a.*, vc.name AS clinic_name, vc.phone AS clinic_phone, vc.address AS clinic_address,
+                                            vt.name AS vet_name
+                             FROM appointments a
+                             LEFT JOIN vet_clinics vc ON vc.id = a.clinic_id
+                             LEFT JOIN vets vt ON vt.user_id = a.vet_user_id
+                             WHERE a.pet_id = $1
+                             ORDER BY COALESCE(a.starts_at, a.created_at) ASC`,
+                            [petId]
+                        );
+
+                        return res.status(200).json({
+                                success: true,
+                                record: {
+                                        pet,
+                                        metrics: metricsRs?.rows || [],
+                                        diseases: diseasesRs?.rows || [],
+                                        vaccinations: vaccinationsRs?.rows || [],
+                                        dewormings: dewormingsRs?.rows || [],
+                                        appointments: apptRs?.rows || [],
+                                }
+                        });
+                } catch (error) {
+                        const status = error?.status || 500;
+                        if (status !== 500) {
+                            return res.status(status).json({ success: false, error: error.message || 'Request failed' });
+                        }
+                        console.error('GetPetMedicalRecord error:', error);
+                        return res.status(500).json({ success: false, error: 'Internal server error' });
+                }
+        };
+
     // Creates a pet
     addPet = async (req, res) => {
         try {

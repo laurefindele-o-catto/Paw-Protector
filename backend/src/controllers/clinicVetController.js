@@ -1,5 +1,6 @@
 const ClinicVetModel = require('../models/clinicVetModel.js');
 const VerificationMailer = require("../utils/verificationMailer.js");
+const DB_Connection = require('../database/db.js');
 
 
 class ClinicVetController {
@@ -7,6 +8,36 @@ class ClinicVetController {
         this.model = new ClinicVetModel();
         this.mailer = new VerificationMailer();
     }
+
+    listNearbyClinics = async (req, res) => {
+        try {
+            const lat = Number(req.query.lat);
+            const lng = Number(req.query.lng);
+            const limit = Math.min(Math.max(Number(req.query.limit || 5), 1), 25);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                return res.status(400).json({ success: false, error: 'lat and lng are required' });
+            }
+
+            const db = new DB_Connection();
+            const sql = `
+              SELECT id, name, phone, email, address, latitude, longitude,
+                (6371 * acos(
+                  cos(radians($1)) * cos(radians(latitude)) *
+                  cos(radians(longitude) - radians($2)) +
+                  sin(radians($1)) * sin(radians(latitude))
+                )) AS distance_km
+              FROM vet_clinics
+              WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+              ORDER BY distance_km ASC
+              LIMIT $3;
+            `;
+            const rs = await db.query_executor(sql, [lat, lng, limit]);
+            return res.status(200).json({ success: true, clinics: rs.rows || [] });
+        } catch (error) {
+            console.error('listNearbyClinics error:', error);
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    };
 
     addClinic = async (req, res) => {
         try {

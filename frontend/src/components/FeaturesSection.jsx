@@ -12,7 +12,6 @@ export default function FeaturesSection() {
         justify-center
         items-center
         gap-2
-        py-2
         px-2
         border-b-0
         bg-transparent
@@ -23,7 +22,7 @@ export default function FeaturesSection() {
       "
       style={{ minHeight: "56px" }}
     >
-      <FeatureCard to="/paw-pal">🐾 {t("PawPal")}</FeatureCard>
+      <FeatureCard to="/guide">{t("Guide")}</FeatureCard>
       <FeatureCard to="/skinDiseaseDetection">{t("Disease Detection")}</FeatureCard>
       <FeatureCard to="/petcare">{t("Pet Care")}</FeatureCard>
       <FeatureCard to="/find-a-vet">{t("Find a Vet")}</FeatureCard>

@@ -1,368 +1,622 @@
-import React, { useEffect, useState } from "react";
-import { useLanguage } from "../context/LanguageContext";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
 import apiConfig from "../config/apiConfig";
-import { useNavigate } from "react-router-dom";
-import Header from '../components/Header'
-// import { CheckCircleIcon } from '@heroicons/react/24/solid'; // // If you use Heroicons, or use any SVG
+import { useLanguage } from "../context/LanguageContext";
+import { usePet } from "../context/PetContext";
+import { useAuth } from "../context/AuthContext";
+import { normalizeSpecies, VACCINE_ALL_OPTIONS_BY_SPECIES, VACCINE_CORE_BY_SPECIES } from "../constants/careCatalog";
 
 const VaccineAlert = () => {
-  const [pets, setPets] = useState([]);
-  const [selectedPet, setSelectedPet] = useState(null);
+  const { t } = useLanguage();
+  const { token } = useAuth();
+  const { pets, currentPetId, currentPet, selectPet } = usePet();
+
+  const petSpecies = normalizeSpecies(currentPet?.species);
+  const vaccineOptions = (petSpecies && VACCINE_ALL_OPTIONS_BY_SPECIES[petSpecies])
+    ? VACCINE_ALL_OPTIONS_BY_SPECIES[petSpecies]
+    : ["Rabies", "FVRCP", "DHPP", "FeLV", "Other"]; // fallback
+
   const [vaccinations, setVaccinations] = useState([]);
   const [dewormings, setDewormings] = useState([]);
-  const [newVaccineDate, setNewVaccineDate] = useState("");
-  const [newDewormDate, setNewDewormDate] = useState("");
-  const [vaccineName, setVaccineName] = useState("Rabies");
-  const [dewormProduct, setDewormProduct] = useState("");
-  const [savingVaccine, setSavingVaccine] = useState(false);
-  const [savingDeworm, setSavingDeworm] = useState(false);
-  const [successVaccine, setSuccessVaccine] = useState(false);
-  const [successDeworm, setSuccessDeworm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { t } = useLanguage();
-  const navigate = useNavigate();
+  const [tab, setTab] = useState("overview"); // overview | history | add
+  const [dueWindowDays, setDueWindowDays] = useState(30);
+  const [filterText, setFilterText] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
-    (async () => {
-      const token = localStorage.getItem("token");
+  // Add form
+  const [entryType, setEntryType] = useState("vaccine");
+  const [entryName, setEntryName] = useState("Rabies");
+  const [administeredOn, setAdministeredOn] = useState("");
+  const [dueOn, setDueOn] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const todayISO = new Date().toISOString().slice(0, 10);
+
+  const parseISO = (iso) => {
+    if (!iso) return null;
+    const d = new Date(String(iso).slice(0, 10));
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const toISO = (d) => {
+    const dt = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(dt.getTime())) return null;
+    return dt.toISOString().slice(0, 10);
+  };
+
+  const addDaysISO = (iso, days) => {
+    const base = parseISO(iso);
+    if (!base) return null;
+    const next = new Date(base);
+    next.setDate(next.getDate() + Number(days || 0));
+    return toISO(next);
+  };
+
+  const estimateDueOn = (type, administered) => {
+    if (!administered) return null;
+    const days = type === "deworm" ? 90 : 365;
+    return addDaysISO(administered, days);
+  };
+
+  const computeDueOnForRecord = (type, rec) => {
+    const rawDue = rec?.due_on ? String(rec.due_on).slice(0, 10) : null;
+    if (rawDue) return rawDue;
+    const admin = rec?.administered_on ? String(rec.administered_on).slice(0, 10) : null;
+    return estimateDueOn(type, admin);
+  };
+
+  const fetchRecords = useCallback(
+    async (petId) => {
+      if (!token || !petId) return;
+      setLoading(true);
+      setError("");
       try {
-        const res = await fetch(`${apiConfig.baseURL}/api/pets`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setPets(data.pets || []);
-        if (data.pets?.length) setSelectedPet(data.pets[0].id);
+        const headers = { Authorization: `Bearer ${token}` };
+        const [vacRes, dewRes] = await Promise.all([
+          fetch(`${apiConfig.baseURL}/api/care/vaccinations/${petId}`, { headers }),
+          fetch(`${apiConfig.baseURL}/api/care/dewormings/${petId}`, { headers }),
+        ]);
+
+        if (!vacRes.ok || !dewRes.ok) {
+          throw new Error("Failed to load records");
+        }
+
+        const vacData = await vacRes.json();
+        const dewData = await dewRes.json();
+
+        setVaccinations(Array.isArray(vacData) ? vacData : vacData?.vaccinations || []);
+        setDewormings(Array.isArray(dewData) ? dewData : dewData?.dewormings || []);
       } catch {
-        setPets([]);
+        setVaccinations([]);
+        setDewormings([]);
+        setError(t("Could not load vaccination/deworming data."));
+      } finally {
+        setLoading(false);
       }
-    })();
-  }, []);
+    },
+    [token, t]
+  );
 
   useEffect(() => {
-    if (!selectedPet) {
+    if (!currentPetId) {
       setVaccinations([]);
       setDewormings([]);
       return;
     }
-    (async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const vacRes = await fetch(`${apiConfig.baseURL}/api/care/vaccinations/${selectedPet}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const vacData = await vacRes.json();
-        setVaccinations(vacData.vaccinations || vacData || []);
-        const dewRes = await fetch(`${apiConfig.baseURL}/api/care/dewormings/${selectedPet}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const dewData = await dewRes.json();
-        setDewormings(dewData.dewormings || dewData || []);
-      } catch {
-        setVaccinations([]);
-        setDewormings([]);
-      }
-    })();
-  }, [selectedPet]);
+    fetchRecords(currentPetId);
+  }, [currentPetId, fetchRecords]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const classify = (due) => {
-    if (!due) return null;
-    if (due < today) return "overdue";
-    // mark upcoming if within next 30 days
-    const diff = (new Date(due) - new Date(today)) / (1000 * 60 * 60 * 24);
-    if (diff <= 30) return "due";
-    return null;
-  };
+  const actionItems = useMemo(() => {
+    const query = filterText.trim().toLowerCase();
+    const items = [];
 
-  const vaccineDueItems = vaccinations
-    .filter(v => classify(v.due_on))
-    .map(v => ({
-      type: "vaccine",
-      name: v.vaccine_name,
-      due_on: v.due_on,
-      status: classify(v.due_on)
-    }));
+    vaccinations.forEach((v) => {
+      const due = computeDueOnForRecord("vaccine", v);
+      if (!due) return;
+      const status = due < todayISO ? "overdue" : null;
+      const diff = (new Date(due) - new Date(todayISO)) / (1000 * 60 * 60 * 24);
+      const dueSoon = status ? null : diff <= Number(dueWindowDays || 30);
+      const finalStatus = status || (dueSoon ? "due" : null);
+      if (!finalStatus) return;
 
-  const dewormDueItems = dewormings
-    .filter(d => classify(d.due_on))
-    .map(d => ({
-      type: "deworm",
-      name: d.product_name || "Deworming",
-      due_on: d.due_on,
-      status: classify(d.due_on)
-    }));
+      const name = v.vaccine_name || "Vaccine";
+      if (query && !String(name).toLowerCase().includes(query)) return;
 
-  const overdue = [...vaccineDueItems, ...dewormDueItems].filter(i => i.status === "overdue")
-    .sort((a, b) => new Date(a.due_on) - new Date(b.due_on));
-  const dueSoon = [...vaccineDueItems, ...dewormDueItems].filter(i => i.status === "due")
-    .sort((a, b) => new Date(a.due_on) - new Date(b.due_on));
-
-  const handleAddVaccination = async () => {
-    if (!selectedPet || !vaccineName || !newVaccineDate) return;
-    setSavingVaccine(true);
-    setSuccessVaccine(false);
-    const token = localStorage.getItem("token");
-    await fetch(`${apiConfig.baseURL}/api/care/vaccinations`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pet_id: selectedPet,
-        vaccine_name: vaccineName,
-        administered_on: newVaccineDate,
-        notes: "Updated via alerts page"
-      })
+      items.push({
+        id: `vaccine:${v.id}`,
+        type: "vaccine",
+        name,
+        administered_on: v.administered_on ? String(v.administered_on).slice(0, 10) : null,
+        due_on: due,
+        status: finalStatus,
+        notes: v.notes || null,
+      });
     });
-    setNewVaccineDate("");
-    // refresh
-    const vacRes = await fetch(`${apiConfig.baseURL}/api/care/vaccinations/${selectedPet}`, {
-      headers: { Authorization: `Bearer ${token}` }
+
+    dewormings.forEach((d) => {
+      const due = computeDueOnForRecord("deworm", d);
+      if (!due) return;
+      const status = due < todayISO ? "overdue" : null;
+      const diff = (new Date(due) - new Date(todayISO)) / (1000 * 60 * 60 * 24);
+      const dueSoon = status ? null : diff <= Number(dueWindowDays || 30);
+      const finalStatus = status || (dueSoon ? "due" : null);
+      if (!finalStatus) return;
+
+      const name = d.product_name || "Deworming";
+      if (query && !String(name).toLowerCase().includes(query)) return;
+
+      items.push({
+        id: `deworm:${d.id}`,
+        type: "deworm",
+        name,
+        administered_on: d.administered_on ? String(d.administered_on).slice(0, 10) : null,
+        due_on: due,
+        status: finalStatus,
+        notes: d.notes || null,
+      });
     });
-    const vacData = await vacRes.json();
-    setVaccinations(vacData.vaccinations || vacData || []);
-    setSavingVaccine(false);
-    setSuccessVaccine(true);
-    setTimeout(() => setSuccessVaccine(false), 1800);
 
-    // Update localStorage summary
-    addVaccinationAndDeworming(
-      {
-        id: Date.now(),
-        vaccine_name: vaccineName,
-        administered_on: newVaccineDate,
-        due_on: newVaccineDate, // or logic to set due date
-        notes: "Updated via alerts page"
-      },
-      null // no deworming info
-    );
-  };
+    items.sort((a, b) => new Date(a.due_on) - new Date(b.due_on));
+    return items;
+  }, [vaccinations, dewormings, filterText, dueWindowDays, todayISO]);
 
-  const handleAddDeworming = async () => {
-    if (!selectedPet || !dewormProduct || !newDewormDate) return;
-    setSavingDeworm(true);
-    setSuccessDeworm(false);
-    const token = localStorage.getItem("token");
-    await fetch(`${apiConfig.baseURL}/api/care/dewormings`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pet_id: selectedPet,
-        product_name: dewormProduct,
-        administered_on: newDewormDate,
-        notes: "Updated via alerts page"
-      })
+  const overdue = actionItems.filter((i) => i.status === "overdue");
+  const dueSoon = actionItems.filter((i) => i.status === "due");
+  const nextItem = actionItems[0] || null;
+
+  const historyRows = useMemo(() => {
+    const rows = [];
+    vaccinations.forEach((v) => {
+      rows.push({
+        id: `vaccine:${v.id}`,
+        type: "Vaccine",
+        name: v.vaccine_name || "—",
+        administered_on: v.administered_on ? String(v.administered_on).slice(0, 10) : "—",
+        due_on: computeDueOnForRecord("vaccine", v) || "—",
+        notes: v.notes || "—",
+      });
     });
-    setNewDewormDate("");
-    const dewRes = await fetch(`${apiConfig.baseURL}/api/care/dewormings/${selectedPet}`, {
-      headers: { Authorization: `Bearer ${token}` }
+    dewormings.forEach((d) => {
+      rows.push({
+        id: `deworm:${d.id}`,
+        type: "Deworming",
+        name: d.product_name || "—",
+        administered_on: d.administered_on ? String(d.administered_on).slice(0, 10) : "—",
+        due_on: computeDueOnForRecord("deworm", d) || "—",
+        notes: d.notes || "—",
+      });
     });
-    const dewData = await dewRes.json();
-    setDewormings(dewData.dewormings || dewData || []);
-    setSavingDeworm(false);
-    setSuccessDeworm(true);
-    setTimeout(() => setSuccessDeworm(false), 1800);
+    rows.sort((a, b) => (a.due_on === "—" ? 1 : b.due_on === "—" ? -1 : new Date(a.due_on) - new Date(b.due_on)));
+    return rows;
+  }, [vaccinations, dewormings]);
 
-    // Update localStorage summary
-    addVaccinationAndDeworming(
-      null, // no vaccination info
-      {
-        id: Date.now(),
-        product_name: dewormProduct,
-        administered_on: newDewormDate,
-        due_on: newDewormDate, // or logic to set due date
-        notes: "Updated via alerts page"
-      }
-    );
-  };
+  const onSave = async () => {
+    if (!currentPetId || !token) return;
+    if (!entryName) return;
+    if (!administeredOn && !dueOn) return;
 
-  // Add a new vaccination and deworming to current_pet_summary in localStorage
-  function addVaccinationAndDeworming(newVaccine, newDeworm) {
-    const key = "current_pet_summary";
-    let summary = {};
+    setSaving(true);
+    setSaved(false);
+    setError("");
     try {
-      summary = JSON.parse(localStorage.getItem(key)) || {};
+      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+      if (entryType === "vaccine") {
+        await fetch(`${apiConfig.baseURL}${apiConfig.care.addVaccination}`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            pet_id: currentPetId,
+            vaccine_name: entryName,
+            administered_on: administeredOn || null,
+            due_on: dueOn || estimateDueOn("vaccine", administeredOn) || null,
+            notes: notes || null,
+          }),
+        });
+      } else {
+        await fetch(`${apiConfig.baseURL}${apiConfig.care.addDeworming}`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            pet_id: currentPetId,
+            product_name: entryName,
+            administered_on: administeredOn || null,
+            due_on: dueOn || estimateDueOn("deworm", administeredOn) || null,
+            notes: notes || null,
+          }),
+        });
+      }
+
+      await fetchRecords(currentPetId);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1600);
+      setNotes("");
+      setAdministeredOn("");
+      setDueOn("");
     } catch {
-      summary = {};
+      setError(t("Save failed. Please try again."));
+    } finally {
+      setSaving(false);
     }
+  };
 
-    // Vaccination
-    if (newVaccine) {
-      if (!summary.vaccinations) summary.vaccinations = { recent: [], nextDue: null };
-      summary.vaccinations.recent = Array.isArray(summary.vaccinations.recent)
-        ? [...summary.vaccinations.recent, newVaccine]
-        : [newVaccine];
-      summary.vaccinations.nextDue = newVaccine; // or logic to pick the soonest due
-    }
-
-    // Deworming
-    if (newDeworm) {
-      if (!summary.dewormings) summary.dewormings = { recent: [], nextDue: null };
-      summary.dewormings.recent = Array.isArray(summary.dewormings.recent)
-        ? [...summary.dewormings.recent, newDeworm]
-        : [newDeworm];
-      summary.dewormings.nextDue = newDeworm; // or logic to pick the soonest due
-    }
-
-    localStorage.setItem(key, JSON.stringify(summary));
-  }
+  const statusPill = (status) => {
+    if (status === "overdue") return "bg-red-50 text-red-700 border-red-200";
+    if (status === "due") return "bg-amber-50 text-amber-700 border-amber-200";
+    return "bg-slate-50 text-slate-700 border-slate-200";
+  };
 
   return (
     <>
-      <Header/>
+      <Header />
       <main id="main-content" role="main" tabIndex="-1">
-      <section className="min-h-screen bg-white text-slate-900 px-6 py-8 mt-32">
-        <div className="max-w-5xl mx-auto flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">{t("Vaccine & Deworming Alerts")}</h1>
+        <div className="min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden mt-28">
+          <div className="mx-auto max-w-6xl px-4 pt-8">
+            <div className="bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow-lg p-6 md:p-8">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <div className="text-xs uppercase tracking-widest text-slate-500">{t("Vaccination Alerts")}</div>
+                  <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                    {t("Vaccination & Deworming")}
+                  </h1>
+                  <p className="mt-1 text-slate-600">
+                    {currentPet?.name
+                      ? t("Alerts for") + ` ${currentPet.name}`
+                      : t("Select a pet to see due items.")}
+                  </p>
+                </div>
 
-        </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="min-w-60">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Pet")}</label>
+                    <select
+                      value={currentPetId || ""}
+                      onChange={(e) => selectPet(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white shadow-sm text-sm"
+                    >
+                      {(pets || []).map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.species})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-        <div className="max-w-5xl mx-auto mb-6">
-          <label className="block text-sm font-medium mb-1">{t("Select Pet")}</label>
-          <select
-            value={selectedPet || ""}
-            onChange={(e) => setSelectedPet(Number(e.target.value))}
-            className="w-full md:w-1/3 px-3 py-2 border border-slate-300 rounded-md text-sm"
-          >
-            {pets.map(p => (
-              <option key={p.id} value={p.id}>{p.name} ({p.species})</option>
-            ))}
-          </select>
-        </div>
+                  <div className="min-w-44">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Due window")}</label>
+                    <select
+                      value={dueWindowDays}
+                      onChange={(e) => setDueWindowDays(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white shadow-sm text-sm"
+                    >
+                      <option value={7}>{t("Next 7 days")}</option>
+                      <option value={14}>{t("Next 14 days")}</option>
+                      <option value={30}>{t("Next 30 days")}</option>
+                      <option value={60}>{t("Next 60 days")}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
-          <div className="border border-slate-200 rounded-md p-4" role="region" aria-live="assertive" aria-label="Overdue vaccinations">
-            <h2 className="text-sm font-semibold mb-3">{t("Overdue")}</h2>
-            {overdue.length ? (
-              <ul className="space-y-2 text-sm">
-                {overdue.map((o, i) => (
-                  <li key={i} className="flex justify-between items-center">
-                    <span className="text-red-700 font-medium">{t(o.name)}</span>
-                    <span className="text-red-600">{t("Due")} {o.due_on}</span>
-                  </li>
+              {/* Tabs */}
+              <div className="mt-6 flex flex-wrap gap-2">
+                {[
+                  { k: "overview", label: t("Overview") },
+                  { k: "history", label: t("History") },
+                  { k: "add", label: t("Add / Schedule") },
+                ].map((x) => (
+                  <button
+                    key={x.k}
+                    type="button"
+                    onClick={() => setTab(x.k)}
+                    className={
+                      "px-4 py-2 rounded-full text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2 " +
+                      (tab === x.k
+                        ? "bg-[#0f172a] text-[#edfdfd] shadow"
+                        : "bg-white border border-slate-200 text-[#0f172a] hover:bg-[#fdd142]/20")
+                    }
+                  >
+                    {x.label}
+                  </button>
                 ))}
-              </ul>
-            ) : <p className="text-xs text-slate-500">{t("No overdue items.")}</p>}
-          </div>
-          <div className="border border-slate-200 rounded-md p-4" role="region" aria-live="polite" aria-label="Upcoming vaccinations">
-            <h2 className="text-sm font-semibold mb-3">{t("Due Soon (≤30d)")}</h2>
-              {dueSoon.length ? (
-                <ul className="space-y-2 text-sm">
-                  {dueSoon.map((d, i) => (
-                    <li key={i} className="flex justify-between items-center">
-                      <span className="text-amber-700 font-medium">{t(d.name)}</span>
-                      <span className="text-amber-600">{t("Due")} {d.due_on}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="text-xs text-slate-500">{t("No upcoming items in next 30 days.")}</p>}
-          </div>
-        </div>
+              </div>
 
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mt-8">
-          <div className="border border-slate-200 rounded-md p-4">
-            <h3 className="text-sm font-semibold mb-3">{t("Add Vaccination Dose")}</h3>
-            <label className="block text-xs mb-1">{t("Vaccine Name")}</label>
-            <select
-              value={vaccineName}
-              onChange={(e) => setVaccineName(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border border-slate-300 rounded-md text-sm"
-            >
-              <option>Rabies</option>
-              <option>Flu</option>
-              <option>FVRCP</option>
-              <option>FeLV</option>
-              <option>Other</option>
-            </select>
-            <label className="block text-xs mb-1">{t("Administered On")}</label>
-            <input
-              type="date"
-              value={newVaccineDate}
-              onChange={(e) => setNewVaccineDate(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border border-slate-300 rounded-md text-sm"
-            />
-            <button
-              onClick={handleAddVaccination}
-              disabled={!newVaccineDate || savingVaccine}
-              className="w-full px-4 py-2 rounded-md bg-[#0f172a] text-white text-sm disabled:opacity-50 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
-            >
-              {savingVaccine ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none"/>
-                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  {t("Saving...")}
-                </span>
-              ) : successVaccine ? (
-                <span className="flex items-center gap-2 text-emerald-200">
-                  {/* <CheckCircleIcon className="h-5 w-5" /> */}
-                  {t("Saved!")}
-                </span>
-              ) : (
-                t("Save")
+              {error && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
               )}
-            </button>
-          </div>
 
-          <div className="border border-slate-200 rounded-md p-4">
-            <h3 className="text-sm font-semibold mb-3">{t("Add Deworming Dose")}</h3>
-            <label className="block text-xs mb-1">{t("Product")}</label>
-            <select
-              value={dewormProduct}
-              onChange={(e) => setDewormProduct(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border border-slate-300 rounded-md text-sm"
-            >
-              <option value="">{t("-- Choose --")}</option>
-              <option>Albendazole</option>
-              <option>Fenbendazole</option>
-              <option>Helminticide-L</option>
-              <option>Drontal</option>
-              <option>Other</option>
-            </select>
-            <label className="block text-xs mb-1">{t("Administered On")}</label>
-            <input
-              type="date"
-              value={newDewormDate}
-              onChange={(e) => setNewDewormDate(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border border-slate-300 rounded-md text-sm"
-            />
-            <button
-              onClick={handleAddDeworming}
-              disabled={!dewormProduct || !newDewormDate || savingDeworm}
-              className="w-full px-4 py-2 rounded-md bg-[#0f172a] text-white text-sm disabled:opacity-50 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
-            >
-              {savingDeworm ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none"/>
-                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  {t("Saving...")}
-                </span>
-              ) : successDeworm ? (
-                <span className="flex items-center gap-2 text-emerald-200">
-                  {/* <CheckCircleIcon className="h-5 w-5" /> */}
-                  {t("Saved!")}
-                </span>
-              ) : (
-                t("Save")
+              {loading && (
+                <div className="mt-4 text-sm text-slate-600">{t("Loading...")}</div>
               )}
-            </button>
+
+              {/* Overview */}
+              {tab === "overview" && (
+                <div className="mt-6 grid gap-6">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="bg-white/90 border border-white rounded-2xl shadow p-5">
+                      <div className="text-xs uppercase tracking-widest text-slate-500">{t("Overdue")}</div>
+                      <div className="mt-1 text-3xl font-extrabold text-red-700">{overdue.length}</div>
+                      <div className="mt-1 text-sm text-slate-600">{t("Items past due date")}</div>
+                    </div>
+                    <div className="bg-white/90 border border-white rounded-2xl shadow p-5">
+                      <div className="text-xs uppercase tracking-widest text-slate-500">{t("Due Soon")}</div>
+                      <div className="mt-1 text-3xl font-extrabold text-amber-700">{dueSoon.length}</div>
+                      <div className="mt-1 text-sm text-slate-600">{t("Within selected window")}</div>
+                    </div>
+                    <div className="bg-white/90 border border-white rounded-2xl shadow p-5">
+                      <div className="text-xs uppercase tracking-widest text-slate-500">{t("Next")}</div>
+                      {nextItem ? (
+                        <div className="mt-2">
+                          <div className="font-bold">{t(nextItem.name)}</div>
+                          <div className="text-sm text-slate-600">{t("Due")} {nextItem.due_on}</div>
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-sm text-slate-600">{t("No upcoming alerts.")}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <div className="text-lg font-bold">{t("Action items")}</div>
+                      <div className="text-sm text-slate-600">{t("Click an item for details.")}</div>
+                    </div>
+                    <input
+                      value={filterText}
+                      onChange={(e) => setFilterText(e.target.value)}
+                      placeholder={t("Filter by name")}
+                      className="w-full sm:w-[280px] px-4 py-2 rounded-full border border-slate-200 bg-white shadow-sm text-sm"
+                    />
+                  </div>
+
+                  <div className="grid gap-3">
+                    {actionItems.length ? (
+                      actionItems.map((it) => {
+                        const open = expandedId === it.id;
+                        const badge = it.type === "vaccine" ? t("Vaccine") : t("Deworming");
+                        return (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => setExpandedId(open ? null : it.id)}
+                            className="text-left bg-white/90 border border-white rounded-2xl shadow p-5 hover:shadow-lg transition focus:outline-none focus:ring-4 focus:ring-[#fdd142]/60 focus:ring-offset-2"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold ${statusPill(it.status)}`}>
+                                    {it.status === "overdue" ? t("Overdue") : t("Due soon")}
+                                  </span>
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+                                    {badge}
+                                  </span>
+                                </div>
+                                <div className="mt-2 font-bold text-slate-900">{t(it.name)}</div>
+                                <div className="text-sm text-slate-600">{t("Due")} {it.due_on}</div>
+                              </div>
+                              <span className="text-slate-400 text-lg" aria-hidden="true">
+                                {open ? "–" : "+"}
+                              </span>
+                            </div>
+
+                            {open && (
+                              <div className="mt-3 pt-3 border-t border-slate-100 text-sm text-slate-700 grid gap-1">
+                                <div>
+                                  <span className="text-slate-500">{t("Last administered")}:</span>{" "}
+                                  <span className="font-semibold">{it.administered_on || t("Unknown")}</span>
+                                </div>
+                                {it.notes && (
+                                  <div>
+                                    <span className="text-slate-500">{t("Notes")}:</span>{" "}
+                                    <span className="font-semibold">{t(it.notes)}</span>
+                                  </div>
+                                )}
+                                <div className="text-xs text-slate-500 mt-1">
+                                  {t("If due date is missing in older records, this page estimates next due as 1 year for vaccines and 3 months for deworming.")}
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="rounded-2xl border border-slate-100 bg-white/90 p-5 text-sm text-slate-600">
+                        {t("No items match your filters.")}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* History */}
+              {tab === "history" && (
+                <div className="mt-6">
+                  <div className="flex items-end justify-between gap-4 flex-wrap">
+                    <div>
+                      <div className="text-lg font-bold">{t("History")}</div>
+                      <div className="text-sm text-slate-600">{t("Vaccines and deworming records (with due dates).")}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100 bg-white/90 shadow-sm">
+                    <table className="min-w-[720px] w-full text-left">
+                      <thead className="bg-[#fffef7]">
+                        <tr>
+                          {[t("Type"), t("Name"), t("Administered"), t("Due"), t("Notes")].map((h) => (
+                            <th key={h} className="px-4 py-3 text-xs uppercase tracking-widest text-slate-600">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historyRows.map((r, idx) => (
+                          <tr key={r.id} className={idx % 2 ? "bg-white" : "bg-slate-50/60"}>
+                            <td className="px-4 py-3 text-sm text-slate-800">{t(r.type)}</td>
+                            <td className="px-4 py-3 text-sm text-slate-800 font-semibold">{t(r.name)}</td>
+                            <td className="px-4 py-3 text-sm text-slate-800">{r.administered_on}</td>
+                            <td className="px-4 py-3 text-sm text-slate-800">{r.due_on}</td>
+                            <td className="px-4 py-3 text-sm text-slate-800">{t(r.notes)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Add */}
+              {tab === "add" && (
+                <div className="mt-6 grid gap-6">
+                  <div className="bg-white/90 border border-white rounded-2xl shadow p-6">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div>
+                        <div className="text-lg font-bold">{t("Add / Schedule")}</div>
+                        <div className="text-sm text-slate-600">{t("Record a dose or set a due date.")}</div>
+                      </div>
+                      {saved && (
+                        <div className="px-3 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold">
+                          {t("Saved")}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Type")}</label>
+                        <select
+                          value={entryType}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setEntryType(v);
+                            setEntryName(v === "deworm" ? "Albendazole" : "Rabies");
+                          }}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white shadow-sm text-sm"
+                        >
+                          <option value="vaccine">{t("Vaccine")}</option>
+                          <option value="deworm">{t("Deworming")}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Name")}</label>
+                        <select
+                          value={entryName}
+                          onChange={(e) => setEntryName(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white shadow-sm text-sm"
+                        >
+                          {entryType === "vaccine" ? (
+                            <>
+                              {vaccineOptions.map((v) => (
+                                <option key={v} value={v}>{v}</option>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              <option>Albendazole</option>
+                              <option>Fenbendazole</option>
+                              <option>Drontal</option>
+                              <option>Other</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Administered on (optional)")}</label>
+                        <input
+                          type="date"
+                          value={administeredOn}
+                          onChange={(e) => setAdministeredOn(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white shadow-sm text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between gap-3">
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Due on (optional)")}</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const computed = estimateDueOn(entryType === "deworm" ? "deworm" : "vaccine", administeredOn);
+                              if (computed) setDueOn(computed);
+                            }}
+                            className="text-xs font-semibold text-[#0f172a] hover:underline"
+                            aria-label={t("Auto-calculate due date")}
+                          >
+                            {t("Auto-calc")}
+                          </button>
+                        </div>
+                        <input
+                          type="date"
+                          value={dueOn}
+                          onChange={(e) => setDueOn(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white shadow-sm text-sm"
+                        />
+                        <div className="mt-1 text-[11px] text-slate-500">
+                          {t("If you leave Due empty, we estimate 1 year for vaccines and 3 months for deworming.")}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Notes (optional)")}</label>
+                        <textarea
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          className="w-full min-h-[88px] px-3 py-2 rounded-2xl border border-slate-200 bg-white shadow-sm text-sm"
+                          placeholder={t("e.g., given at clinic, batch number, side effects")}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={onSave}
+                        disabled={saving || !currentPetId || (!administeredOn && !dueOn) || !entryName}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0f172a] text-[#edfdfd] px-5 py-3 text-sm font-semibold shadow hover:bg-slate-900 transition disabled:opacity-50 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
+                      >
+                        {saving ? t("Saving...") : t("Save")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdministeredOn("");
+                          setDueOn("");
+                          setNotes("");
+                        }}
+                        className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold shadow-sm hover:shadow transition focus:outline-none focus:ring-4 focus:ring-[#fdd142]/60 focus:ring-offset-2"
+                      >
+                        {t("Clear")}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/90 border border-white rounded-2xl shadow p-6">
+                    <div className="text-sm font-bold">{t("Recommended core vaccines")}</div>
+                    <ul className="mt-3 list-disc list-inside text-sm text-slate-700 space-y-1">
+                      {(petSpecies && VACCINE_CORE_BY_SPECIES[petSpecies]
+                        ? VACCINE_CORE_BY_SPECIES[petSpecies]
+                        : ["Rabies", "FVRCP", "DHPP", "FeLV"]) // fallback
+                        .map((v) => (
+                          <li key={v}>{v}</li>
+                        ))}
+                    </ul>
+                    <p className="mt-3 text-xs text-slate-500">{t("Always confirm schedules and booster frequency with your veterinarian.")}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        <div className="max-w-5xl mx-auto mt-10 border border-slate-200 rounded-md p-4">
-          <h3 className="text-sm font-semibold mb-3">{t("Recommended Core Vaccines")}</h3>
-          <ul className="list-disc list-inside text-xs text-slate-700 space-y-1">
-            <li>{t("Rabies – follow local law")}</li>
-            <li>{t("FVRCP – kitten series then q3y")}</li>
-            <li>{t("FeLV – if outdoor or multi-cat risk")}</li>
-          </ul>
-          <p className="mt-3 text-[11px] text-slate-500">
-            {t("Always confirm schedule with your veterinarian.")}
-          </p>
-        </div>
-    </section>
-    </main>
+      </main>
     </>
   );
 };

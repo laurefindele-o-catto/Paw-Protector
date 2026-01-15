@@ -49,6 +49,25 @@ router.get('/pets/:petId/summary', authenticateToken.authenticateToken, petContr
 
 /**
  * @openapi
+ * /api/pets/{petId}/medical-record:
+ *   get:
+ *     tags: [Pet]
+ *     summary: Get pet medical record (all-time) for printing/sharing with vets
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: petId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Medical record
+ */
+router.get('/pets/:petId/medical-record', authenticateToken.authenticateToken, petController.getPetMedicalRecord);
+
+/**
+ * @openapi
  * /api/pets:
  *   post:
  *     tags: [Pet]
