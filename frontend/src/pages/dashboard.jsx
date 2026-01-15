@@ -524,7 +524,7 @@ function Dashboard() {
                   </label>
                   <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                     <input type="checkbox" checked={healthForm.no_poop_48h} onChange={onHealthBool('no_poop_48h')} />
-                    No poop > 48h
+                    No poop 48h
                   </label>
                 </div>
               </div>

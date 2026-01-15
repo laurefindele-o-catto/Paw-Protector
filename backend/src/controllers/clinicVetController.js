@@ -117,6 +117,20 @@ class ClinicVetController {
         }
     }
 
+    getVet = async (req, res) => {
+        try {
+            const id = req.params.user_id;
+            if (!id) return res.status(400).json({ success: false, error: 'user_id required' });
+
+            const result = await this.model.getVet(id);
+            if (!result) return res.status(404).json({ success: false, error: 'Vet not found' });
+
+            return res.status(200).json({ success: true, vet: result });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    }
+
     addReview = async (req, res) => {
         try {
             const data = req.body;

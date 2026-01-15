@@ -41,6 +41,56 @@ class ClinicVetModel {
         }
     };
 
+    getVet = async (id) => {
+        try {
+            const user_id = Number(id);
+            const query = `
+                SELECT v.*, c.* FROM vets v
+                LEFT JOIN vet_clinics c ON v.clinic_id = c.id
+                WHERE v.user_id = $1;
+            `;
+            const params = [user_id];
+            const result = await this.db.query_executor(query, params);
+            if (!result.rows || result.rows.length === 0) return null;
+            
+            const vet = result.rows[0];
+            let clinic = null;
+            if (vet.clinic_id) {
+                // Extract clinic columns (they have the same names as vets columns, so we need to be careful)
+                clinic = {
+                    id: vet.id,
+                    name: vet.name,
+                    phone: vet.phone,
+                    email: vet.email,
+                    address: vet.address,
+                    latitude: vet.latitude,
+                    longitude: vet.longitude,
+                    hours: vet.hours,
+                    is_verified: vet.is_verified
+                };
+            }
+            
+            return {
+                id: vet.id,
+                user_id: vet.user_id,
+                name: vet.name,
+                clinic_id: vet.clinic_id,
+                license_number: vet.license_number,
+                license_issuer: vet.license_issuer,
+                license_valid_until: vet.license_valid_until,
+                specialization: vet.specialization,
+                verified: vet.verified,
+                address: vet.address,
+                latitude: vet.latitude,
+                longitude: vet.longitude,
+                clinic: clinic
+            };
+        } catch (error) {
+            console.log(`Vet fetch failed: ${error.message}`);
+            return null;
+        }
+    };
+
     updateVet = async (id, data) => {
         try {
             const user_id = Number(id);

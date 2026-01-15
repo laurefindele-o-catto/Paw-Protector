@@ -76,6 +76,19 @@ router.post('/vets', authenticateToken.authenticateToken, controller.addVet);
 /**
  * @openapi
  * /api/vets/{user_id}:
+ *   get:
+ *     tags: [Clinic/Vet]
+ *     summary: Get a vet profile
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Success
  *   patch:
  *     tags: [Clinic/Vet]
  *     summary: Update a vet profile
@@ -96,6 +109,7 @@ router.post('/vets', authenticateToken.authenticateToken, controller.addVet);
  *       200:
  *         description: Updated
  */
+router.get('/vets/:user_id', authenticateToken.authenticateToken, controller.getVet);
 router.patch('/vets/:user_id', authenticateToken.authenticateToken, controller.updateVet);
 
 /**
