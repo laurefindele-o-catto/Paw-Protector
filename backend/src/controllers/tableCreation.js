@@ -22,6 +22,9 @@ class CreateTables {
             // Pets next (FK for many tables)
             await this.tables.create_pets_table();
 
+            // Vector + RAG tables (after users/pets exist for FK)
+            await this.tables.ensure_pgvector_and_rag_documents();
+
             // Vet profiles (depends on users + clinics)
             await this.tables.create_vets_table();
 

@@ -2,7 +2,7 @@ Pet First Aid
 
 Bleeding
 1. Keep your pet calm by speaking gently and approaching quietly. 2. With clean hands, explore your pet to identify the source of the bleeding. Take care; an animal in pain may bite. 3. Using a clean towel or bandage, apply firm pressure on the wound. 4. If the bleeding doesn’t stop or your pet remains unwell, contact your vet for advice or take your pet directly to your local vet.
-
+ 
 Seizure
 If your pet is moving their paws randomly and doesn’t respond when you call them, they may be having a seizure. 1. Call your pet’s name and see if they respond. Don’t hold them. Even the mildest of pets could seriously injure you as you try to comfort them. 2. Clear the area around your pet so they don’t hurt themselves. 3. To provide information for the vet, film the seizure and time its duration. 4. If the seizure lasts longer than two minutes, your pet needs to see a vet as soon as possible. Be very careful when moving your pet. If you’re concerned, call your vet for advice. 5. If the seizure ends within two minutes, try to keep your pet calm. You should still call your vet for advice. 6. Once the seizure is over, your pet may move around but they may be disorientated. Watch them to ensure they are safe.
 

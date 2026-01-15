@@ -51,31 +51,39 @@ const getVectorStore = async (type = 'kb') => {
       return _storeKB;
   }
 };
-
-const similaritySearchRaw = async({user_id, query, topK = 6, pet_id=null, doc_types=[]})=>{
-  if(!user_id || !query) return [];
+// Split retrieval so callers can fetch pet-specific vs guide refs independently.
+// Returns: { personal: [...], kb: [...] }
+async function similaritySearchDualRaw({
+  user_id,
+  query,
+  pet_id = null,
+  personal_doc_types = [],
+  kb_doc_types = [],
+  topKPersonal = 6,
+  topKKB = 6
+}) {
+  if (!user_id || !query) return { personal: [], kb: [] };
   const embeddings = await getEmbeddings();
   const qvec = await embeddings.embedQuery(query);
   const qvecText = `[${qvec.join(',')}]`;
 
   const db = new DB_Connection();
-  
-  // --- QUERY 1: Personalized Data (User Chats, Health Records) from PERSONAL TABLE ---
+
+  // --- PERSONAL TABLE ---
   let paramsUser = [qvecText, String(user_id)];
   let filtersUser = [`(metadata->>'user_id') = $2`];
   let iUser = 3;
-  // console.log(paramsUser);
 
-  if(pet_id != null){
+  if (pet_id != null) {
     filtersUser.push(`((metadata->>'pet_id') IS NULL OR (metadata->>'pet_id') = $${iUser})`);
     paramsUser.push(String(pet_id));
     iUser++;
   }
 
-  if(Array.isArray(doc_types) && doc_types.length){
-    const placeholders = doc_types.map(()=> `$${iUser++}`).join(', ');
+  if (Array.isArray(personal_doc_types) && personal_doc_types.length) {
+    const placeholders = personal_doc_types.map(() => `$${iUser++}`).join(', ');
     filtersUser.push(`(metadata->>'doc_type') IN (${placeholders})`);
-    paramsUser.push(...doc_types.map(String));
+    paramsUser.push(...personal_doc_types.map(String));
   }
 
   const sqlUser = `
@@ -83,18 +91,18 @@ const similaritySearchRaw = async({user_id, query, topK = 6, pet_id=null, doc_ty
     FROM ${TABLE_NAME_PERSONAL}
     WHERE ${filtersUser.join(' AND ')}
     ORDER BY embedding <=> $1::vector ASC
-    LIMIT ${topK};
+    LIMIT ${Number(topKPersonal) || 6};
   `;
 
-  // --- QUERY 2: Knowledge Base (Global Guidelines) from KB TABLE ---
+  // --- KB TABLE ---
   let paramsKB = [qvecText];
   let filtersKB = [`(metadata->>'user_id') = '0'`];
   let iKB = 2;
 
-  if(Array.isArray(doc_types) && doc_types.length){
-    const placeholders = doc_types.map(()=> `$${iKB++}`).join(', ');
+  if (Array.isArray(kb_doc_types) && kb_doc_types.length) {
+    const placeholders = kb_doc_types.map(() => `$${iKB++}`).join(', ');
     filtersKB.push(`(metadata->>'doc_type') IN (${placeholders})`);
-    paramsKB.push(...doc_types.map(String));
+    paramsKB.push(...kb_doc_types.map(String));
   }
 
   const sqlKB = `
@@ -102,27 +110,45 @@ const similaritySearchRaw = async({user_id, query, topK = 6, pet_id=null, doc_ty
     FROM ${TABLE_NAME_KB}
     WHERE ${filtersKB.join(' AND ')}
     ORDER BY embedding <=> $1::vector ASC
-    LIMIT ${topK};
+    LIMIT ${Number(topKKB) || 6};
   `;
 
   const [resUser, resKB] = await Promise.all([
-    db.query_executor(sqlUser, paramsUser).catch(e => { console.error("RAG User Search Error:", e); return {rows:[]}; }),
-    db.query_executor(sqlKB, paramsKB).catch(e => { console.error("RAG KB Search Error:", e); return {rows:[]}; })
+    db.query_executor(sqlUser, paramsUser).catch(e => { console.error('RAG Personal Search Error:', e); return { rows: [] }; }),
+    db.query_executor(sqlKB, paramsKB).catch(e => { console.error('RAG KB Search Error:', e); return { rows: [] }; })
   ]);
 
-  const userDocs = (resUser?.rows || []).map(x => ({
+  const personal = (resUser?.rows || []).map(x => ({
     id: x.id,
     content: x.content,
     metadata: x.metadata,
     score: Number(x.score)
   }));
 
-  const knowledgeBaseDocs = (resKB?.rows || []).map(x => ({
+  const kb = (resKB?.rows || []).map(x => ({
     id: x.id,
     content: x.content,
     metadata: x.metadata,
     score: Number(x.score)
   }));
+
+  return { personal, kb };
+}
+
+const similaritySearchRaw = async({user_id, query, topK = 6, pet_id=null, doc_types=[]})=>{
+  if(!user_id || !query) return [];
+  const out = await similaritySearchDualRaw({
+    user_id,
+    query,
+    pet_id,
+    personal_doc_types: Array.isArray(doc_types) ? doc_types : [],
+    kb_doc_types: Array.isArray(doc_types) ? doc_types : [],
+    topKPersonal: topK,
+    topKKB: topK
+  });
+
+  const userDocs = out.personal || [];
+  const knowledgeBaseDocs = out.kb || [];
   
   console.log(`RAG Retrieval: ${userDocs.length} User docs, ${knowledgeBaseDocs.length} KB docs`);
 
@@ -166,4 +192,4 @@ const similaritySearchRaw = async({user_id, query, topK = 6, pet_id=null, doc_ty
   return result.slice(0, topK);
 }
 
-module.exports = { getVectorStore, similaritySearchRaw, TABLE_NAME_KB, TABLE_NAME_PERSONAL };
+module.exports = { getVectorStore, similaritySearchRaw, similaritySearchDualRaw, TABLE_NAME_KB, TABLE_NAME_PERSONAL };

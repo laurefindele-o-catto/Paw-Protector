@@ -3,7 +3,9 @@
 const CareModel = require('../models/careModel.js');
 const DB_Connection = require('../database/db.js');
 const { upsertDocs } = require('../rag/service.js');
+const { ChatOpenAI } = require('@langchain/openai');
 const { getCareAgent } = require('../rag/agentGraph.js');
+const { similaritySearchDualRaw } = require('../rag/vectorStore.js');
 const db = new DB_Connection();
 
 function startOfWeek(date = new Date()) {
@@ -78,6 +80,24 @@ function ensureDailyReminders(plan) {
   return { ...plan, days };
 }
 
+function extractFirstJsonObject(text) {
+  if (!text) return null;
+  const s = String(text);
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  return s.slice(start, end + 1);
+}
+
+function datesForWeek(week_start) {
+  const base = new Date(`${week_start}T00:00:00.000Z`);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base);
+    d.setUTCDate(d.getUTCDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+}
+
 class CareController {
   constructor() {
     this.careModel = new CareModel();
@@ -106,49 +126,201 @@ class CareController {
 
       const week_start = startOfWeek(now);
 
-      const petRow = await db.query_executor(`SELECT name FROM pets WHERE id=$1`, [Number(pet_id)]);
-      const petName = petRow.rows?.[0]?.name || '';
+      const petRs = await db.query_executor(
+        `SELECT id, name, species, breed, sex, birthdate, weight_kg, notes, is_neutered
+         FROM pets WHERE id=$1 AND owner_id=$2 LIMIT 1`,
+        [Number(pet_id), Number(userId)]
+      );
+      const pet = petRs.rows?.[0] || null;
+      const petName = pet?.name || '';
 
-      const agent = getCareAgent();
-      const configurable = {
-        thread_id: `care-${userId}-${pet_id}-${week_start}`,
+      // Ensure there's at least one stable "pet_summary" doc in the personal RAG table.
+      try {
+        if (pet) {
+          await upsertDocs([
+            {
+              doc_id: `pet:${pet.id}:summary`,
+              user_id: userId,
+              pet_id: Number(pet.id),
+              doc_type: 'pet_summary',
+              content: `Pet ${pet.name} (${pet.species || 'unknown'}), sex=${pet.sex || '—'}, breed=${pet.breed || '—'}, birthdate=${pet.birthdate || '—'}, weight=${pet.weight_kg ?? '—'}kg, neutered=${pet.is_neutered ? 'yes' : 'no'}. Notes: ${pet.notes || '—'}.`
+            }
+          ]);
+        }
+      } catch {}
+
+      // Fetch two contexts from two RAG tables:
+      // - personal: pet info/current health/diseases/etc
+      // - kb: care guide references only
+      const personalDocTypes = [
+        'pet_summary',
+        'metric',
+        'disease',
+        'vaccination',
+        'deworming',
+        'vaccine_timeline',
+        'life_stage',
+        'care_summary',
+        'care_plan',
+        'chat'
+      ];
+      const kbDocTypes = ['care_guide'];
+
+      const retrievalQuery = [
+        `Weekly care plan for pet ${petName || pet_id}`,
+        `Week start ${week_start}`,
+        'diet hydration feeding routine grooming litter play enrichment',
+        'diseases symptoms monitoring vaccinations deworming',
+        'safety toxic foods household hazards'
+      ].join('. ');
+
+      const retrieved = await similaritySearchDualRaw({
         user_id: userId,
+        query: retrievalQuery,
         pet_id: Number(pet_id),
-        doc_types: 'metric,disease,vaccination,deworming,vision,chat,care_plan,care_summary',
-        topK: 8
+        personal_doc_types: personalDocTypes,
+        kb_doc_types: kbDocTypes,
+        topKPersonal: 10,
+        topKKB: 8
+      });
+
+      const formatHit = (h, idx) => {
+        const dt = h?.metadata?.doc_type || 'doc';
+        const did = h?.metadata?.doc_id || '';
+        return `#${idx + 1} (${dt}) ${did}\n${String(h?.content || '').slice(0, 1200)}`.trim();
       };
-      const ask = `
-        Create weekly care JSON for pet_id=${pet_id}.
-        Week start=${week_start}.
-        Summary: simple Bangla + light English; max 2–3 sentences + optional trend; no raw field labels.
-        Plan: distribute small Nutrition/Hydration + Grooming/Environment/Behavior tasks; vary days; each slot max 3–4 bullets.
-        Health/Medicine: only gentle reminders if due/overdue; no prescriptions.
-        EVERY day must have 1–2 key "reminders".
-        JSON only per schema.
-      `;
-      const result = await agent.invoke({ messages: [{ role: 'user', content: ask }] }, { configurable });
-      const raw = String(result?.messages?.at?.(-1)?.content || '').trim();
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch {
-        return res.status(500).json({ success: false, error: 'Agent did not return valid JSON' });
+
+      const personalHits = retrieved.personal || [];
+      const guideHits = retrieved.kb || [];
+
+      const personalContext = personalHits.map(formatHit).join('\n\n').slice(0, 8000);
+      const guideContext = guideHits.map(formatHit).join('\n\n').slice(0, 8000);
+
+      const sources = {
+        personal: personalHits.map(h => ({
+          id: h.id,
+          doc_id: h?.metadata?.doc_id || null,
+          doc_type: h?.metadata?.doc_type || null,
+          score: typeof h.score === 'number' ? h.score : null,
+          snippet: String(h?.content || '').slice(0, 280)
+        })),
+        guide: guideHits.map(h => ({
+          id: h.id,
+          doc_id: h?.metadata?.doc_id || null,
+          doc_type: h?.metadata?.doc_type || null,
+          score: typeof h.score === 'number' ? h.score : null,
+          snippet: String(h?.content || '').slice(0, 280)
+        }))
+      };
+
+      const llm = new ChatOpenAI({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        temperature: Number(process.env.OPENAI_TEMPERATURE ?? 0.2),
+        apiKey: process.env.OPENAI_API_KEY
+      });
+
+      const system = `You generate a weekly pet-care flashcard plan.
+Rules:
+- Use BOTH contexts:
+  (A) PersonalContext = this user's pet info/current health/diseases/metrics.
+  (B) CareGuideContext = general care guide reference.
+- If PersonalContext mentions active disease/symptoms, be conservative and add monitoring + vet-contact reminder.
+- No prescriptions, no dosing, no human medicines.
+- Output MUST be valid JSON only (no markdown).
+
+JSON schema:
+{
+  "allow": true,
+  "summary": { "current_status_bn": string, "trend_bn": string },
+  "plan": {
+    "global_reminders": string[],
+    "days": [
+      {
+        "date": "YYYY-MM-DD",
+        "morning": string[],
+        "midday": string[],
+        "evening": string[],
+        "reminders": string[]
       }
-      if (!parsed.allow) {
+    ]
+  }
+}
+
+Constraints:
+- Exactly 7 days.
+- Each of morning/midday/evening max 4 bullets.
+- Each day reminders 1–2 bullets.`;
+
+      const dates = datesForWeek(week_start);
+      const userMsg = [
+        `pet_id=${pet_id}`,
+        pet ? `PetProfile: name=${pet.name}, species=${pet.species || '—'}, breed=${pet.breed || '—'}, sex=${pet.sex || '—'}, birthdate=${pet.birthdate || '—'}, weight_kg=${pet.weight_kg ?? '—'}, neutered=${pet.is_neutered ? 'yes' : 'no'}` : '',
+        `week_start=${week_start}`,
+        `RequiredDates: ${dates.join(', ')}`,
+        `\nPersonalContext:\n${personalContext || '—'}`,
+        `\nCareGuideContext:\n${guideContext || '—'}`
+      ].filter(Boolean).join('\n');
+
+      const reply = await llm.invoke([
+        { role: 'system', content: system },
+        { role: 'user', content: userMsg }
+      ]);
+
+      const raw = String(reply?.content || '').trim();
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        const extracted = extractFirstJsonObject(raw);
+        if (!extracted) {
+          return res.status(500).json({ success: false, error: 'Model did not return valid JSON' });
+        }
+        parsed = JSON.parse(extracted);
+      }
+
+      if (!parsed || typeof parsed !== 'object') {
+        return res.status(500).json({ success: false, error: 'Model output missing JSON object' });
+      }
+
+      if (parsed.allow === false) {
         return res.status(412).json({
           success: false,
-          code: 'METRICS_OUTDATED_OR_BLOCKED',
+          code: 'PLAN_GENERATION_BLOCKED',
           message_bn: parsed.reason_bn || 'এই সপ্তাহে কার্ড তৈরি অনুমোদিত নয়।'
         });
       }
 
+      // Normalize plan days to exactly 7 dates.
+      const inDays = Array.isArray(parsed?.plan?.days) ? parsed.plan.days : [];
+      const normalizedDays = dates.map((date, i) => {
+        const d = inDays[i] || {};
+        return {
+          date,
+          morning: Array.isArray(d.morning) ? d.morning.filter(Boolean).slice(0, 4) : [],
+          midday: Array.isArray(d.midday) ? d.midday.filter(Boolean).slice(0, 4) : [],
+          evening: Array.isArray(d.evening) ? d.evening.filter(Boolean).slice(0, 4) : [],
+          reminders: Array.isArray(d.reminders) ? d.reminders.filter(Boolean).slice(0, 2) : []
+        };
+      });
+
+      const planObj = {
+        global_reminders: Array.isArray(parsed?.plan?.global_reminders) ? parsed.plan.global_reminders.filter(Boolean).slice(0, 6) : [],
+        days: normalizedDays
+      };
+
+      parsed.summary = parsed.summary && typeof parsed.summary === 'object' ? parsed.summary : {};
+      if (!parsed.summary.current_status_bn) parsed.summary.current_status_bn = 'এই সপ্তাহে নিয়মিত রুটিন + নজরদারি চালিয়ে যাও।';
+      if (!parsed.summary.trend_bn) parsed.summary.trend_bn = 'Hydration, appetite, litter habits—এই ৩টা খেয়াল রেখো।';
+
       const polishedSummary = polishSummary(parsed.summary, petName);
-      const fixedPlan = ensureDailyReminders(parsed.plan);
+      const fixedPlan = ensureDailyReminders(planObj);
 
       const saved = await this.careModel.upsertCarePlan({
         pet_id: Number(pet_id),
         week_start,
         summary_json: polishedSummary,
         plan_json: fixedPlan,
-        sources: null
+        sources
       });
 
       try {
@@ -177,6 +349,8 @@ class CareController {
         week_start,
         summary: polishedSummary,
         plan: fixedPlan,
+        sources,
+        retrieval: { personal: personalHits.length, guide: guideHits.length },
         saved_id: saved?.id || null
       });
     } catch (e) {
@@ -194,7 +368,7 @@ class CareController {
       const week_start = week || startOfWeek(new Date());
       const row = await this.careModel.getCarePlan({ pet_id: Number(pet_id), week_start });
       if (!row) return res.status(404).json({ success: false, error: 'No plan found' });
-      return res.json({ success: true, week_start, summary: row.summary_json, plan: row.plan_json });
+      return res.json({ success: true, week_start, summary: row.summary_json, plan: row.plan_json, sources: row.sources || null });
     } catch (e) {
       return res.status(500).json({ success: false, error: e.message });
     }
