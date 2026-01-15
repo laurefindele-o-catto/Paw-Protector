@@ -27,6 +27,9 @@ const chatRouter = require('./routes/chatRoutes.js');
 const { diseaseRouter } = require('./routes/diseaseRoutes.js');
 const requestRouter = require('./routes/requestRoutes.js');
 const vetApprovedRouter = require('./routes/vetApprovedRoutes.js');
+const vetDeclinedRouter = require('./routes/vetDeclinedRoutes.js');
+const petHealthCheckRouter = require('./routes/petHealthCheckRoutes.js');
+const vetDashboardRouter = require('./routes/vetDashboardRoutes.js');
 const knowledgeBaseRouter = require('./routes/knowledgeBaseRoutes.js');
 
 
@@ -115,6 +118,9 @@ app.use('/api', chatRouter);
 app.use('/api', diseaseRouter);
 app.use('/api', requestRouter);
 app.use('/api', vetApprovedRouter);
+app.use('/api', vetDeclinedRouter);
+app.use('/api', petHealthCheckRouter);
+app.use('/api', vetDashboardRouter);
 app.use('/api/knowledge-base', knowledgeBaseRouter);
 
 

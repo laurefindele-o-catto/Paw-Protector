@@ -772,6 +772,59 @@ class TableCreation {
             throw error;
         }
     }
+
+    create_vet_declined_table = async () => {
+        try {
+            const query = `
+                CREATE TABLE IF NOT EXISTS vet_declined (
+                    vet_id INTEGER REFERENCES vets(user_id) ON DELETE SET NULL,
+                    req_id INTEGER REFERENCES requests(id) ON DELETE SET NULL,
+                    correct_diagnosis TEXT,
+                    note TEXT,
+                    declined_at TIMESTAMP DEFAULT NOW(),
+                    CONSTRAINT pk_vet_declined PRIMARY KEY (req_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_vet_declined_vet_id ON vet_declined(vet_id);
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Vet declined table created");
+            return { success: true };
+        } catch (error) {
+            console.error(error.message + " while creating vet declined table");
+            throw error;
+        }
+    }
+
+    create_pet_health_check_requests_table = async () => {
+        try {
+            const query = `
+                CREATE TABLE IF NOT EXISTS pet_health_check_requests (
+                    id SERIAL PRIMARY KEY,
+                    owner_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    vet_user_id INTEGER REFERENCES vets(user_id) ON DELETE SET NULL,
+                    pet_id INTEGER REFERENCES pets(id) ON DELETE SET NULL,
+                    problem_text TEXT NOT NULL,
+                    image_urls JSONB DEFAULT '[]'::jsonb,
+                    health_profile JSONB,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','responded')),
+                    vet_response TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    responded_at TIMESTAMP
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_phc_vet_status ON pet_health_check_requests(vet_user_id, status);
+                CREATE INDEX IF NOT EXISTS idx_phc_owner_created ON pet_health_check_requests(owner_user_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_phc_pet_id ON pet_health_check_requests(pet_id);
+            `;
+            await this.db_connection.query_executor(query);
+            console.log("Pet health check requests table created");
+            return { success: true };
+        } catch (error) {
+            console.error(error.message + " while creating pet health check requests table");
+            throw error;
+        }
+    }
 }
 
 module.exports = TableCreation;
