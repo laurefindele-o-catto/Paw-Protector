@@ -379,7 +379,7 @@ function Dashboard() {
           <section className="mx-auto w-full sm:px-4">
             <FeaturesSection />
             <div className="w-full flex justify-center my-8">
-              <div className="my-4 h-[3px] w-2/3 bg-linear-to-r from-[#fdd142] via-[#0f172a]/30 to-[#fdd142] rounded-full shadow-md opacity-70" />
+              <div className="mt-4 h-[3px] w-2/3 bg-linear-to-r from-[#fdd142] via-[#0f172a]/30 to-[#fdd142] rounded-full shadow-md opacity-70" />
             </div>
           </section>
         )}

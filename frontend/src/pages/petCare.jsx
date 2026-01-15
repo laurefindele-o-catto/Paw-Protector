@@ -1,19 +1,18 @@
-// petCare.jsx — engaging flashcard UI for cat care (with auto-translate)
-import React, { useState, useEffect, useMemo } from "react";
+// petCare.jsx — interactive 7-day routine + vaccine tracker
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import apiConfig from "../config/apiConfig";
 import Header from '../components/Header'
 import { usePet } from "../context/PetContext";
 import { useAuth } from "../context/AuthContext";
+import { normalizeSpecies, normalizeVaccineName, VACCINE_CORE_BY_SPECIES } from "../constants/careCatalog";
 
 /**
  * This version focuses on *readability* and *delight*:
  * - Flashcards (horizontal scroll, no autoplay) for daily routine
  * - Compact life-stage cards
  * - Vaccine timeline as stepper chips
- * - Essentials as bite-size cards
- * - Toxic list as pill cloud
  * Keep/extend styles from your LandingPage palette (#edfdfd, #0f172a, #fdd142)
  */
 export default function PetCare() {
@@ -22,114 +21,36 @@ export default function PetCare() {
   const { currentPet, currentPetSummary } = usePet();
   const { user } = useAuth();
   const [printMode, setPrintMode] = useState('none'); // 'none', 'owner', 'vet'
+  const [printMenuOpen, setPrintMenuOpen] = useState(false);
+  const printMenuRef = useRef(null);
 
-  useEffect(() => {
-    if (printMode !== 'none') {
-      const timer = setTimeout(() => {
-        window.print();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [printMode]);
-
-  const daily = [
-    {
-      title: "Morning",
-      emoji: "🌅",
-      points: [
-        "Fresh water & bowls",
-        "Breakfast portion",
-        "Scoop litter",
-        "5–10 min play (wand)",
-      ],
-    },
-    {
-      title: "Mid-day",
-      emoji: "🧩",
-      points: ["Puzzle feeder / foraging", "Window perch & toy rotation"],
-    },
-    {
-      title: "Evening",
-      emoji: "🌙",
-      points: ["Dinner portion", "Brush coat & teeth", "Interactive play, wind-down"],
-    },
-  ];
-
-  const lifeStages = [
-    {
-      label: "Kittens",
-      range: "0–12 m",
-      key: "3x meals → 2x; vaccine series; deworm",
-      emoji: "🍼",
-    },
-    {
-      label: "Adults",
-      range: "1–10 y",
-      key: "Annual vet; 2x meals; enrichment",
-      emoji: "💪",
-    },
-    {
-      label: "Seniors",
-      range: "10+ y",
-      key: "Vet every ~6 mo; comfort & ramps",
-      emoji: "🧣",
-    },
-  ];
-
-  const vaccineSteps = [
-    { label: "6–8 wks", sub: "FVRCP #1" },
-    { label: "10–12 wks", sub: "FVRCP #2" },
-    { label: "14–16 (to 20) wks", sub: "FVRCP #3 + Rabies*" },
-    { label: "6–12 mo", sub: "Boosters" },
-    { label: "Adult", sub: "FVRCP ~q3y; Rabies per law" },
-  ];
-
-  const essentials = [
-    { title: "Feeding", tip: "Kittens 3×→2×; Adults 2×", emoji: "🍽️" },
-    { title: "Hydration", tip: "Fresh water / fountain", emoji: "💧" },
-    { title: "Litter", tip: "+1 box rule, scoop daily", emoji: "🧼" },
-    { title: "Play", tip: "2–3 short sessions/day", emoji: "🪶" },
-    { title: "Dental", tip: "Brush daily or 3–4×/wk", emoji: "🪥" },
-    { title: "Parasites", tip: "Deworm & preventives", emoji: "🪲" },
-  ];
-
-  const toxic = [
-    "Chocolate",
-    "Onion/Garlic",
-    "Grapes/Raisins",
-    "Xylitol",
-    "Alcohol",
-    "Caffeine",
-    "Unbaked dough",
-    "Lilies (very toxic)",
-  ];
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showGenSlowHint, setShowGenSlowHint] = useState(false);
 
   const dailyFallback = [
     {
       title: "Morning",
-      emoji: "🌅",
+      key: "morning",
       points: [
-        "Fresh water & breakfast portioned",
-        "Quick body/skin check",
-        "Litter scoop or short walk",
+        "Refresh water bowl and observe intake",
+        "Offer a portioned meal and note appetite",
+        "Scoop litter and check stool/urine",
       ],
     },
     {
       title: "Mid-day",
-      emoji: "🧩",
+      key: "midday",
       points: [
-        "Interactive play 10–15 মিনিট",
-        "Hydration reminder",
-        "Grooming brush if needed",
+        "Gentle play (5–10 min) or calm bonding",
+        "Leave a quiet hiding spot undisturbed",
       ],
     },
     {
       title: "Evening",
-      emoji: "🌙",
+      key: "evening",
       points: [
-        "Dinner portioned",
-        "Dental chew/brush",
-        "Calm bonding or gentle massage",
+        "Offer dinner portion and note appetite",
+        "Quick coat/skin check and brushing",
       ],
     },
   ];
@@ -144,16 +65,212 @@ export default function PetCare() {
   const [lifeStageData, setLifeStageData] = useState(null);
   const [stageSummary, setStageSummary] = useState(null);
   const [vaxNote, setVaxNote] = useState(null);
-
-  // Personalized Essentials/Toxic
-  const [essentialsP, setEssentialsP] = useState(null);
-  const [toxicP, setToxicP] = useState(null);
-  const [toxicTopNote, setToxicTopNote] = useState(null);
+  const [sources, setSources] = useState(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const petId = typeof window !== "undefined"
     ? Number(localStorage.getItem("current_pet_id") || localStorage.getItem("selected_pet_id") || "")
     : null;
+
+  const userId = user?.id ?? null;
+
+  const userLocation = useMemo(() => {
+    try {
+      const key = `user_location_${userId ?? 'anon'}`;
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, [userId]);
+
+  const [ownerContacts, setOwnerContacts] = useState({
+    owner_phone: "",
+    emergency_phone: "",
+    poison_control: "",
+    notes: "",
+  });
+
+  useEffect(() => {
+    if (!petId) return;
+    const key = `print_contacts_${userId ?? 'anon'}_${petId}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) setOwnerContacts(JSON.parse(raw));
+    } catch {}
+  }, [userId, petId]);
+
+  const persistOwnerContacts = useCallback((next) => {
+    setOwnerContacts(next);
+    if (!petId) return;
+    const key = `print_contacts_${userId ?? 'anon'}_${petId}`;
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+  }, [userId, petId]);
+
+  const [nearbyClinics, setNearbyClinics] = useState([]);
+  const [nearbyClinicsLoading, setNearbyClinicsLoading] = useState(false);
+  const [nearbyClinicsError, setNearbyClinicsError] = useState("");
+
+  const [medicalRecord, setMedicalRecord] = useState(null);
+  const [medicalRecordLoading, setMedicalRecordLoading] = useState(false);
+  const [medicalRecordError, setMedicalRecordError] = useState("");
+
+  useEffect(() => {
+    const onDocDown = (e) => {
+      if (!printMenuOpen) return;
+      const el = printMenuRef.current;
+      if (el && !el.contains(e.target)) {
+        setPrintMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setPrintMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [printMenuOpen]);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadNearby() {
+      if (printMode !== 'owner') return;
+      if (!token) return;
+      const lat = userLocation?.latitude;
+      const lng = userLocation?.longitude;
+      if (typeof lat !== 'number' || typeof lng !== 'number') return;
+
+      setNearbyClinicsLoading(true);
+      setNearbyClinicsError("");
+      try {
+        const qs = new URLSearchParams({ lat: String(lat), lng: String(lng), limit: '5' });
+        const res = await fetch(`${apiConfig.baseURL}/api/clinics/nearby?${qs.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!ignore) {
+          if (res.ok && json.success) {
+            setNearbyClinics(Array.isArray(json.clinics) ? json.clinics : []);
+          } else {
+            setNearbyClinics([]);
+            setNearbyClinicsError(json?.error || 'Could not load nearby clinics');
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setNearbyClinics([]);
+          setNearbyClinicsError('Could not load nearby clinics');
+        }
+      } finally {
+        if (!ignore) setNearbyClinicsLoading(false);
+      }
+    }
+    loadNearby();
+    return () => { ignore = true; };
+  }, [printMode, token, userLocation]);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadMedicalRecord() {
+      if (printMode !== 'vet') return;
+      if (!token || !petId) return;
+      setMedicalRecordLoading(true);
+      setMedicalRecordError("");
+      try {
+        const res = await fetch(`${apiConfig.baseURL}/api/pets/${petId}/medical-record`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!ignore) {
+          if (res.ok && json.success) {
+            setMedicalRecord(json.record || null);
+          } else {
+            setMedicalRecord(null);
+            setMedicalRecordError(json?.error || 'Could not load medical record');
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setMedicalRecord(null);
+          setMedicalRecordError('Could not load medical record');
+        }
+      } finally {
+        if (!ignore) setMedicalRecordLoading(false);
+      }
+    }
+    loadMedicalRecord();
+    return () => { ignore = true; };
+  }, [printMode, token, petId]);
+
+  const petSpecies = normalizeSpecies(currentPetSummary?.pet?.species || currentPet?.species);
+  const latestMetric = currentPetSummary?.metrics?.trend?.[0] || null;
+
+  const redFlags = useMemo(() => {
+    const flags = [];
+    if (!latestMetric) return flags;
+    if (latestMetric.straining_to_pee) flags.push("straining_to_pee");
+    if (latestMetric.blood_in_stool) flags.push("blood_in_stool");
+    return flags;
+  }, [latestMetric]);
+
+  const signalChips = useMemo(() => {
+    const chips = [];
+    if (!latestMetric) return chips;
+    if (latestMetric.appetite_state === "decreased") chips.push({ k: "appetite", label: t("Appetite decreased") });
+    if (latestMetric.water_intake_state === "decreased") chips.push({ k: "water", label: t("Water intake decreased") });
+    if (latestMetric.stool_consistency === "constipation") chips.push({ k: "stool", label: t("Constipation") });
+    if (latestMetric.urine_frequency === "low") chips.push({ k: "urine", label: t("Low urine output") });
+    return chips;
+  }, [latestMetric, t]);
+
+  const weeklyFocus = useMemo(() => {
+    // Rotating focus reduces the “robotic repetition” feel.
+    const map = [
+      t("Hydration + litter focus"),
+      t("Hydration + litter focus"),
+      t("Appetite + gentle activity"),
+      t("Appetite + gentle activity"),
+      t("Body condition + coat check"),
+      t("Review notes + patterns"),
+      t("Weekly summary + decide if vet visit needed"),
+    ];
+    return map;
+  }, [t]);
+
+  const routineStorageKey = useMemo(() => {
+    const dateKey = plan?.days?.[dayIndex]?.date
+      ? String(plan.days[dayIndex].date).slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+    return petId ? `routine_state_${petId}_${dateKey}` : null;
+  }, [petId, plan, dayIndex]);
+
+  const [routineState, setRoutineState] = useState({ done: {}, note: "" });
+
+  useEffect(() => {
+    if (!routineStorageKey) return;
+    try {
+      const raw = localStorage.getItem(routineStorageKey);
+      setRoutineState(raw ? JSON.parse(raw) : { done: {}, note: "" });
+    } catch {
+      setRoutineState({ done: {}, note: "" });
+    }
+  }, [routineStorageKey]);
+
+  const persistRoutineState = useCallback(
+    (next) => {
+      setRoutineState(next);
+      if (!routineStorageKey) return;
+      try {
+        localStorage.setItem(routineStorageKey, JSON.stringify(next));
+      } catch {}
+    },
+    [routineStorageKey]
+  );
 
   const saveSummaryLS = (pid, data) => {
     try { localStorage.setItem(`care_summary_${pid}`, JSON.stringify(data)); } catch {}
@@ -208,6 +325,7 @@ export default function PetCare() {
         });
         if (planRes.status === 404) {
           if (!ignore) setPlan(null);
+          if (!ignore) setSources(null);
         } else if (planRes.status === 412) {
           const j = await planRes.json().catch(() => ({}));
           if (!ignore) setError(j?.message_bn || "Weekly metrics not updated.");
@@ -216,6 +334,7 @@ export default function PetCare() {
           if (!ignore) {
             setPlan(planJson.plan || null);
             setDayIndex(0);
+            setSources(planJson.sources || null);
             if (planJson.plan && planJson.week_start) savePlanLS(petId, planJson.week_start, planJson.plan);
           }
         } else if (!ignore) {
@@ -273,6 +392,8 @@ export default function PetCare() {
 
   const handleGenerate = async () => {
     if (!token || !petId) return;
+    setIsGenerating(true);
+    setShowGenSlowHint(true);
     setLoading(true);
     setError(null);
     try {
@@ -298,6 +419,9 @@ export default function PetCare() {
         setPlan(data.plan);
         setDayIndex(0);
       }
+      if (data.sources) {
+        setSources(data.sources);
+      }
       if (data.plan && data.week_start) {
         savePlanLS(petId, data.week_start, data.plan);
       }
@@ -307,72 +431,10 @@ export default function PetCare() {
       setError("Network error while generating flashcards.");
     } finally {
       setLoading(false);
+      setIsGenerating(false);
     }
   };
 
-  // Helper: build age in months
-  const ageInMonths = (iso) => {
-    if (!iso) return null;
-    const b = new Date(iso);
-    if (Number.isNaN(b.getTime())) return null;
-    return Math.max(0, Math.floor((Date.now() - b.getTime()) / (1000 * 60 * 60 * 24 * 30.4)));
-  };
-
-  // Build personalized Essentials and Toxic lists
-  function personalizeEssentialsAndToxic(pSum) {
-    if (!pSum || !pSum.pet) return { e: null, tox: null, note: null };
-    const months = ageInMonths(pSum.pet.birthdate);
-    const active = (pSum.diseases?.active || []).map(d => String(d.disease_name || '').toLowerCase());
-    const hasFeverVomiting = active.some(n => /fever|flu|vomit|gastro|diarrh/.test(n));
-    const isKitten = months != null && months <= 12;
-    const isSenior = months != null && months >= 120;
-
-    // Essentials: start from base, tweak labels/tips and priority
-    const e = [
-      { title: "Hydration", tip: hasFeverVomiting ? "Fresh water in 2–3 spots + wet food; monitor intake" : "Fresh water / fountain", emoji: "💧" },
-      { title: "Feeding", tip: isKitten ? "Kittens 3×→2×; wet+dry balanced" : (isSenior ? "Adults/Seniors 2×; easy-to-chew; portion control" : "Adults 2×; portion control"), emoji: "🍽️" },
-      { title: "Litter", tip: "+1 box rule, scoop daily", emoji: "🧼" },
-      { title: "Play", tip: "2–3 short sessions/day", emoji: "🪶" },
-      { title: "Dental", tip: isSenior ? "Brush 3–4×/wk; soft chew; vet check if tartar" : "Brush daily or 3–4×/wk", emoji: "🪥" },
-      { title: "Parasites", tip: "Cat‑safe preventives only; deworm as scheduled", emoji: "🪲" }
-    ];
-    // Toxic: keep base + highlight high‑risk items first
-    const toxBase = [
-      "Lilies (very toxic)", "Chocolate", "Onion/Garlic", "Grapes/Raisins", "Xylitol", "Alcohol", "Caffeine", "Unbaked dough"
-    ];
-    const extras = [
-      "Human painkillers (paracetamol/ibuprofen)",
-      "Essential oils (tea tree, eucalyptus)",
-      "Permethrin (dog spot‑ons) — toxic to cats"
-    ];
-    const tox = Array.from(new Set([ ...extras.slice(0, 1), ...toxBase, ...extras.slice(1) ]));
-    const note = hasFeverVomiting ? "Hydration first this week — avoid new treats; no human meds." : null;
-
-    return { e, tox, note };
-  }
-
-  // Fetch pet summary once and personalize
-  useEffect(() => {
-    let ignore = false;
-    (async () => {
-      if (!token || !petId) return;
-      try {
-        const res = await fetch(`${apiConfig.baseURL}${apiConfig.pets.summary(petId)}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const pSum = data?.summary || null;
-        if (!ignore && pSum) {
-          const { e, tox, note } = personalizeEssentialsAndToxic(pSum);
-          setEssentialsP(e);
-          setToxicP(tox);
-          setToxicTopNote(note);
-        }
-      } catch {}
-    })();
-    return () => { ignore = true; };
-  }, [token, petId]);
 
   return (
     <>
@@ -391,43 +453,74 @@ export default function PetCare() {
                 <span className="inline-flex items-center gap-2 bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full text-xs font-semibold">
                   <span>🐾 PawPal</span>
                   <span className="h-1 w-1 rounded-full bg-[#fdd142]" />
-                  <span>{t("Cat Care")}</span>
+                  <span>{t("Pet Care")}</span>
                 </span>
-                <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">
-                  {t("Summary: ")}
-                </h1>
+                <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">{t("7-Day Care Routine")}</h1>
                 <p className="mt-2 text-slate-600 max-w-2xl">
                   {summary && typeof summary === 'object'
                     ? `${summary.current_status_bn || ''}${summary.trend_bn ? ` (${summary.trend_bn})` : ''}`
                     : t("Skim-friendly flashcards you can follow daily. Details are simplified—ask your veterinarian for personal advice.")
                   }
                 </p>
+
+                {!!signalChips.length && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {signalChips.map((c) => (
+                      <span key={c.k} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                        {c.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleGenerate}
-                  disabled={loading || !petId}
-                  className={`inline-flex items-center gap-2 rounded-full ${loading ? "bg-slate-400" : "bg-[#0f172a] hover:bg-slate-900"} text-[#edfdfd] px-5 py-3 font-semibold shadow transition`}
+                  disabled={loading || isGenerating || !petId}
+                  className={`inline-flex items-center gap-2 rounded-full ${(loading || isGenerating) ? "bg-slate-400" : "bg-[#0f172a] hover:bg-slate-900"} text-[#edfdfd] px-5 py-3 font-semibold shadow transition`}
                   aria-label={t("Generate Flashcards")}
                   title={!petId ? t("Select a pet first") : t("Generate this week's plan")}
                 >
-                  {loading ? t("Generating…") : t("Generate Flashcards")}
+                  {(loading || isGenerating) ? t("Generating…") : t("Generate Flashcards")}
                 </button>
-                <div className="relative group">
+                {(isGenerating || showGenSlowHint) && (
+                  <div className="text-xs text-slate-600 max-w-[260px]">
+                    {t("Generating can take up to ~30 seconds. Please keep this tab open.")}
+                  </div>
+                )}
+                <div className="relative" ref={printMenuRef}>
                   <button
+                    type="button"
+                    onClick={() => setPrintMenuOpen((v) => !v)}
                     className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold shadow hover:shadow-md transition"
                     aria-label={t("Print Options")}
+                    aria-haspopup="menu"
+                    aria-expanded={printMenuOpen ? 'true' : 'false'}
                   >
                     {t("Print / Export")}
                   </button>
-                  <div className="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black/5 hidden group-hover:block z-50">
-                     <button onClick={() => setPrintMode('owner')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 rounded-t-md">
-                       {t("Daily Checklist (For Me)")}
-                     </button>
-                     <button onClick={() => setPrintMode('vet')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 rounded-b-md">
-                       {t("Health Report (For Vet)")}
-                     </button>
-                  </div>
+                  {printMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-60 rounded-xl bg-white shadow-lg ring-1 ring-black/5 z-50 p-1">
+                      <button
+                        type="button"
+                        onClick={() => { setPrintMenuOpen(false); setPrintMode('owner'); }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-slate-50 rounded-lg"
+                        role="menuitem"
+                      >
+                        <div className="font-semibold">{t("For Me (Owner)")}</div>
+                        <div className="text-xs text-slate-500">{t("Summary + 7-day plan + emergency + nearby vets")}</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setPrintMenuOpen(false); setPrintMode('vet'); }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-slate-50 rounded-lg"
+                        role="menuitem"
+                      >
+                        <div className="font-semibold">{t("For Vet")}</div>
+                        <div className="text-xs text-slate-500">{t("All-time medical record")}</div>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -435,46 +528,81 @@ export default function PetCare() {
         </section>
         
         {/* Health Snapshot Section */}
-        {currentPetSummary && (
+        {/* {currentPetSummary && (
            <HealthSnapshot summary={currentPetSummary} t={t} />
-        )}
+        )} */}
 
         {/* Daily flashcards */}
         <section id="daily" className="mx-auto max-w-6xl px-4 mt-8">
-          <TitleBar title={t("Daily Care Flashcards")} subtitle={t("This week's plan (toggle days)")} t={t} />
+          <TitleBar title={t("Today’s Routine")} subtitle={t("Morning, mid-day, evening — with a rotating weekly focus")} t={t} />
 
-          {/* Day-specific reminders */}
-          <div className="grid grid-cols-2 gap-4">
-            {plan?.days && plan?.days[dayIndex]?.reminders?.length ? (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 h-full">
-                <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-                  <span className="text-lg">⚠️</span>
-                  আজকের গুরুত্বপূর্ণ নোটিস
-                </h4>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
-                  {plan?.days[dayIndex].reminders.map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : <div />}
+          
 
-            {plan?.global_reminders?.length ? (
-              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50/70 p-4 h-full">
-                <h4 className="text-sm font-semibold text-red-700 flex items-center gap-2">
-                  <span className="text-lg">🛑</span>
-                  এই সপ্তাহের সতর্কতাসূচক নোট
-                </h4>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-red-800">
-                  {plan?.global_reminders.map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : <div />}
-          </div>
+          {/* Plan reminders (non-alarming) */}
+          {(plan?.days?.[dayIndex]?.reminders?.length || plan?.global_reminders?.length) && (
+            <div className="mt-4 grid md:grid-cols-3 gap-4">
+              {/* Safety layer */}
+              {!!redFlags.length && (
+                <div className="mt-5 rounded-2xl border border-red-200 bg-red-50/70 p-5">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                      <div className="text-sm font-extrabold text-red-800 flex items-center gap-2">
+                        <span aria-hidden="true">⚠️</span>
+                        {t("Vet alert")}
+                      </div>
+                      <p className="mt-2 text-sm text-red-800">
+                        {t("Some of today’s signals can be urgent. If your pet is straining to pee or has blood in stool, contact a vet promptly.")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate("/find-a-vet")}
+                        className="inline-flex items-center justify-center rounded-full bg-[#0f172a] text-[#edfdfd] px-4 py-2 text-sm font-semibold shadow hover:bg-slate-900 transition"
+                      >
+                        {t("Find a Vet")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/vaccination-alerts")}
+                        className="inline-flex items-center justify-center rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm hover:shadow transition"
+                      >
+                        {t("Open Alerts")}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {plan?.days?.[dayIndex]?.reminders?.length ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                  <h4 className="text-sm font-semibold text-amber-900">{t("Today’s notes")}</h4>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-950">
+                    {plan.days[dayIndex].reminders.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div />
+              )}
+
+              {plan?.global_reminders?.length ? (
+                <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
+                  <h4 className="text-sm font-semibold text-slate-900">{t("This week")}</h4>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                    {plan.global_reminders.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div />
+              )}
+              
+            </div>
+          )}
           {/* Day toggler (7 days) */}
-          <div className="mt-3 flex flex-wrap gap-2 mt-12">
+          <div className="mt-12 flex flex-wrap gap-2">
             {(plan?.days || []).map((d, i) => (
               <button
                 key={d.date || i}
@@ -489,25 +617,66 @@ export default function PetCare() {
             ))}
           </div>
 
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">{t("Focus")}: </span>
+              {weeklyFocus[dayIndex] || weeklyFocus[0]}
+            </div>
+            <div className="w-full md:w-[420px]">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">{t("Notes")}</label>
+              <input
+                value={routineState.note || ""}
+                onChange={(e) => persistRoutineState({ ...routineState, note: e.target.value })}
+                placeholder={t("Anything to remember today (appetite, litter, behavior)")}
+                className="w-full px-4 py-2 rounded-2xl border border-slate-200 bg-white/90 shadow-sm text-sm"
+              />
+            </div>
+          </div>
+
           
               
           {plan?.days?.length ? (
-            <>
-              <div className="mt-4 overflow-x-auto snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <div className="flex gap-4 min-w-max">
-                  <FlashCard title="Morning" emoji="🌅" points={plan?.days[dayIndex]?.morning || []} t={t} />
-                  <FlashCard title="Mid-day" emoji="🧩" points={plan?.days[dayIndex]?.midday || []} t={t} />
-                  <FlashCard title="Evening" emoji="🌙" points={plan?.days[dayIndex]?.evening || []} t={t} />
-                </div>
+            <div className="mt-4 overflow-x-auto snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-4 min-w-max">
+                <RoutineCard
+                  title={t("Morning")}
+                  sectionKey="morning"
+                  points={(plan?.days?.[dayIndex]?.morning || []).filter((x) => !/vaccine|deworm/i.test(String(x)))}
+                  routineState={routineState}
+                  setRoutineState={persistRoutineState}
+                  t={t}
+                />
+                <RoutineCard
+                  title={t("Mid-day")}
+                  sectionKey="midday"
+                  points={(plan?.days?.[dayIndex]?.midday || []).filter((x) => !/vaccine|deworm/i.test(String(x)))}
+                  routineState={routineState}
+                  setRoutineState={persistRoutineState}
+                  t={t}
+                />
+                <RoutineCard
+                  title={t("Evening")}
+                  sectionKey="evening"
+                  points={(plan?.days?.[dayIndex]?.evening || []).filter((x) => !/vaccine|deworm/i.test(String(x)))}
+                  routineState={routineState}
+                  setRoutineState={persistRoutineState}
+                  t={t}
+                />
               </div>
-
-              
-            </>
+            </div>
           ) : (
             <div className="mt-4 overflow-x-auto snap-x snap-mandatory pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex gap-4 min-w-max">
                 {dailyFallback.map((card) => (
-                  <FlashCard key={card.title} title={card.title} emoji={card.emoji} points={card.points} t={t} />
+                  <RoutineCard
+                    key={card.title}
+                    title={t(card.title)}
+                    sectionKey={card.key}
+                    points={card.points}
+                    routineState={routineState}
+                    setRoutineState={persistRoutineState}
+                    t={t}
+                  />
                 ))}
               </div>
               {!loading && !error && (
@@ -518,108 +687,92 @@ export default function PetCare() {
             </div>
           )}
         </section>
-
-        {/* Vaccine timeline */}
+        
+        {/* Vaccines (tracker aligned with Vaccination Alerts types) */}
         <section className="mx-auto max-w-6xl px-4 mt-10">
           <TitleBar
-            title={t("Vaccine Timeline")}
-            subtitle={t("Condensed overview (ask your vet for exact plan)")}
+            title={t("Vaccines")}
+            subtitle={t("Track what’s given vs missing (core types match Vaccination Alerts)")}
             t={t}
           />
-          <div className="mt-4 flex flex-wrap gap-3">
-            {(vaxSteps || vaccineSteps).map((s, i) => {
-              const status = s.status || 'static';
-              const color =
-                status === 'completed' ? 'border-emerald-300 bg-emerald-50'
-                : status === 'overdue' ? 'border-red-300 bg-red-50'
-                : status === 'pending' ? 'border-amber-300 bg-amber-50'
-                : 'border-slate-200 bg-white';
-              return (
-                <span
-                  key={s.label}
-                  className={`inline-flex flex-col items-start justify-center rounded-2xl border ${color} px-4 py-3 shadow-sm hover:shadow transition`}
-                  aria-label="Vaccine step"
-                >
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
-                    {t("Step")} {i + 1}
-                  </span>
-                  <span className="font-semibold">{t(s.label)}</span>
-                  <span className="text-xs text-slate-600">{t(s.sub)}</span>
-                  {status !== 'static' && (
-                    <span className="mt-1 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                      {status}
+
+          <div className="mt-4 bg-white/70 border border-white rounded-3xl shadow p-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div className="text-sm font-bold text-slate-900">{t("Core vaccines tracker")}</div>
+                <div className="text-sm text-slate-600">
+                  {petSpecies ? t("Based on species") + `: ${petSpecies}` : t("Select a pet to personalize this list.")}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/vaccination-alerts")}
+                className="inline-flex items-center justify-center rounded-full bg-[#0f172a] text-[#edfdfd] px-4 py-2 text-sm font-semibold shadow hover:bg-slate-900 transition"
+              >
+                {t("Open Vaccination Alerts")}
+              </button>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <VaccineCoreTracker
+                species={petSpecies}
+                vaccinations={currentPetSummary?.vaccinations?.all || currentPetSummary?.vaccinations?.recent || []}
+                t={t}
+              />
+            </div>
+
+            {vaxNote && <p className="mt-3 text-xs text-slate-600">{vaxNote}</p>}
+            {vaxSteps?.length ? (
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-semibold text-slate-900">{t("Typical timeline")}</summary>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {vaxSteps.map((s) => (
+                    <span
+                      key={s.label}
+                      className="inline-flex flex-col items-start justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+                    >
+                      <span className="font-semibold">{t(s.label)}</span>
+                      <span className="text-xs text-slate-600">{t(s.sub)}</span>
                     </span>
-                  )}
-                </span>
-              );
-            })}
-          </div>
-          {vaxNote && (
-            <p className="mt-2 text-xs text-slate-600">{vaxNote}</p>
-          )}
-          {!vaxSteps && (
-            <p className="mt-2 text-xs text-slate-500">
-              {t("Using default schedule. Generate metrics & vaccinations to personalize.")}
-            </p>
-          )}
-        </section>
-
-        {/* Essentials grid */}
-        <section className="mx-auto max-w-6xl px-4 mt-10">
-          <TitleBar title={t("Essentials")} subtitle={t("Small habits, big impact")} t={t} />
-          <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {(essentialsP || essentials).map((e) => (
-              <article
-                key={e.title}
-                className="bg-white/90 border border-white rounded-2xl shadow p-5 hover:shadow-lg transition"
-                aria-label={t("Essential card")}
-              >
-                <div className="text-2xl">{e.emoji}</div>
-                <h3 className="mt-2 font-bold">{t(e.title)}</h3>
-                <p className="text-sm text-slate-700 mt-1">{t(e.tip)}</p>
-              </article>
-            ))}
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </div>
         </section>
 
-        {/* Toxic chips */}
-        <section className="mx-auto max-w-6xl px-4 mt-10 mb-24">
-          <TitleBar title={t("Toxic to Cats")} subtitle={t("Keep these away—seek help if exposed")} t={t} />
-          <div className="mt-3 flex flex-wrap gap-2" aria-label={t("Toxic items list")}>
-            {(toxicP || toxic).map((tox) => (
-              <span
-                key={tox}
-                className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-sm shadow-sm"
-                aria-label={t("Toxic item")}
-              >
-                <span className="h-2 w-2 rounded-full bg-red-500" />
-                {t(tox)}
-              </span>
-            ))}
-          </div>
-          {toxicTopNote && (
-            <p className="mt-2 text-xs text-slate-600">{toxicTopNote}</p>
-          )}
-          <a
-            href="tel:+18884264435"
-            className="inline-flex items-center gap-2 mt-4 rounded-full bg-[#0f172a] text-[#edfdfd] px-4 py-2 text-sm font-semibold shadow hover:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
-            aria-label={t("Call ASPCA Poison Control")}
-          >
-            {t("ASPCA Poison Control")} 888-426-4435
-          </a>
-          <p className="mt-3 text-xs text-slate-500">
-            {t("This is a simplified guide. Your vet may tailor a different plan for your cat.")}
-          </p>
-        </section>
+        <div className="h-24" aria-hidden="true" />
       </div>
       </main>
 
       {/* Print Overlays */}
       {printMode === 'owner' && currentPetSummary && (
-        <OwnerPrintView summary={currentPetSummary} t={t} user={user} onClose={() => setPrintMode('none')} />
+        <OwnerPrintView
+          summary={currentPetSummary}
+          t={t}
+          user={user}
+          plan={plan}
+          weeklyFocus={weeklyFocus}
+          nearbyClinics={nearbyClinics}
+          nearbyClinicsLoading={nearbyClinicsLoading}
+          nearbyClinicsError={nearbyClinicsError}
+          ownerContacts={ownerContacts}
+          setOwnerContacts={persistOwnerContacts}
+          onClose={() => setPrintMode('none')}
+          onPrint={() => window.print()}
+        />
       )}
       {printMode === 'vet' && currentPetSummary && (
-        <VetPrintView summary={currentPetSummary} t={t} user={user} onClose={() => setPrintMode('none')} />
+        <VetPrintView
+          summary={currentPetSummary}
+          t={t}
+          user={user}
+          record={medicalRecord}
+          recordLoading={medicalRecordLoading}
+          recordError={medicalRecordError}
+          onClose={() => setPrintMode('none')}
+          onPrint={() => window.print()}
+        />
       )}
 
         {/* Local keyframes */}
@@ -643,328 +796,635 @@ function TitleBar({ title, subtitle, t }) {
   );
 }
 
-function FlashCard({ title, emoji, points, t }) {
+function RoutineCard({ title, sectionKey, points, routineState, setRoutineState, t }) {
+  const safePoints = Array.isArray(points) ? points : [];
+
+  const toggle = (idx) => {
+    const id = `${sectionKey}:${idx}`;
+    const nextDone = { ...(routineState?.done || {}) };
+    nextDone[id] = !nextDone[id];
+    setRoutineState({ ...(routineState || {}), done: nextDone });
+  };
+
+  const completed = safePoints.reduce((acc, _p, i) => {
+    const id = `${sectionKey}:${i}`;
+    return acc + ((routineState?.done || {})[id] ? 1 : 0);
+  }, 0);
+
   return (
     <article
-      className="snap-center shrink-0 w-[280px] sm:w-[320px] bg-white/95 border border-white rounded-3xl shadow p-5 hover:shadow-lg transition"
-      aria-label={t("Daily card")}
+      className="snap-center shrink-0 w-[280px] sm:w-[340px] bg-white/95 border border-white rounded-3xl shadow p-5 hover:shadow-lg transition"
+      aria-label={t("Daily routine section")}
     >
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold text-lg">{t(title)}</h3>
-        <div className="text-2xl">{emoji}</div>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-bold text-lg">{title}</h3>
+        <div className="text-xs font-semibold text-slate-600">
+          {completed}/{safePoints.length}
+        </div>
       </div>
-      <ul className="mt-3 text-sm text-slate-700 space-y-2 list-disc pl-5">
-        {points.map((p, i) => (
-          <li key={i}>{t(p)}</li>
-        ))}
-      </ul>
+
+      <div className="mt-3 grid gap-2">
+        {safePoints.map((p, idx) => {
+          const id = `${sectionKey}:${idx}`;
+          const checked = !!(routineState?.done || {})[id];
+          return (
+            <label
+              key={id}
+              className={
+                "flex items-start gap-3 rounded-2xl border px-3 py-2 cursor-pointer select-none " +
+                (checked ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-white")
+              }
+            >
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4"
+                checked={checked}
+                onChange={() => toggle(idx)}
+                aria-label={t("Mark done")}
+              />
+              <span className={"text-sm " + (checked ? "text-slate-700" : "text-slate-800")}>{t(p)}</span>
+            </label>
+          );
+        })}
+      </div>
     </article>
   );
 }
 
-function HealthSnapshot({ summary, t }) {
-  if (!summary || !summary.pet) return null;
-  const { metrics, diseases, vaccinations } = summary;
-  
-  // Prefer 'all' lists if available (added in recent backend update), fallback to partials
-  const allDiseases = diseases?.all || diseases?.active || [];
-  const allVaccines = vaccinations?.all || vaccinations?.recent || [];
+function VaccineCoreTracker({ species, vaccinations, t }) {
+  const core = (species && VACCINE_CORE_BY_SPECIES[species]) ? VACCINE_CORE_BY_SPECIES[species] : [];
 
-  // Local state for expandable items
-  const [expandedDiseaseId, setExpandedDiseaseId] = useState(null);
+  const byName = useMemo(() => {
+    const map = new Map();
+    (Array.isArray(vaccinations) ? vaccinations : []).forEach((v) => {
+      const canon = normalizeVaccineName(v?.vaccine_name);
+      if (!canon) return;
+      const prev = map.get(canon) || [];
+      map.set(canon, [...prev, v]);
+    });
+    return map;
+  }, [vaccinations]);
 
-  return (
-    <section className="mx-auto max-w-6xl px-4 mt-8 mb-8 no-print">
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-10 -mt-10 opacity-50" />
-        
-        <div className="relative z-10">
-          <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-             <span className="text-2xl">🩺</span> {t("Health Snapshot")}
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* 1. Vitals */}
-            <div className="bg-slate-50 p-4 rounded-2xl h-full">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{t("Recent Vitals")}</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                   <span className="text-slate-600">{t("Weight")}</span>
-                   <span className="text-lg font-bold">{metrics?.latestWeightKg ? `${metrics.latestWeightKg} kg` : "—"}</span>
-                </div>
-                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                   <span className="text-slate-600">{t("Temp")}</span>
-                   <span className="text-lg font-bold">{metrics?.latestTempC ? `${metrics.latestTempC}°C` : "—"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Disease History (All) */}
-            <div className="bg-red-50 p-4 rounded-2xl h-full overflow-y-auto max-h-[300px]">
-              <h3 className="text-sm font-semibold text-red-800 uppercase tracking-wide mb-3">{t("Disease History")}</h3>
-              {allDiseases.length > 0 ? (
-                <ul className="space-y-2">
-                  {allDiseases.map((d) => (
-                    <li key={d.id} className="bg-white/60 rounded-lg p-2 border border-red-100">
-                      <button 
-                        onClick={() => setExpandedDiseaseId(expandedDiseaseId === d.id ? null : d.id)}
-                        className="w-full flex justify-between items-center text-left"
-                      >
-                        <span className={`font-bold text-sm ${d.status === 'active' ? 'text-red-700' : 'text-slate-700'}`}>
-                          {d.disease_name}
-                          {d.status === 'active' && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1 rounded">ACTIVE</span>}
-                        </span>
-                        <span className="text-xs text-slate-400">{expandedDiseaseId === d.id ? '▲' : '▼'}</span>
-                      </button>
-                      
-                      {expandedDiseaseId === d.id && (
-                        <div className="mt-2 text-xs text-slate-600 border-t border-red-100 pt-2 space-y-1">
-                          <p><strong>Date:</strong> {new Date(d.diagnosed_on).toLocaleDateString()}</p>
-                          <p><strong>Status:</strong> {d.status}</p>
-                          {d.severity && <p><strong>Severity:</strong> {d.severity}</p>}
-                          {d.notes && <p className="italic bg-white p-1 rounded border border-red-50">"{d.notes}"</p>}
-                          {d.symptoms && <p><strong>Symptoms:</strong> {d.symptoms}</p>}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                 <div className="text-sm text-slate-500 italic py-2">{t("No recorded diseases.")}</div>
-              )}
-            </div>
-
-            {/* 3. Vaccination Record (All) */}
-            <div className="bg-amber-50 p-4 rounded-2xl h-full overflow-y-auto max-h-[300px]">
-               <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-3">{t("Vaccination Record")}</h3>
-               {allVaccines.length > 0 ? (
-                 <ul className="space-y-2">
-                   {allVaccines.map((v) => {
-                     // Logic: If 'administered_on' is present, it's done. Else if 'due_on' is present, it's scheduled/due.
-                     const isDone = !!v.administered_on;
-                     const isDue = !isDone && v.due_on;
-                     
-                     return (
-                       <li key={v.id} className={`rounded-lg p-2 border ${isDue ? 'bg-amber-100 border-amber-200' : 'bg-white/60 border-amber-100'}`}>
-                         <div className="flex justify-between items-start">
-                           <span className="font-bold text-sm text-slate-800">{v.vaccine_name}</span>
-                           {isDue ? (
-                             <span className="text-[10px] bg-amber-200 text-amber-800 px-1 rounded font-bold">DUE</span>
-                           ) : (
-                             <span className="text-[10px] bg-green-100 text-green-800 px-1 rounded font-bold">DONE</span>
-                           )}
-                         </div>
-                         <div className="text-xs text-slate-500 mt-1">
-                           {isDone ? (
-                             <span>Given: {new Date(v.administered_on).toLocaleDateString()}</span>
-                           ) : (
-                             <span>Due: {new Date(v.due_on).toLocaleDateString()}</span>
-                           )}
-                         </div>
-                       </li>
-                     );
-                   })}
-                 </ul>
-               ) : (
-                 <div className="text-sm text-slate-500 italic py-2">{t("No vaccination records.")}</div>
-               )}
-            </div>
-          </div>
-        </div>
+  if (!core.length) {
+    return (
+      <div className="text-sm text-slate-600">
+        {t("No core vaccine list available for this species.")}
       </div>
-    </section>
-  );
+    );
+  }
+
+  return core.map((name) => {
+    const rows = byName.get(name) || [];
+    const mostRecent = rows
+      .filter((r) => r?.administered_on)
+      .sort((a, b) => new Date(b.administered_on) - new Date(a.administered_on))[0];
+
+    const given = !!mostRecent;
+    const due = mostRecent?.due_on ? String(mostRecent.due_on).slice(0, 10) : null;
+    const givenOn = mostRecent?.administered_on ? String(mostRecent.administered_on).slice(0, 10) : null;
+
+    return (
+      <span
+        key={name}
+        className={
+          "inline-flex flex-col items-start justify-center rounded-2xl border px-4 py-3 shadow-sm " +
+          (given ? "border-emerald-200 bg-emerald-50/60" : "border-red-200 bg-red-50/50")
+        }
+      >
+        <span className="text-xs uppercase tracking-wide text-slate-500">{given ? t("Given") : t("Missing")}</span>
+        <span className="font-semibold text-slate-900">{t(name)}</span>
+        <span className="text-xs text-slate-600">
+          {givenOn ? `${t("Given")}: ${givenOn}` : t("No record yet")}
+        </span>
+        {due && (
+          <span className="text-xs text-slate-600">{t("Due")}: {due}</span>
+        )}
+      </span>
+    );
+  });
 }
+
+
+// function HealthSnapshot({ summary, t }) {
+//   if (!summary || !summary.pet) return null;
+//   const { metrics, diseases, vaccinations } = summary;
+  
+//   // Prefer 'all' lists if available (added in recent backend update), fallback to partials
+//   const allDiseases = diseases?.all || diseases?.active || [];
+//   const allVaccines = vaccinations?.all || vaccinations?.recent || [];
+
+//   // Local state for expandable items
+//   const [expandedDiseaseId, setExpandedDiseaseId] = useState(null);
+
+//   return (
+//     <section className="mx-auto max-w-6xl px-4 mt-8 mb-8 no-print">
+//       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+//         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-10 -mt-10 opacity-50" />
+        
+//         <div className="relative z-10">
+//           <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+//              <span className="text-2xl">🩺</span> {t("Health Snapshot")}
+//           </h2>
+
+//           <div className="grid md:grid-cols-3 gap-6">
+//             {/* 1. Vitals */}
+//             <div className="bg-slate-50 p-4 rounded-2xl h-full">
+//               <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{t("Recent Vitals")}</h3>
+//               <div className="space-y-4">
+//                 <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+//                    <span className="text-slate-600">{t("Weight")}</span>
+//                    <span className="text-lg font-bold">{metrics?.latestWeightKg ? `${metrics.latestWeightKg} kg` : "—"}</span>
+//                 </div>
+//                 <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+//                    <span className="text-slate-600">{t("Temp")}</span>
+//                    <span className="text-lg font-bold">{metrics?.latestTempC ? `${metrics.latestTempC}°C` : "—"}</span>
+//                 </div>
+//               </div>
+//             </div>
+
+//             {/* 2. Disease History (All) */}
+//             <div className="bg-red-50 p-4 rounded-2xl h-full overflow-y-auto max-h-[300px]">
+//               <h3 className="text-sm font-semibold text-red-800 uppercase tracking-wide mb-3">{t("Disease History")}</h3>
+//               {allDiseases.length > 0 ? (
+//                 <ul className="space-y-2">
+//                   {allDiseases.map((d) => (
+//                     <li key={d.id} className="bg-white/60 rounded-lg p-2 border border-red-100">
+//                       <button 
+//                         onClick={() => setExpandedDiseaseId(expandedDiseaseId === d.id ? null : d.id)}
+//                         className="w-full flex justify-between items-center text-left"
+//                       >
+//                         <span className={`font-bold text-sm ${d.status === 'active' ? 'text-red-700' : 'text-slate-700'}`}>
+//                           {d.disease_name}
+//                           {d.status === 'active' && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1 rounded">ACTIVE</span>}
+//                         </span>
+//                         <span className="text-xs text-slate-400">{expandedDiseaseId === d.id ? '▲' : '▼'}</span>
+//                       </button>
+                      
+//                       {expandedDiseaseId === d.id && (
+//                         <div className="mt-2 text-xs text-slate-600 border-t border-red-100 pt-2 space-y-1">
+//                           <p><strong>Date:</strong> {new Date(d.diagnosed_on).toLocaleDateString()}</p>
+//                           <p><strong>Status:</strong> {d.status}</p>
+//                           {d.severity && <p><strong>Severity:</strong> {d.severity}</p>}
+//                           {d.notes && <p className="italic bg-white p-1 rounded border border-red-50">"{d.notes}"</p>}
+//                           {d.symptoms && <p><strong>Symptoms:</strong> {d.symptoms}</p>}
+//                         </div>
+//                       )}
+//                     </li>
+//                   ))}
+//                 </ul>
+//               ) : (
+//                  <div className="text-sm text-slate-500 italic py-2">{t("No recorded diseases.")}</div>
+//               )}
+//             </div>
+
+//             {/* 3. Vaccination Record (All) */}
+//             <div className="bg-amber-50 p-4 rounded-2xl h-full overflow-y-auto max-h-[300px]">
+//                <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wide mb-3">{t("Vaccination Record")}</h3>
+//                {allVaccines.length > 0 ? (
+//                  <ul className="space-y-2">
+//                    {allVaccines.map((v) => {
+//                      // Logic: If 'administered_on' is present, it's done. Else if 'due_on' is present, it's scheduled/due.
+//                      const isDone = !!v.administered_on;
+//                      const isDue = !isDone && v.due_on;
+                     
+//                      return (
+//                        <li key={v.id} className={`rounded-lg p-2 border ${isDue ? 'bg-amber-100 border-amber-200' : 'bg-white/60 border-amber-100'}`}>
+//                          <div className="flex justify-between items-start">
+//                            <span className="font-bold text-sm text-slate-800">{v.vaccine_name}</span>
+//                            {isDue ? (
+//                              <span className="text-[10px] bg-amber-200 text-amber-800 px-1 rounded font-bold">DUE</span>
+//                            ) : (
+//                              <span className="text-[10px] bg-green-100 text-green-800 px-1 rounded font-bold">DONE</span>
+//                            )}
+//                          </div>
+//                          <div className="text-xs text-slate-500 mt-1">
+//                            {isDone ? (
+//                              <span>Given: {new Date(v.administered_on).toLocaleDateString()}</span>
+//                            ) : (
+//                              <span>Due: {new Date(v.due_on).toLocaleDateString()}</span>
+//                            )}
+//                          </div>
+//                        </li>
+//                      );
+//                    })}
+//                  </ul>
+//                ) : (
+//                  <div className="text-sm text-slate-500 italic py-2">{t("No vaccination records.")}</div>
+//                )}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </section>
+//   );
+// }
 
 /* --- Print Overlays --- */
 
-function OwnerPrintView({ summary, t, user, onClose }) {
-  const { pet, diseases, vaccinations, dewormings } = summary;
+function OwnerPrintView({
+  summary,
+  t,
+  user,
+  plan,
+  weeklyFocus,
+  nearbyClinics,
+  nearbyClinicsLoading,
+  nearbyClinicsError,
+  ownerContacts,
+  setOwnerContacts,
+  onClose,
+  onPrint,
+}) {
+  const { pet } = summary;
+  const days = Array.isArray(plan?.days) ? plan.days : [];
   
   return (
     <div className="fixed inset-0 bg-white z-50 overflow-auto p-8 print-overlay">
-      <div className="max-w-3xl mx-auto border-2 border-black p-8 min-h-screen relative">
+      <div className="max-w-4xl mx-auto border border-slate-200 rounded-3xl p-8 min-h-screen relative bg-white shadow-sm">
         {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-6">
+        <div className="flex justify-between items-start border-b border-slate-200 pb-6 mb-6">
           <div>
-            <h1 className="text-4xl font-bold uppercase tracking-tighter mb-2">{pet.name}'s Care Sheet</h1>
-            <p className="text-lg">Prepared for: {user?.username || 'Owner'}</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-1">{pet.name} — {t("Owner Summary")}</h1>
+            <p className="text-sm text-slate-600">{t("Prepared for")}: {user?.username || t('Owner')} • {new Date().toLocaleDateString()}</p>
           </div>
           <div className="text-right">
-            <div className="text-sm font-bold bg-black text-white px-3 py-1 inline-block mb-1">{t("FOR FRIDGE")}</div>
-            <div className="text-sm">{new Date().toLocaleDateString()}</div>
+            <div className="text-xs font-bold bg-[#0f172a] text-[#edfdfd] px-3 py-1 rounded-full inline-flex">{t("PRINT COPY")}</div>
           </div>
         </div>
 
         {/* 3-Column Quick Info */}
-        <div className="grid grid-cols-3 gap-6 mb-8 text-center bg-gray-50 p-4 rounded-lg border border-gray-200">
-           <div>
-             <div className="text-xs uppercase text-gray-500 font-bold">{t("Weight")}</div>
-             <div className="text-xl font-bold">{summary.metrics?.latestWeightKg || "—"} kg</div>
-           </div>
-           <div>
-             <div className="text-xs uppercase text-gray-500 font-bold">{t("Microchip/Tag")}</div>
-             <div className="text-xl font-bold">{pet.id}</div>
-           </div>
-           <div>
-             <div className="text-xs uppercase text-gray-500 font-bold">{t("Vet Contact")}</div>
-             <div className="text-sm font-bold truncate">See App</div>
-           </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="rounded-2xl border border-slate-200 bg-[#edfdfd] p-4">
+            <div className="text-[11px] uppercase tracking-widest text-slate-600 font-bold">{t("Species")}</div>
+            <div className="text-lg font-extrabold text-slate-900">{pet.species || '—'}</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-[#fffef7] p-4">
+            <div className="text-[11px] uppercase tracking-widest text-slate-600 font-bold">{t("Weight")}</div>
+            <div className="text-lg font-extrabold text-slate-900">{summary.metrics?.latestWeightKg || "—"} kg</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-[11px] uppercase tracking-widest text-slate-600 font-bold">{t("Breed")}</div>
+            <div className="text-lg font-extrabold text-slate-900">{pet.breed || '—'}</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-[11px] uppercase tracking-widest text-slate-600 font-bold">{t("Pet ID")}</div>
+            <div className="text-lg font-extrabold text-slate-900">#{pet.id}</div>
+          </div>
         </div>
 
-        {/* Routine Checklist (Interactive for paper) */}
+        {/* 7-day plan */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 uppercase border-b border-black pb-1">{t("Daily Routine Checklist")}</h2>
-          <div className="space-y-4">
-             {['Morning Feed', 'Fresh Water', 'Litter Scoop', 'Play Session 1', 'Evening Feed', 'Medications (if any)'].map(item => (
-               <div key={item} className="flex items-center gap-4 py-2 border-b border-gray-100">
-                 <div className="w-6 h-6 border-2 border-black rounded shadow-sm"></div>
-                 <span className="text-lg font-medium">{item}</span>
-               </div>
-             ))}
+          <h2 className="text-lg font-extrabold text-slate-900 mb-3">{t("7-Day Plan")}</h2>
+          {days.length ? (
+            <div className="grid md:grid-cols-2 gap-4">
+              {days.slice(0, 7).map((d, i) => (
+                <div key={d.date || i} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {new Date(d.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">{t("Focus")}: {weeklyFocus?.[i] || weeklyFocus?.[0] || ''}</div>
+                    </div>
+                    <div className="text-xs font-bold text-slate-700 bg-[#fdd142]/60 rounded-full px-3 py-1">Day {i + 1}</div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                      <div className="text-xs font-bold text-slate-600 uppercase">{t("Morning")}</div>
+                      <ul className="mt-1 list-disc pl-5 text-slate-800">
+                        {(d.morning || []).slice(0, 5).map((x, idx) => (<li key={idx}>{x}</li>))}
+                      </ul>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                      <div className="text-xs font-bold text-slate-600 uppercase">{t("Mid-day")}</div>
+                      <ul className="mt-1 list-disc pl-5 text-slate-800">
+                        {(d.midday || []).slice(0, 4).map((x, idx) => (<li key={idx}>{x}</li>))}
+                      </ul>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                      <div className="text-xs font-bold text-slate-600 uppercase">{t("Evening")}</div>
+                      <ul className="mt-1 list-disc pl-5 text-slate-800">
+                        {(d.evening || []).slice(0, 4).map((x, idx) => (<li key={idx}>{x}</li>))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              {t("No generated plan yet. Click Generate Flashcards first.")}
+            </div>
+          )}
+        </section>
+
+        {/* Emergency + contacts */}
+        <section className="mb-8 grid md:grid-cols-2 gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-extrabold text-slate-900 mb-3">{t("Emergency Contacts")}</h3>
+            <div className="grid gap-3">
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-slate-600">{t("Owner phone")}</span>
+                <input
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  value={ownerContacts.owner_phone || ''}
+                  onChange={(e) => setOwnerContacts({ ...ownerContacts, owner_phone: e.target.value })}
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-slate-600">{t("Emergency contact")}</span>
+                <input
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  value={ownerContacts.emergency_phone || ''}
+                  onChange={(e) => setOwnerContacts({ ...ownerContacts, emergency_phone: e.target.value })}
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-slate-600">{t("Poison control / hotline")}</span>
+                <input
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  value={ownerContacts.poison_control || ''}
+                  onChange={(e) => setOwnerContacts({ ...ownerContacts, poison_control: e.target.value })}
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-slate-600">{t("Notes")}</span>
+                <textarea
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm min-h-[92px]"
+                  value={ownerContacts.notes || ''}
+                  onChange={(e) => setOwnerContacts({ ...ownerContacts, notes: e.target.value })}
+                />
+              </label>
+            </div>
+            <div className="mt-2 text-[11px] text-slate-500">{t("These fields are saved locally for this pet.")}</div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="text-sm font-extrabold text-slate-900 mb-3">{t("Nearby Vets")}</h3>
+            {nearbyClinicsLoading ? (
+              <div className="text-sm text-slate-600">{t("Loading nearby clinics…")}</div>
+            ) : nearbyClinicsError ? (
+              <div className="text-sm text-red-700">{nearbyClinicsError}</div>
+            ) : nearbyClinics?.length ? (
+              <div className="grid gap-3">
+                {nearbyClinics.map((c) => (
+                  <div key={c.id} className="rounded-xl border border-slate-200 bg-[#edfdfd] p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-slate-900">{c.name}</div>
+                        <div className="text-xs text-slate-600">{c.address || ''}</div>
+                      </div>
+                      {typeof c.distance_km === 'number' && (
+                        <div className="text-xs font-bold text-slate-700 bg-white rounded-full px-3 py-1 border border-slate-200">
+                          {c.distance_km.toFixed(1)} km
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 text-sm text-slate-800">
+                      {c.phone ? (<div><span className="font-semibold">{t("Phone")}: </span>{c.phone}</div>) : null}
+                      {c.email ? (<div><span className="font-semibold">{t("Email")}: </span>{c.email}</div>) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-slate-600">
+                {t("No nearby clinics found. Update your profile location to enable this section.")}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Active Medications / Concerns */}
-        <section className="mb-8 p-4 bg-yellow-50 border-2 border-black rounded-xl">
-           <h2 className="text-xl font-bold mb-2 flex items-center gap-2">⚠️ {t("Active Health Watch")}</h2>
-           {diseases?.active?.length ? (
-             <ul className="list-disc pl-5">
-               {diseases.active.map(d => (
-                 <li key={d.id} className="text-lg">
-                   <strong>{d.disease_name}:</strong> {d.notes || d.symptoms}
-                 </li>
-               ))}
-             </ul>
-           ) : (
-             <p className="text-gray-500">{t("No active medical concerns recorded.")}</p>
-           )}
-        </section>
-
-        {/* Upcoming Dates */}
-        <section className="grid grid-cols-2 gap-8">
-           <div>
-              <h3 className="font-bold border-b border-black mb-2">{t("Upcoming Vaccines")}</h3>
-              {vaccinations?.nextDue ? (
-                <div className="py-2">
-                   <div className="font-bold text-lg">{vaccinations.nextDue.vaccine_name}</div>
-                   <div>Due: {new Date(vaccinations.nextDue.due_on).toLocaleDateString()}</div>
-                </div>
-              ) : <p className="text-gray-400 py-2">Up to date</p>}
-           </div>
-           <div>
-              <h3 className="font-bold border-b border-black mb-2">{t("Emergency Contacts")}</h3>
-              <div className="py-2 space-y-2 h-32 border border-gray-300 rounded p-2 bg-gray-50">
-                 <p className="text-sm text-gray-400 italic">Write contacts here...</p>
-              </div>
-           </div>
-        </section>
-
         <div className="mt-12 text-center text-xs text-gray-400 print:hidden">
-          <button onClick={onClose} className="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-red-700">Close Preview</button>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={onClose} className="border border-slate-300 bg-white text-slate-900 px-6 py-2 rounded-full font-bold shadow-sm hover:shadow">{t("Close")}</button>
+            <button onClick={onPrint} className="bg-[#0f172a] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-slate-900">{t("Print")}</button>
+          </div>
         </div>
       </div>
-      <style>{`@media print { .print:hidden { display: none; } body > *:not(.print-overlay){ display: none; } .print-overlay { display: block; background: white; height: auto; overflow: visible; padding: 0; } }`}</style>
+      <style>{`@media print {
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .print\\:hidden { display: none !important; }
+        /* React app is mounted under #root; only print the overlay */
+        #root > *:not(.print-overlay) { display: none !important; }
+        .print-overlay {
+          display: block !important;
+          position: static !important;
+          inset: auto !important;
+          background: white !important;
+          height: auto !important;
+          overflow: visible !important;
+          padding: 0 !important;
+        }
+      }`}</style>
     </div>
   );
 }
 
-function VetPrintView({ summary, t, onClose }) {
-  const { pet, metrics, diseases, vaccinations, dewormings } = summary;
-  const trend = metrics.trend || [];
+function VetPrintView({ summary, t, user, record, recordLoading, recordError, onClose, onPrint }) {
+  const pet = record?.pet || summary?.pet;
+  const metrics = record?.metrics || [];
+  const diseases = record?.diseases || [];
+  const vaccinations = record?.vaccinations || [];
+  const dewormings = record?.dewormings || [];
+  const appointments = record?.appointments || [];
   
   return (
     <div className="fixed inset-0 bg-white z-50 overflow-auto p-8 print-overlay">
-      <div className="max-w-4xl mx-auto border border-gray-300 p-8 min-h-screen">
+      <div className="max-w-5xl mx-auto border border-slate-200 rounded-3xl p-8 min-h-screen bg-white shadow-sm">
          {/* Professional Header */}
-         <div className="flex border-b-2 border-gray-800 pb-6 mb-8">
+         <div className="flex border-b border-slate-200 pb-6 mb-8">
             <div className="flex-1">
-              <h1 className="text-3xl font-serif font-bold text-gray-900 mb-1">Health Status Report</h1>
-              <p className="text-gray-500 text-sm uppercase tracking-widest">Generated via PawPal App</p>
+              <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{t("Veterinary Medical Record")}</h1>
+              <p className="text-slate-600 text-sm">{t("All-time history")}{user?.username ? ` • ${t("Owner")}: ${user.username}` : ''} • {new Date().toLocaleDateString()}</p>
             </div>
             <div className="text-right">
-               <div className="font-bold text-xl">{pet.name}</div>
-               <div className="text-sm text-gray-600">{pet.breed} • {pet.sex} • {new Date().getFullYear() - new Date(pet.birthdate).getFullYear()}y</div>
-               <div className="text-sm text-gray-600">ID: #{pet.id}</div>
+               <div className="font-extrabold text-xl text-slate-900">{pet?.name || ''}</div>
+               <div className="text-sm text-slate-600">{[pet?.species, pet?.breed, pet?.sex].filter(Boolean).join(' • ')}</div>
+               <div className="text-sm text-slate-600">{t("Pet ID")}: #{pet?.id || ''}</div>
             </div>
          </div>
 
+         {recordLoading && (
+           <div className="rounded-2xl border border-slate-200 bg-[#fffef7] p-4 text-sm text-slate-700 mb-6">
+             {t("Loading full medical record…")}
+           </div>
+         )}
+         {recordError && (
+           <div className="rounded-2xl border border-red-200 bg-red-50/60 p-4 text-sm text-red-800 mb-6">
+             {recordError}
+           </div>
+         )}
+
          {/* Vitals Table */}
          <section className="mb-8">
-            <h2 className="text-sm font-bold uppercase bg-gray-100 p-2 mb-2">Recent Vitals Log</h2>
-            <table className="w-full text-sm text-left">
+            <h2 className="text-sm font-extrabold uppercase bg-[#edfdfd] border border-slate-200 rounded-xl p-3 mb-2">{t("Vitals / Metrics")}</h2>
+            <table className="w-full text-sm text-left border border-slate-200 rounded-xl overflow-hidden">
               <thead>
-                <tr className="border-b border-gray-300">
-                  <th className="py-1">Date</th>
-                  <th className="py-1">Weight</th>
-                  <th className="py-1">Temp</th>
-                  <th className="py-1">HR / RR</th>
-                  <th className="py-1">Notes</th>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="py-2 px-3">{t("Date")}</th>
+                  <th className="py-2 px-3">{t("Weight")}</th>
+                  <th className="py-2 px-3">{t("Temp")}</th>
+                  <th className="py-2 px-3">{t("HR/RR")}</th>
+                  <th className="py-2 px-3">{t("Notes")}</th>
                 </tr>
               </thead>
               <tbody>
-                {trend.slice(0, 5).map(m => (
-                  <tr key={m.id} className="border-b border-gray-100">
-                    <td className="py-2">{new Date(m.measured_at).toLocaleDateString()}</td>
-                    <td>{m.weight_kg ? `${m.weight_kg} kg` : '-'}</td>
-                    <td>{m.body_temp_c ? `${m.body_temp_c}°C` : '-'}</td>
-                    <td>{m.heart_rate_bpm || '-'}/{m.respiration_rate_bpm || '-'}</td>
-                    <td className="italic text-gray-500">{m.note || '-'}</td>
+                {(metrics || []).map((m, idx) => (
+                  <tr key={m.id || idx} className="border-b border-slate-100">
+                    <td className="py-2 px-3">{m.measured_at ? new Date(m.measured_at).toLocaleDateString() : '-'}</td>
+                    <td className="px-3">{m.weight_kg != null ? `${m.weight_kg} kg` : '-'}</td>
+                    <td className="px-3">{m.body_temp_c != null ? `${m.body_temp_c}°C` : '-'}</td>
+                    <td className="px-3">{m.heart_rate_bpm || '-'} / {m.respiration_rate_bpm || '-'}</td>
+                    <td className="px-3 text-slate-600">{m.note || '-'}</td>
                   </tr>
                 ))}
+                {!(metrics || []).length && (
+                  <tr><td colSpan={5} className="py-3 px-3 text-slate-500 italic">{t("No metrics recorded.")}</td></tr>
+                )}
               </tbody>
             </table>
          </section>
 
-         <div className="grid grid-cols-2 gap-8 mb-8">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Medical History */}
-            <section>
-              <h2 className="text-sm font-bold uppercase bg-gray-100 p-2 mb-2">Medical History</h2>
-              <div className="border border-gray-200 rounded">
-                 {(diseases?.active || []).map(d => (
-                   <div key={d.id} className="p-3 border-b border-gray-100 last:border-0 bg-red-50">
-                      <div className="flex justify-between font-bold text-red-900">
-                        <span>{d.disease_name} (Active)</span>
-                        <span className="text-xs">{new Date(d.diagnosed_on).toLocaleDateString()}</span>
+            <section className="break-inside-avoid">
+              <h2 className="text-sm font-extrabold uppercase bg-[#fff0f0] border border-red-200 rounded-xl p-3 mb-2">{t("Conditions / Diagnoses")}</h2>
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                 {(diseases || []).map((d, idx) => (
+                   <div key={d.id || idx} className="p-3 border-b border-slate-100 last:border-0">
+                      <div className="flex justify-between gap-3">
+                        <div className="font-bold text-slate-900">
+                          {d.disease_name}
+                          {d.status ? (
+                            <span className={"ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full " + (d.status === 'active' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700')}>
+                              {String(d.status).toUpperCase()}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-slate-600">
+                          {d.diagnosed_on ? new Date(d.diagnosed_on).toLocaleDateString() : (d.created_at ? new Date(d.created_at).toLocaleDateString() : '')}
+                        </div>
                       </div>
-                      <p className="text-sm mt-1">{d.notes || d.symptoms}</p>
+                      {d.severity ? <div className="text-xs text-slate-600 mt-1">{t("Severity")}: {d.severity}</div> : null}
+                      {d.symptoms ? <div className="text-sm text-slate-700 mt-1"><span className="font-semibold">{t("Symptoms")}: </span>{d.symptoms}</div> : null}
+                      {d.notes ? <div className="text-sm text-slate-700 mt-1"><span className="font-semibold">{t("Notes")}: </span>{d.notes}</div> : null}
+                      {d.clinic_name ? <div className="text-xs text-slate-500 mt-1">{t("Clinic")}: {d.clinic_name}{d.clinic_phone ? ` • ${d.clinic_phone}` : ''}</div> : null}
                    </div>
                  ))}
-                 
-                 {/* Filter resolved or show message if logic allows, for now listing active */}
-                 {!(diseases?.active?.length) && <div className="p-4 text-gray-500 italic">No active conditions.</div>}
+                 {!(diseases || []).length && <div className="p-4 text-slate-500 italic">{t("No conditions recorded.")}</div>}
               </div>
             </section>
 
-            {/* Vaccine History */}
-            <section>
-              <h2 className="text-sm font-bold uppercase bg-gray-100 p-2 mb-2">Vaccination Record</h2>
-              <table className="w-full text-sm">
+            {/* Vaccines + Deworm */}
+            <section className="break-inside-avoid">
+              <h2 className="text-sm font-extrabold uppercase bg-[#fffef7] border border-slate-200 rounded-xl p-3 mb-2">{t("Vaccinations")}</h2>
+              <table className="w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
                  <thead>
-                   <tr className="border-b"><th>Vaccine</th><th>Date</th><th>Due</th></tr>
+                   <tr className="border-b border-slate-200 bg-slate-50">
+                     <th className="py-2 px-3">{t("Vaccine")}</th>
+                     <th className="py-2 px-3">{t("Given")}</th>
+                     <th className="py-2 px-3">{t("Due")}</th>
+                     <th className="py-2 px-3">{t("Clinic")}</th>
+                   </tr>
                  </thead>
                  <tbody>
-                   {(vaccinations?.recent || []).map(v => (
-                     <tr key={v.id} className="border-b border-gray-50">
-                       <td className="py-2 font-medium">{v.vaccine_name}</td>
-                       <td>{new Date(v.administered_on).toLocaleDateString()}</td>
-                       <td className="text-gray-500">{v.due_on ? new Date(v.due_on).toLocaleDateString() : '-'}</td>
+                   {(vaccinations || []).map((v, idx) => (
+                     <tr key={v.id || idx} className="border-b border-slate-100">
+                       <td className="py-2 px-3 font-semibold text-slate-900">{v.vaccine_name}</td>
+                       <td className="px-3">{v.administered_on ? new Date(v.administered_on).toLocaleDateString() : '-'}</td>
+                       <td className="px-3 text-slate-600">{v.due_on ? new Date(v.due_on).toLocaleDateString() : '-'}</td>
+                       <td className="px-3 text-slate-600">{v.clinic_name || '-'}</td>
                      </tr>
                    ))}
+                   {!(vaccinations || []).length && (
+                     <tr><td colSpan={4} className="py-3 px-3 text-slate-500 italic">{t("No vaccinations recorded.")}</td></tr>
+                   )}
+                 </tbody>
+              </table>
+
+              <h2 className="text-sm font-extrabold uppercase bg-[#edfdfd] border border-slate-200 rounded-xl p-3 mb-2 mt-6">{t("Dewormings")}</h2>
+              <table className="w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
+                 <thead>
+                   <tr className="border-b border-slate-200 bg-slate-50">
+                     <th className="py-2 px-3">{t("Product")}</th>
+                     <th className="py-2 px-3">{t("Given")}</th>
+                     <th className="py-2 px-3">{t("Due")}</th>
+                     <th className="py-2 px-3">{t("Notes")}</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {(dewormings || []).map((d, idx) => (
+                     <tr key={d.id || idx} className="border-b border-slate-100">
+                       <td className="py-2 px-3 font-semibold text-slate-900">{d.product_name}</td>
+                       <td className="px-3">{d.administered_on ? new Date(d.administered_on).toLocaleDateString() : '-'}</td>
+                       <td className="px-3 text-slate-600">{d.due_on ? new Date(d.due_on).toLocaleDateString() : '-'}</td>
+                       <td className="px-3 text-slate-600">{d.notes || '-'}</td>
+                     </tr>
+                   ))}
+                   {!(dewormings || []).length && (
+                     <tr><td colSpan={4} className="py-3 px-3 text-slate-500 italic">{t("No dewormings recorded.")}</td></tr>
+                   )}
                  </tbody>
               </table>
             </section>
          </div>
 
+         <section className="mb-8 break-inside-avoid">
+           <h2 className="text-sm font-extrabold uppercase bg-slate-100 border border-slate-200 rounded-xl p-3 mb-2">{t("Appointments")}</h2>
+           <table className="w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
+             <thead>
+               <tr className="border-b border-slate-200 bg-slate-50">
+                 <th className="py-2 px-3">{t("Start")}</th>
+                 <th className="py-2 px-3">{t("Status")}</th>
+                 <th className="py-2 px-3">{t("Vet")}</th>
+                 <th className="py-2 px-3">{t("Clinic")}</th>
+                 <th className="py-2 px-3">{t("Reason")}</th>
+               </tr>
+             </thead>
+             <tbody>
+               {(appointments || []).map((a, idx) => (
+                 <tr key={a.id || idx} className="border-b border-slate-100">
+                   <td className="py-2 px-3">{a.starts_at ? new Date(a.starts_at).toLocaleString() : '-'}</td>
+                   <td className="px-3 text-slate-700">{a.status || '-'}</td>
+                   <td className="px-3 text-slate-700">{a.vet_name || '-'}</td>
+                   <td className="px-3 text-slate-700">{a.clinic_name || '-'}</td>
+                   <td className="px-3 text-slate-600">{a.reason || '-'}</td>
+                 </tr>
+               ))}
+               {!(appointments || []).length && (
+                 <tr><td colSpan={5} className="py-3 px-3 text-slate-500 italic">{t("No appointments recorded.")}</td></tr>
+               )}
+             </tbody>
+           </table>
+         </section>
+
          <div className="mt-12 pt-6 border-t border-gray-300 text-center">
-             <p className="text-xs text-gray-400">Validated by User Report • Not an official medical certificate</p> 
+             <p className="text-xs text-slate-500">{t("User-reported log + clinic entries. Not an official certificate.")}</p>
          </div>
 
          <div className="mt-6 text-center text-xs text-gray-400 print:hidden">
-            <button onClick={onClose} className="bg-slate-800 text-white px-6 py-2 rounded-full font-bold shadow hover:bg-slate-900">Close Report</button>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={onClose} className="border border-slate-300 bg-white text-slate-900 px-6 py-2 rounded-full font-bold shadow-sm hover:shadow">{t("Close")}</button>
+              <button onClick={onPrint} className="bg-[#0f172a] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-slate-900">{t("Print")}</button>
+            </div>
          </div>
       </div>
-      <style>{`@media print { .print:hidden { display: none; } body > *:not(.print-overlay){ display: none; } .print-overlay { display: block; background: white; height: auto; overflow: visible; padding: 0; } }`}</style>
+      <style>{`@media print {
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .print\\:hidden { display: none !important; }
+        /* React app is mounted under #root; only print the overlay */
+        #root > *:not(.print-overlay) { display: none !important; }
+        .print-overlay {
+          display: block !important;
+          position: static !important;
+          inset: auto !important;
+          background: white !important;
+          height: auto !important;
+          overflow: visible !important;
+          padding: 0 !important;
+        }
+      }`}</style>
     </div>
   );
 }

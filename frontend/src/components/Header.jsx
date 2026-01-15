@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ProfilePictureCard from '../components/profilePictureCard';
 import { usePet } from '../context/PetContext';
 import { useLanguage } from '../context/LanguageContext';
+import FloatingFeatureMenu from './FloatingFeatureMenu';
 const placeholder = "/placeholder.png";
 
 function Header() {
@@ -22,12 +23,12 @@ function Header() {
     // Button config for nav
     const navLinks = [
         { to: '/dashboard', label: ('Dashboard') },
-        { to: '/petcare', label: ('Petcare') },
         { to: '/assistant', label: ('Assistant') },
         { to: '/find-a-vet', label: ('Vet Finder') }
     ];
 
     return (
+        <>
         <header className="fixed top-0 left-0 w-full bg-white/30 backdrop-blur-md border-b border-white shadow z-30" role="banner">
             <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between">
                 {/* Logo left */}
@@ -56,6 +57,14 @@ function Header() {
                             {link.label}
                         </Link>
                     ))}
+
+                    <Link
+                        to="/pawpal"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:bg-[#fdd142]/40 text-[#0f172a] font-semibold text-sm transition focus:outline-none focus:ring-4 focus:ring-[#fdd142] focus:ring-offset-2"
+                        aria-label={t('PawPal')}
+                    >
+                        {t('PawPal')}
+                    </Link>
                 </nav>
                 {/* Right side: translation toggle, logout then profile */}
                 <div className="flex items-center gap-4">
@@ -105,7 +114,11 @@ function Header() {
                     </Link>
                 </div>
             </div>
+
         </header>
+
+        <FloatingFeatureMenu />
+        </>
     );
 }
 

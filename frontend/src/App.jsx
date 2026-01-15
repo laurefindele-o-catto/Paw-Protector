@@ -6,6 +6,7 @@ import Dashboard from "./pages/dashboard.jsx";
 import VetFinder from "./pages/vetFinder.jsx";
 import VaccineAlert from "./pages/vaccineAlert.jsx";
 import PetCare from "./pages/petCare.jsx";
+import Guide from "./pages/Guide.jsx";
 import PawPal from "./pages/PawPal.jsx";
 import ProfilePage from "./pages/profilePage.jsx";
 import AddPetPage from "./pages/AddPetPage.jsx";
@@ -54,7 +55,8 @@ function AppContent() {
         <Route path="/find-a-vet" element={<VetFinder />} />
         <Route path="/vaccination-alerts" element={<VaccineAlert />} />
         <Route path="/petcare" element={<PetCare />} />
-        <Route path="/paw-pal" element={<PawPal />} />
+        <Route path="/guide" element={<Guide />} />
+        <Route path="/pawpal" element={<PawPal />} />
         <Route path="/profile" element={< ProfilePage/>} />
         <Route path="/vetprofile" element={< VetProfile/>} />
         <Route path="/addPet" element={< AddPetPage/>} />
