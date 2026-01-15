@@ -129,7 +129,7 @@ function getCareAgent() {
       - Concern first if fever/vomit.
 
       Summary:
-      - 2–3 short conversational Bangla sentences (with light English if natural). Names and terms in English.
+      - 2–3 short conversational Bangla sentences (with light English if natural). Names and terms in English. Like veterenarian, doctor, pet's name - mew, catto.
       - Add super concern if illness present. Always give reminder that the pet has this illness. But do not give tension to the user.
       - If multi‑week data: one short trend line ending with "তুমি ভালোমতো খেয়াল রেখো।"
 

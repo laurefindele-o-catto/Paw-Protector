@@ -1,5 +1,5 @@
-// PawPal.jsx — alt style: split hero, marquee motto, striped goals, KPI tickers
-import React, { useState } from "react";
+// PawPal.jsx — split hero, goals, targets, roadmap
+import React from "react";
 import { useLanguage } from "../context/LanguageContext";
 import Header from "../components/Header";
 
@@ -137,7 +137,7 @@ export default function PawPal() {
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-4 gap-4">
             {kpis.map((k) => (
               <article key={k.label} className="relative bg-white/90 border border-white rounded-2xl shadow p-5 overflow-hidden" aria-label={t("Target card")}>
-                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full border-[10px] border-[#fdd142]/25" />
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full border-10 border-[#fdd142]/25" />
                 <div className="text-3xl font-extrabold tracking-tight">{k.value}</div>
                 <p className="text-sm text-slate-600">{t(k.label)}</p>
               </article>
