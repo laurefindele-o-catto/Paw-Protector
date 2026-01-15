@@ -35,6 +35,9 @@ export default function VetProfile() {
   // Tabs
   const [tab, setTab] = useState('vet'); // 'vet' | 'clinic'
 
+  const [savingVet, setSavingVet] = useState(false);
+  const [savingClinic, setSavingClinic] = useState(false);
+
   // Vet form
   const [vetName, setVetName] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
@@ -87,12 +90,9 @@ export default function VetProfile() {
         const data = await res.json();
         const vet = data?.vet || data?.data || {};
 
-        setVetName(
-          vet.name ||
-          user?.full_name ||
-          user?.username ||
-          ''
-        );
+        const fullName = String(vet.name || user?.full_name || '').trim();
+        const username = String(user?.username || '').trim();
+        setVetName(fullName || username || '');
         setLicenseNumber(vet.license_number || '');
         setLicenseIssuer(vet.license_issuer || '');
         setLicenseValidUntil(vet.license_valid_until || '');
@@ -117,7 +117,9 @@ export default function VetProfile() {
       try {
         const saved = JSON.parse(localStorage.getItem('vet_profile') || 'null');
         if (saved && typeof saved === 'object') {
-          setVetName(saved.name || '');
+          const fullName = String(saved.name || user?.full_name || '').trim();
+          const username = String(user?.username || '').trim();
+          setVetName(fullName || username || '');
           setLicenseNumber(saved.license_number || '');
           setLicenseIssuer(saved.license_issuer || '');
           setLicenseValidUntil(saved.license_valid_until || '');
@@ -322,11 +324,12 @@ export default function VetProfile() {
   // Submit handlers
   const saveVet = async () => {
     if (!user?.id) return;
-    console.log('saveVet: token=', token, 'user.id=', user?.id);
-    if (!token) { alert('No token found'); return; }
     try {
+      const tokenNow = localStorage.getItem('token');
+      if (!tokenNow) { alert('No token found. Please log in again.'); return; }
+      setSavingVet(true);
       const body = {
-        name: vetName || user?.full_name || user?.username || 'Vet',
+        name: String(vetName || user?.full_name || user?.username || 'Vet').trim(),
         clinic_id: clinicId ? Number(clinicId) : undefined,
         license_number: licenseNumber || undefined,
         license_issuer: licenseIssuer || undefined,
@@ -338,10 +341,9 @@ export default function VetProfile() {
       };
       const res = await fetch(`${apiConfig.baseURL}${apiConfig.clinics.updateVet(user.id)}`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${tokenNow}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      console.log('saveVet: response status=', res.status);
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to update vet');
 
@@ -370,15 +372,20 @@ export default function VetProfile() {
 
       alert('Vet profile saved');
     } catch (e) {
-      alert(e.message || 'Failed to save vet');
+      alert(e?.message || 'Failed to save vet');
+    } finally {
+      setSavingVet(false);
     }
   };
 
   const saveClinic = async () => {
     try {
+      const tokenNow = localStorage.getItem('token');
+      if (!tokenNow) { alert('No token found. Please log in again.'); return; }
+      setSavingClinic(true);
       const res = await fetch(`${apiConfig.baseURL}${apiConfig.clinics.createClinic}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${tokenNow}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: clinicName,
           phone: clinicPhone || null,
@@ -395,7 +402,9 @@ export default function VetProfile() {
       setClinicId(String(data?.clinic?.id || ''));
       alert('Clinic saved. Linked to your vet profile.');
     } catch (e) {
-      alert(e.message || 'Failed to add clinic');
+      alert(e?.message || 'Failed to add clinic');
+    } finally {
+      setSavingClinic(false);
     }
   };
 
@@ -510,9 +519,15 @@ export default function VetProfile() {
               </div>
 
               <div className="pt-2">
-                <button onClick={saveVet}
-                  className="px-5 py-3 rounded-full bg-[#0f172a] text-white font-semibold">
-                  Save vet info
+                <button
+                  onClick={saveVet}
+                  disabled={savingVet}
+                  className={`px-5 py-3 rounded-full text-white font-semibold inline-flex items-center gap-2 ${savingVet ? "bg-slate-400 cursor-not-allowed" : "bg-[#0f172a] hover:bg-slate-900"}`}
+                >
+                  {savingVet && (
+                    <span className="inline-block h-4 w-4 rounded-full border-2 border-white/70 border-t-transparent animate-spin" aria-hidden="true" />
+                  )}
+                  {savingVet ? 'Saving…' : 'Save vet info'}
                 </button>
               </div>
             </div>
@@ -575,9 +590,15 @@ export default function VetProfile() {
               </div>
 
               <div className="pt-2">
-                <button onClick={saveClinic}
-                  className="px-5 py-3 rounded-full bg-[#0f172a] text-white font-semibold">
-                  Save clinic
+                <button
+                  onClick={saveClinic}
+                  disabled={savingClinic}
+                  className={`px-5 py-3 rounded-full text-white font-semibold inline-flex items-center gap-2 ${savingClinic ? "bg-slate-400 cursor-not-allowed" : "bg-[#0f172a] hover:bg-slate-900"}`}
+                >
+                  {savingClinic && (
+                    <span className="inline-block h-4 w-4 rounded-full border-2 border-white/70 border-t-transparent animate-spin" aria-hidden="true" />
+                  )}
+                  {savingClinic ? 'Saving…' : 'Save clinic'}
                 </button>
               </div>
             </div>

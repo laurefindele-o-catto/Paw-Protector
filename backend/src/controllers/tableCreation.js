@@ -37,6 +37,14 @@ class CreateTables {
             await this.tables.create_emergency_requests_table(); // depends on pets + users + vet_clinics
             await this.tables.create_pet_diseases_table();
 
+            // Vet diagnostics workflow tables (ML image diagnostics)
+            await this.tables.create_request_table();
+            await this.tables.create_vet_approve_table();
+            await this.tables.create_vet_declined_table();
+
+            // New vet consult workflow tables (Pet health check)
+            await this.tables.create_pet_health_check_requests_table();
+
             // Media + anomaly (depend on users/pets, then media, then jobs)
             await this.tables.create_media_assets_table();     
             await this.tables.create_anomaly_jobs_table();     

@@ -94,6 +94,7 @@ class ClinicVetModel {
     updateVet = async (id, data) => {
         try {
             const user_id = Number(id);
+            if (!Number.isFinite(user_id)) return { success: false };
             const { name, clinic_id, license_number, license_issuer, license_valid_until, specialization, verified } = data;
             const expiry = license_valid_until ? new Date(license_valid_until) : null;
             const today = new Date();
@@ -112,14 +113,55 @@ class ClinicVetModel {
                 WHERE user_id = $1
                 RETURNING *;
             `;
-            const params = [user_id, name || null, clinic_id || null, license_number || null, license_issuer || null, license_valid_until || null, specialization || null, _verified];
+            const params = [
+                user_id,
+                name ?? null,
+                clinic_id ?? null,
+                license_number ?? null,
+                license_issuer ?? null,
+                license_valid_until ?? null,
+                specialization ?? null,
+                _verified,
+            ];
             const result = await this.db.query_executor(query, params);
+            if (!result.rows || result.rows.length === 0) return null;
             return result.rows[0];
         } catch (error) {
-            console.log(`Vet insert failed: ${error.message}`);
+            console.log(`Vet update failed: ${error.message}`);
             return { success: false };
         }
     };
+
+    listVets = async ({ verified = null } = {}) => {
+        try {
+            const hasVerifiedFilter = verified === true || verified === false;
+            const query = `
+                SELECT
+                    v.user_id as vet_user_id,
+                    v.name as vet_profile_name,
+                    v.specialization,
+                    v.verified,
+                    u.username,
+                    u.full_name,
+                    c.id as clinic_id,
+                    c.name as clinic_name,
+                    c.address as clinic_address,
+                    c.phone as clinic_phone,
+                    c.email as clinic_email
+                FROM vets v
+                LEFT JOIN users u ON v.user_id = u.id
+                LEFT JOIN vet_clinics c ON v.clinic_id = c.id
+                WHERE ($1::boolean IS NULL OR v.verified = $1)
+                ORDER BY v.verified DESC, COALESCE(u.full_name, u.username, v.name) ASC;
+            `;
+            const params = [hasVerifiedFilter ? verified : null];
+            const result = await this.db.query_executor(query, params);
+            return result.rows || [];
+        } catch (error) {
+            console.log(`List vets failed: ${error.message}`);
+            return [];
+        }
+    }
 
 
 

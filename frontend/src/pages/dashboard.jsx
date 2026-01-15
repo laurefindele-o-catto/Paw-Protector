@@ -65,6 +65,10 @@ function Dashboard() {
   const [healthForm, setHealthForm] = useState(() => defaultHealthForm());
   const [healthSaving, setHealthSaving] = useState(false);
   const [healthError, setHealthError] = useState("");
+
+  const [healthChecksPreview, setHealthChecksPreview] = useState([]);
+  const [healthChecksPreviewLoading, setHealthChecksPreviewLoading] = useState(false);
+  const [healthChecksPreviewError, setHealthChecksPreviewError] = useState("");
   
 
   useEffect(() => {
@@ -78,6 +82,38 @@ function Dashboard() {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    let alive = true;
+
+    const run = async () => {
+      setHealthChecksPreviewLoading(true);
+      setHealthChecksPreviewError("");
+      try {
+        const res = await fetch(`${apiConfig.baseURL}${apiConfig.healthChecks.mine}?limit=10`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error || data?.message || "Failed to load health checks");
+        const list = Array.isArray(data?.requests) ? data.requests : [];
+        const filteredList = currentPet?.id ? list.filter((r) => Number(r.pet_id) === Number(currentPet.id)) : list;
+        // Keep a few more so we can still show latest responded feedback
+        if (alive) setHealthChecksPreview(filteredList.slice(0, 10));
+      } catch (e) {
+        if (!alive) return;
+        setHealthChecksPreview([]);
+        setHealthChecksPreviewError(e?.message || "Failed to load health checks");
+      } finally {
+        if (alive) setHealthChecksPreviewLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [isAuthenticated, token, currentPet?.id]);
 
   useEffect(() => {
     try {
@@ -378,13 +414,14 @@ function Dashboard() {
         {hasPet && (
           <section className="mx-auto w-full sm:px-4">
             <FeaturesSection />
+
             <div className="w-full flex justify-center my-8">
               <div className="mt-4 h-[3px] w-2/3 bg-linear-to-r from-[#fdd142] via-[#0f172a]/30 to-[#fdd142] rounded-full shadow-md opacity-70" />
             </div>
           </section>
         )}
 
-        {hasPet && <PetSwitcher />}
+        {hasPet && <PetSwitcher healthChecksPreview={healthChecksPreview} />}
 
         {/* Random Cat Fact */}
         <section className="mx-auto max-w-6xl w-full px-4">
@@ -560,6 +597,84 @@ function Dashboard() {
                 {healthSaving ? 'Saving...' : 'Save health metrics'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {hasPet && (
+        <div className="mx-auto max-w-6xl w-full px-4 mt-6">
+          <div className="bg-white/85 backdrop-blur-md border border-white rounded-3xl shadow p-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-900">{t("Pet Health Checks")}</h2>
+                <p className="text-sm text-slate-600 mt-1">
+                  {currentPet?.name ? t("Recent responses for your current pet") : t("Recent responses")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/health-checks")}
+                className="px-4 py-2 rounded-xl bg-[#0f172a] text-[#edfdfd] font-semibold"
+              >
+                {t("View all")}
+              </button>
+            </div>
+
+            {healthChecksPreviewError && (
+              <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3">
+                {healthChecksPreviewError}
+              </div>
+            )}
+
+            {healthChecksPreviewLoading ? (
+              <div className="mt-4 text-sm text-slate-600">{t("Loading...")}</div>
+            ) : healthChecksPreview.length === 0 ? (
+              <div className="mt-4 text-sm text-slate-600">
+                {t("No health check requests yet.")}{" "}
+                <button type="button" className="underline" onClick={() => navigate("/find-a-vet")}>
+                  {t("Create one")}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                {healthChecksPreview.slice(0, 3).map((r) => (
+                  <button
+                    key={String(r.id)}
+                    type="button"
+                    onClick={() => navigate(`/health-checks/${r.id}`)}
+                    className="rounded-2xl border border-slate-100 bg-white p-4 text-left hover:shadow-sm hover:border-slate-200 transition"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="text-xs text-slate-500">
+                        {r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}
+                      </div>
+                      <div
+                        className={
+                          "text-[11px] font-semibold px-2 py-0.5 rounded-full border " +
+                          (r.status === "responded"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200")
+                        }
+                      >
+                        {r.status === "responded" ? t("Responded") : t("Pending")}
+                      </div>
+                    </div>
+
+                    <div className="mt-2 text-sm font-semibold text-slate-900 line-clamp-2">
+                      {String(r.vet_full_name || r.vet_username || "Vet").trim() || "Vet"}
+                    </div>
+                    <div className="mt-2 text-sm text-slate-700 line-clamp-3">{r.problem_text}</div>
+                    {r.status === "responded" && r.vet_response && (
+                      <div className="mt-3 text-sm text-slate-900 line-clamp-3">
+                        <span className="text-xs font-semibold text-slate-600">{t("Response")}: </span>
+                        {r.vet_response}
+                      </div>
+                    )}
+                    <div className="mt-3 text-xs text-slate-500">Click to view full details</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

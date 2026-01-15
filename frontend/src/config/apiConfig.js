@@ -53,6 +53,7 @@ const apiConfig = {
   },
   vets:{
     update: (user_id) => `/api/vets/${user_id}`,
+    list: '/api/vets',
   },
   clinics: {
     createClinic: '/api/clinics',
@@ -94,6 +95,26 @@ const apiConfig = {
     all: '/api/vet-approvals/all',
     updateNote: (requestId) => `/api/vet-approvals/${requestId}/note`,
     revoke: (requestId) => `/api/vet-approvals/${requestId}`,
+  },
+
+  vetDecline: {
+    decline: (requestId) => `/api/vet-declines/${requestId}`,
+    myDeclines: '/api/vet-declines/my-declines',
+  },
+
+  healthChecks: {
+    upload: '/api/health-checks/upload',
+    create: '/api/health-checks',
+    mine: '/api/health-checks/mine',
+    vetPending: '/api/health-checks/vet/pending',
+    vetAll: (status) => (status ? `/api/health-checks/vet/all?status=${encodeURIComponent(status)}` : '/api/health-checks/vet/all'),
+    getById: (id) => `/api/health-checks/${id}`,
+    respond: (id) => `/api/health-checks/${id}/respond`,
+    vetSummary: '/api/health-checks/vet/summary',
+  },
+
+  vetDashboard: {
+    overview: '/api/vet-dashboard/overview',
   }
  
 }

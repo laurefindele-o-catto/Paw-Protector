@@ -22,6 +22,9 @@ import VetDashboard from "./pages/VetDashboard.jsx";
 import CheckDiagnostics from "./pages/CheckDIagnostics.jsx";
 import VerifyVet from "./pages/VerifyVet.jsx";
 import VetProfile from "./pages/VetProfile.jsx";
+import HealthChecks from "./pages/HealthChecks.jsx";
+import VetHealthChecks from "./pages/VetHealthChecks.jsx";
+import HealthCheckDetails from "./pages/HealthCheckDetails.jsx";
 import VoiceControl from "./components/VoiceControl.jsx";
 import SkipToContent from "./components/SkipToContent.jsx";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts.jsx";
@@ -59,12 +62,16 @@ function AppContent() {
         <Route path="/pawpal" element={<PawPal />} />
         <Route path="/profile" element={< ProfilePage/>} />
         <Route path="/vetprofile" element={< VetProfile/>} />
+        <Route path="/verification" element={<VerifyVet />} />
         <Route path="/addPet" element={< AddPetPage/>} />
         <Route path="/login" element = {<LoginPage/>}/>
         <Route path="/signup" element={<SignupPage/>}/>
         <Route path="/pet-profile" element={<PetProfile />} />
         <Route path="/assistant" element={<AssistantChat />} />
         <Route path="/checkDiagnostics" element={<CheckDiagnostics />} />
+        <Route path="/health-checks" element={<HealthChecks />} />
+        <Route path="/health-checks/:id" element={<HealthCheckDetails />} />
+        <Route path="/vetHealthChecks" element={<VetHealthChecks />} />
         {/* <Route path="/vetcheckdiag" element={<Vetcheckdiag />} /> */}
       </Routes>
       

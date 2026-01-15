@@ -75,6 +75,25 @@ router.post('/vets', authenticateToken.authenticateToken, controller.addVet);
 
 /**
  * @openapi
+ * /api/vets:
+ *   get:
+ *     tags: [Clinic/Vet]
+ *     summary: List vet profiles (for selection)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: verified
+ *         required: false
+ *         schema: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: List
+ */
+router.get('/vets', authenticateToken.authenticateToken, controller.listVets);
+
+/**
+ * @openapi
  * /api/vets/{user_id}:
  *   get:
  *     tags: [Clinic/Vet]

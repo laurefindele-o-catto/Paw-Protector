@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePet } from "../context/PetContext";
 
 const placeholder = "/placeholder.png";
@@ -12,7 +12,8 @@ function daysUntil(dateStr) {
   return Math.ceil((due - start) / (1000 * 60 * 60 * 24));
 }
 
-export default function PetSwitcher() {
+export default function PetSwitcher({ healthChecksPreview = [] }) {
+  const navigate = useNavigate();
   const { pets, currentPet, currentPetId, selectPet, currentPetSummary } = usePet();
   const [showDiseaseInfo, setShowDiseaseInfo] = React.useState(false);
   const [showVaccineInfo, setShowVaccineInfo] = React.useState(false);
@@ -210,6 +211,55 @@ export default function PetSwitcher() {
                 </div>
               </div>
             )}
+
+            {/* Doctor's feedback (latest responded health check) */}
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-white/70 p-4">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-xs text-slate-500">Doctor's feedback</div>
+                  <div className="text-sm font-semibold text-slate-900">Latest vet response</div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/health-checks")}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50"
+                  >
+                    View all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/find-a-vet")}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#fdd142] text-[#0f172a]"
+                  >
+                    New request
+                  </button>
+                </div>
+              </div>
+
+              {(() => {
+                const latest = (Array.isArray(healthChecksPreview) ? healthChecksPreview : []).find(
+                  (r) => r && r.status === "responded" && String(r.vet_response || "").trim()
+                );
+                if (!latest) {
+                  return <div className="mt-3 text-sm text-slate-600">No feedback yet. Send a health check to a vet to get advice.</div>;
+                }
+                const vetName = String(latest.vet_full_name || "").trim() || String(latest.vet_username || "").trim() || "Vet";
+                return (
+                  <div className="mt-3">
+                    <div className="text-xs text-slate-500">{vetName}{latest.responded_at ? ` • ${new Date(latest.responded_at).toLocaleString()}` : ""}</div>
+                    <div className="mt-2 text-sm text-slate-900 whitespace-pre-wrap line-clamp-4">{latest.vet_response}</div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/health-checks/${latest.id}`)}
+                      className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50"
+                    >
+                      View details
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </>
       )}

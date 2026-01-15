@@ -72,11 +72,36 @@ class ClinicVetController {
         }
     };
 
+    listVets = async (req, res) => {
+        try {
+            const verifiedParam = req.query.verified;
+            const verified = verifiedParam === undefined ? null : String(verifiedParam).toLowerCase() === 'true';
+            const vets = await this.model.listVets({ verified });
+            return res.status(200).json({ success: true, vets, count: vets.length });
+        } catch (error) {
+            console.error('listVets error:', error);
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+    };
+
     updateVet = async (req, res) => {
         try {
             const data = req.body;
-            const id = req.params.user_id;
-            if (!id) return res.status(400).json({ success: false, error: 'user_id required' });
+            const id = Number(req.params.user_id);
+            if (!Number.isFinite(id)) {
+                return res.status(400).json({ success: false, error: 'user_id must be a valid number' });
+            }
+
+            if (data?.clinic_id !== undefined && data?.clinic_id !== null && `${data.clinic_id}`.trim() !== '') {
+                const clinicIdNum = Number(data.clinic_id);
+                if (!Number.isFinite(clinicIdNum)) {
+                    return res.status(400).json({ success: false, error: 'clinic_id must be a valid number' });
+                }
+                data.clinic_id = clinicIdNum;
+            } else {
+                // Normalize empty string -> undefined so we can treat it as "not provided"
+                delete data.clinic_id;
+            }
 
             // If no clinic_id is supplied, create/find a default "Home Practice" clinic using provided location.
             let clinic_id = data.clinic_id;
@@ -101,7 +126,12 @@ class ClinicVetController {
             }
 
             const result = await this.model.updateVet(id, { ...data, clinic_id });
-            if (!result || result.success === false) return res.status(500).json({ success: false, error: 'Failed to update vet' });
+            if (result === null) {
+                return res.status(404).json({ success: false, error: 'Vet profile not found for this user_id' });
+            }
+            if (!result || result.success === false) {
+                return res.status(500).json({ success: false, error: 'Failed to update vet' });
+            }
             // if vet is still unverified, send email again
             if (!result.verified) {
                 try {
@@ -113,6 +143,7 @@ class ClinicVetController {
 
             return res.status(200).json({ success: true, vet: result });
         } catch (error) {
+            console.error('updateVet error:', error);
             return res.status(500).json({ success: false, error: 'Internal server error' });
         }
     }

@@ -24,7 +24,7 @@ function Header() {
     const navLinks = [
         { to: '/dashboard', label: ('Dashboard') },
         { to: '/assistant', label: ('Assistant') },
-        { to: '/find-a-vet', label: ('Vet Finder') }
+        { to: '/find-a-vet', label: ('Contact Vet') }
     ];
 
     return (

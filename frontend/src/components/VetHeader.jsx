@@ -12,6 +12,10 @@ function VetHeader() {
     const navigate = useNavigate();
     const { t, useTranslation, toggleLanguage } = useLanguage();
 
+    const isVet = Array.isArray(user?.roles)
+        ? user.roles.includes("vet")
+        : user?.roles?.[0] === "vet";
+
     // console.log(currentPet);
     
     const handleLogout = async () => {
@@ -23,7 +27,7 @@ function VetHeader() {
         <header className="fixed top-0 left-0 w-full bg-white/30 backdrop-blur-md border-b border-white shadow z-30">
             <div className="max-w-7xl mx-auto px-4 py-1 flex items-center justify-between">
                 {/* Logo left */}
-                <Link to='/dashboard'>
+                <Link to={isVet ? '/vdashboard' : '/dashboard'}>
                     <div className="flex items-center gap-3">
                         <div className="h-9 w-9 bg-[#0f172a] rounded-xl flex items-center justify-center text-[#edfdfd] font-bold text-xs select-none">
                             PP

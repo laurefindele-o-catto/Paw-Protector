@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import VetHeader from "../components/VetHeader";
 import apiConfig from "../config/apiConfig";
 
 function VerificationProcessPage() {
@@ -12,11 +13,15 @@ function VerificationProcessPage() {
     const [licenseValidUntil, setLicenseValidUntil] = useState("");
     const [specialization, setSpecialization] = useState("");
     const [photoUrl, setPhotoUrl] = useState(""); // placeholder for now
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         try {
             const u = JSON.parse(localStorage.getItem("user"));
             setUser(u);
+            const fullName = String(u?.full_name || u?.name || "").trim();
+            const username = String(u?.username || "").trim();
+            setName(fullName || username || "");
         } catch { }
     }, []);
 
@@ -36,9 +41,15 @@ function VerificationProcessPage() {
             return;
         }
 
+        if (!token) {
+            alert("No token found. Please log in again.");
+            return;
+        }
+
         try {
+            setSubmitting(true);
             const res = await fetch(  
-                `${apiConfig.baseURL}/api/vets/${user.id}`, // your updateVet endpoint
+                `${apiConfig.baseURL}${apiConfig.clinics.updateVet(user.id)}`,
                 {
                     method: "PATCH",
                     headers: {
@@ -47,11 +58,11 @@ function VerificationProcessPage() {
                     },
                     body: JSON.stringify({
                         name: name,
-                        clinic_id: clinicId,
+                        clinic_id: clinicId ? Number(clinicId) : undefined,
                         license_number: licenseNumber,
-                        license_issuer: licenseIssuer,
-                        license_valid_until: licenseValidUntil,
-                        specialization: specialization,
+                        license_issuer: licenseIssuer || undefined,
+                        license_valid_until: licenseValidUntil || undefined,
+                        specialization: specialization || undefined,
                         verified: false
                     }),
                 }
@@ -65,14 +76,20 @@ function VerificationProcessPage() {
             const data = await res.json();
             alert("Verification submitted successfully!");
             // Optionally store updated vet info
-            localStorage.setItem("vet_profile", JSON.stringify(data));
-            navigate("/dashboard");
+            try {
+                localStorage.setItem("vet_profile", JSON.stringify(data?.vet || data));
+            } catch { }
+            navigate("/vdashboard");
         } catch (err) {
             alert(err.message || "Verification failed");
+        } finally {
+            setSubmitting(false);
         }
     };
     return (
-        <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden">
+        <>
+        <VetHeader />
+        <div className="relative min-h-screen bg-[#edfdfd] text-slate-900 overflow-hidden pt-28">
             {/* animated background shapes */}
             <div className="pointer-events-none fixed -top-32 -left-16 h-52 w-52 bg-[#fdd142]/60 rounded-full blur-3xl animate-[float_7s_ease-in-out_infinite]" />
             <div className="pointer-events-none fixed top-40 -right-10 h-40 w-40 bg-[#fdd142]/50 rounded-full blur-2xl animate-[float_5s_ease-in-out_infinite_alternate]" />
@@ -91,7 +108,7 @@ function VerificationProcessPage() {
             {/* back button */}
             <button
                 onClick={() => navigate("/vdashboard")}
-                className="absolute top-6 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
+                className="absolute top-32 left-6 flex items-center px-4 py-2 bg-black text-[#ffffff] rounded-lg shadow hover:bg-gray-700 transition z-20"
                 aria-label="Back to dashboard"
             >
                 <svg
@@ -216,9 +233,15 @@ function VerificationProcessPage() {
 
                     <button
                         type="submit"
-                        className="mt-8 w-full bg-[#0f172a] text-white py-3 rounded-full font-semibold hover:bg-slate-900 transition transform hover:-translate-y-[2px]"
+                        disabled={submitting}
+                        className={`mt-8 w-full text-white py-3 rounded-full font-semibold transition transform hover:-translate-y-0.5 ${submitting ? "bg-slate-400 cursor-not-allowed" : "bg-[#0f172a] hover:bg-slate-900"}`}
                     >
-                        Submit for Verification
+                        <span className="inline-flex items-center justify-center gap-2">
+                            {submitting && (
+                                <span className="inline-block h-4 w-4 rounded-full border-2 border-white/70 border-t-transparent animate-spin" aria-hidden="true" />
+                            )}
+                            {submitting ? "Submitting…" : "Submit for Verification"}
+                        </span>
                     </button>
                 </form>
             </div>
@@ -248,6 +271,7 @@ function VerificationProcessPage() {
       `}</style>
 
         </div>
+        </>
     );
 }
 
